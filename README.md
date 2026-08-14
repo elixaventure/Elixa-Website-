@@ -1,7 +1,10 @@
-# Elixa Renewables — Website
+# Elixa Renewables Group — Website
 
-A modern, fast, single-page marketing site for **Elixa Renewables**, MCS-accredited
-installers of air source heat pumps, underfloor heating and ThermaSkirt skirting heating.
+A modern, fast, single-page marketing site for **Elixa Renewables Group Ltd**, an
+MCS-accredited UK clean-energy specialist providing solar PV, battery storage and
+low-carbon heating (air source heat pumps, underfloor heating and ThermaSkirt).
+
+Brand: navy base with a green→blue gradient flame · tagline **"Clean Energy. Smarter Future."**
 
 ## Highlights
 
@@ -59,5 +62,8 @@ the CSS hero if the CDNs are blocked.
 ## Notes
 
 The enquiry form has no backend; on submit it opens the visitor's email client
-pre-filled to `joshua@elixarenewables.co.uk`. To collect submissions server-side,
+pre-filled to `info@elixarenewables.co.uk`. To collect submissions server-side,
 point the form at a handler such as Formspree, Netlify Forms, or your own endpoint.
+
+**Contact:** 07833 387653 · info@elixarenewables.co.uk · 14/2E Docklands Business
+Centre, 10-16 Tiller Road, London, E14 8PX

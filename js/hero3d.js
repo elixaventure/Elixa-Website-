@@ -28,20 +28,20 @@ function initHero(THREE) {
   const group = new THREE.Group();
   scene.add(group);
 
-  // ----- Colours -----
-  const C_LIME = new THREE.Color('#7be08a');
-  const C_GREEN = new THREE.Color('#2ecc8f');
-  const C_AMBER = new THREE.Color('#f7a63b');
+  // ----- Brand colours: green → teal → blue -----
+  const C_GREEN = new THREE.Color('#8ed04a');
+  const C_TEAL = new THREE.Color('#35b1ab');
+  const C_BLUE = new THREE.Color('#2b9fd4');
 
   // ----- Central glowing sphere (wireframe icosahedron) -----
   const coreGeo = new THREE.IcosahedronGeometry(2.05, 2);
-  const coreMat = new THREE.MeshBasicMaterial({ color: C_GREEN, wireframe: true, transparent: true, opacity: 0.34 });
+  const coreMat = new THREE.MeshBasicMaterial({ color: C_TEAL, wireframe: true, transparent: true, opacity: 0.34 });
   const core = new THREE.Mesh(coreGeo, coreMat);
   group.add(core);
 
   // Inner solid glow orb
   const glowGeo = new THREE.IcosahedronGeometry(1.55, 3);
-  const glowMat = new THREE.MeshBasicMaterial({ color: C_GREEN, transparent: true, opacity: 0.10 });
+  const glowMat = new THREE.MeshBasicMaterial({ color: C_BLUE, transparent: true, opacity: 0.10 });
   group.add(new THREE.Mesh(glowGeo, glowMat));
 
   // ----- Orbiting particle field -----
@@ -66,7 +66,7 @@ function initHero(THREE) {
     setParticle(i, r, a, tilt);
 
     const t = Math.random();
-    tmp.copy(t < 0.72 ? C_LIME : (t < 0.9 ? C_GREEN : C_AMBER));
+    tmp.copy(t < 0.45 ? C_BLUE : (t < 0.8 ? C_TEAL : C_GREEN));
     colors[i * 3] = tmp.r; colors[i * 3 + 1] = tmp.g; colors[i * 3 + 2] = tmp.b;
   }
 

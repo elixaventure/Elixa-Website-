@@ -115,7 +115,7 @@
         `Interested in: ${form.service.value}\n\n` +
         `${form.message.value.trim()}`
       );
-      window.location.href = `mailto:joshua@elixarenewables.co.uk?subject=${subject}&body=${body}`;
+      window.location.href = `mailto:info@elixarenewables.co.uk?subject=${subject}&body=${body}`;
 
       note.textContent = 'Thanks! Your email app should open with the details ready to send.';
       note.className = 'form-note ok';
