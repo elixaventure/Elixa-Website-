@@ -68,7 +68,7 @@ function Geo({ id, hi, isDay, acMode, model }: { id: string; hi: boolean; isDay:
     case "solarPanels":
       // tilted array matching the front roof slope
       return (
-        <group rotation={[-0.675, 0, 0]}>
+        <group rotation={[0.675, 0, 0]}>
           {[-1, 0, 1].map((i) => (
             <group key={i} position={[i * 1.35, 0.12, 0]}>
               {/* frame */}

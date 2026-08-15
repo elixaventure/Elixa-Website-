@@ -149,13 +149,13 @@ export function House({ isDay, dim }: { isDay: boolean; dim: number }) {
 
       {/* ---- complete pitched roof, separated upward so the inside stays visible ---- */}
       <group position={[0, LIFT, 0]}>
-        {/* front slope (holds solar) */}
-        <mesh position={[0, 5.42, 1.0]} rotation={[-0.675, 0, 0]} castShadow>
+        {/* front slope (holds solar) — ridge high at z=0, eave low toward +z */}
+        <mesh position={[0, 5.42, 1.0]} rotation={[0.675, 0, 0]} castShadow>
           <boxGeometry args={[6.7, 0.16, 2.65]} />
           <meshStandardMaterial color={c.roof} roughness={0.7} />
         </mesh>
-        {/* back slope */}
-        <mesh position={[0, 5.42, -1.0]} rotation={[0.675, 0, 0]} castShadow>
+        {/* back slope — ridge high at z=0, eave low toward -z */}
+        <mesh position={[0, 5.42, -1.0]} rotation={[-0.675, 0, 0]} castShadow>
           <boxGeometry args={[6.7, 0.16, 2.65]} />
           <meshStandardMaterial color={c.roof} roughness={0.7} />
         </mesh>
