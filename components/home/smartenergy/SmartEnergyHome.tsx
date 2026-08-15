@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ServiceIcon } from "@/components/brand/ServiceIcon";
-import { MobileStage } from "./MobileStage";
+import { HouseCrossSection } from "./HouseCrossSection";
 import { site } from "@/content/site";
 import { cn } from "@/lib/cn";
 import { track } from "@/lib/analytics";
@@ -23,37 +22,6 @@ import {
   type TechId,
 } from "./state";
 
-const Scene = dynamic(() => import("./Scene"), { ssr: false });
-
-/* -------- capability detection -------- */
-function useCan3D() {
-  const reduce = useReducedMotion();
-  const [ok, setOk] = useState(false);
-  useEffect(() => {
-    if (reduce) return;
-    try {
-      const c = document.createElement("canvas");
-      const gl = c.getContext("webgl2") || c.getContext("webgl");
-      setOk(!!gl);
-    } catch {
-      setOk(false);
-    }
-  }, [reduce]);
-  return ok;
-}
-
-function useIsMobile() {
-  const [m, setM] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 768px)");
-    const on = () => setM(mq.matches);
-    on();
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return m;
-}
-
 export function SmartEnergyHome() {
   const [selected, setSelected] = useState<Set<TechId>>(new Set(["solar"]));
   const [isDay, setIsDay] = useState(true);
@@ -61,28 +29,7 @@ export function SmartEnergyHome() {
   const [acMode, setAcMode] = useState<"cool" | "heat">("cool");
   const [picked, setPicked] = useState<TechId | "grid" | null>(null);
   const [finale, setFinale] = useState(false);
-  const [inView, setInView] = useState(false);
-
-  const stageRef = useRef<HTMLDivElement>(null);
-  const can3d = useCan3D();
-  const isMobile = useIsMobile();
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-
-  useEffect(() => {
-    const el = stageRef.current;
-    if (!el || !("IntersectionObserver" in window)) {
-      setInView(true);
-      return;
-    }
-    const io = new IntersectionObserver(
-      (e) => e[0].isIntersecting && setInView(true),
-      { rootMargin: "200px" }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   const active = useMemo(() => Array.from(selected), [selected]);
   const model = useMemo(() => computeEnergy(selected, isDay), [selected, isDay]);
@@ -128,37 +75,25 @@ export function SmartEnergyHome() {
     return techs ? `/quote?tech=${techs}` : "/quote";
   }, [active]);
 
-  const quality: "high" | "low" = isMobile ? "low" : "high";
-
   return (
     <div className="grid gap-6 lg:grid-cols-[1.55fr_1fr]">
       {/* ================= STAGE ================= */}
       <div
-        ref={stageRef}
-        className="relative h-[420px] min-w-0 overflow-hidden rounded-4xl border border-navy/10 shadow-elevated sm:h-[520px] lg:h-[640px]"
+        className="relative h-[440px] min-w-0 overflow-hidden rounded-4xl border border-navy/10 shadow-elevated sm:h-[520px] lg:h-[640px]"
         style={{
           background: isDay
             ? "linear-gradient(180deg,#dcecf8,#e7f1ea)"
             : "linear-gradient(180deg,#16233f,#0d1730)",
         }}
       >
-        {isMobile ? (
-          <MobileStage active={active} isDay={isDay} model={model} acMode={acMode} onPick={(id) => setPicked(id)} />
-        ) : can3d && inView ? (
-          <Scene
-            active={active}
-            isDay={isDay}
-            flowMode={flowMode}
-            greenness={greenness}
-            acMode={acMode}
-            model={model}
-            quality={quality}
-            isMobile={isMobile}
-            onPick={(id) => setPicked(id)}
-          />
-        ) : (
-          <StagePreview can3d={can3d} active={active} isDay={isDay} />
-        )}
+        <HouseCrossSection
+          active={active}
+          isDay={isDay}
+          acMode={acMode}
+          model={model}
+          flowMode={flowMode}
+          onPick={(id) => setPicked(id)}
+        />
 
         {/* overlay chips: day/night + flow */}
         <div className="pointer-events-auto absolute left-4 top-4 flex flex-wrap gap-2">
@@ -179,11 +114,11 @@ export function SmartEnergyHome() {
           <button
             onClick={() => setFlowMode((v) => !v)}
             className={cn(
-              "hidden rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur transition sm:inline-flex",
+              "inline-flex rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur transition",
               flowMode ? "bg-elixa-cyan text-white" : "bg-white/85 text-navy/70"
             )}
           >
-            ⚡ Energy flow
+            ⚡ Focus flows
           </button>
         </div>
 
