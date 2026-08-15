@@ -45,11 +45,11 @@ const interestOptions = [
   { key: "advice", label: "Not sure / advice needed" },
 ];
 
-export function QuoteWizard({ preselect }: { preselect?: string }) {
+export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
   const [step, setStep] = useState(0);
   const [a, setA] = useState<Answers>(() => ({
     ...initial,
-    interests: preselect && services.some((s) => s.slug === preselect) ? [preselect] : [],
+    interests: preselect.filter((slug) => services.some((s) => s.slug === slug)),
   }));
 
   const wantsAc = a.interests.includes("air-conditioning");
