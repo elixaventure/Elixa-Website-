@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ServiceIcon } from "@/components/brand/ServiceIcon";
-import { HouseCrossSection } from "./HouseCrossSection";
+import { SmartHomeStage } from "./SmartHomeStage";
 import { site } from "@/content/site";
 import { cn } from "@/lib/cn";
 import { track } from "@/lib/analytics";
@@ -86,7 +86,7 @@ export function SmartEnergyHome() {
             : "linear-gradient(180deg,#16233f,#0d1730)",
         }}
       >
-        <HouseCrossSection
+        <SmartHomeStage
           active={active}
           isDay={isDay}
           acMode={acMode}
