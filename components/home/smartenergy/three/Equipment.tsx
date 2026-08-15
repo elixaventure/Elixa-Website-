@@ -152,14 +152,35 @@ function Geo({ id, hi, isDay, acMode, model }: { id: string; hi: boolean; isDay:
           </mesh>
         </group>
       );
-    case "battery":
+    case "battery": {
+      const pct = Math.max(0.06, model.batteryPct / 100);
+      const charging = model.batteryCharge > 0;
+      const discharging = model.batteryDischarge > 0;
+      const led = charging ? GREEN : discharging ? CYAN : "#8aa0bd";
       return (
-        <mesh castShadow>
-          <boxGeometry args={[0.5, 0.85, 0.3]} />
-          {body("#eaf7e5", hi)}
-          {/* charge bar */}
-        </mesh>
+        <group>
+          <mesh castShadow>
+            <boxGeometry args={[0.52, 0.9, 0.3]} />
+            {body("#f2f6f9", hi)}
+          </mesh>
+          {/* charge window */}
+          <mesh position={[0, -0.02, 0.155]}>
+            <planeGeometry args={[0.3, 0.68]} />
+            <meshStandardMaterial color="#0e1f45" roughness={0.35} />
+          </mesh>
+          {/* state-of-charge fill — height tracks batteryPct live */}
+          <mesh position={[0, -0.36 + (0.68 * pct) / 2 + 0.02, 0.16]}>
+            <planeGeometry args={[0.26, 0.68 * pct]} />
+            <meshBasicMaterial color={charging ? GREEN : discharging ? CYAN : "#4f9e63"} toneMapped={false} />
+          </mesh>
+          {/* status LED: green = charging, cyan = supplying the home */}
+          <mesh position={[0.16, 0.38, 0.16]}>
+            <circleGeometry args={[0.035, 16]} />
+            <meshBasicMaterial color={led} toneMapped={false} />
+          </mesh>
+        </group>
       );
+    }
     case "cylinder":
       return (
         <mesh castShadow>

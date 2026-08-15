@@ -58,7 +58,7 @@ export function Scene({
     <Canvas
       shadows
       dpr={[1, reduced ? 1.2 : 2]}
-      camera={{ position: [10.5, 8.6, 14.2], fov: 32 }}
+      camera={{ position: [11.6, 9.4, 15.8], fov: 32 }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       className="!touch-none"
       onPointerMissed={() => handleHover(null)}
@@ -104,16 +104,14 @@ export function Scene({
 
       <OrbitControls
         makeDefault
-        target={[0.4, 1.9, 0.2]}
+        target={[0.2, 2.6, 0.1]}
         enablePan={false}
         enableDamping
         dampingFactor={0.08}
-        minDistance={12}
-        maxDistance={24}
-        minPolarAngle={Math.PI * 0.26}
+        minDistance={13}
+        maxDistance={26}
+        minPolarAngle={Math.PI * 0.22}
         maxPolarAngle={Math.PI * 0.48}
-        minAzimuthAngle={-0.15}
-        maxAzimuthAngle={0.95}
       />
     </Canvas>
   );

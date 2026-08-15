@@ -109,12 +109,12 @@ export interface FlowCtx {
 
 export const NODES: Record<string, ComponentNode> = {
   sun: {
-    id: "sun", name: "The sun", tech: "solar", pick: "solar", pos: [5.4, 6.4, 0.6],
+    id: "sun", name: "The sun", tech: "solar", pick: "solar", pos: [5.6, 7.6, 0.6],
     tooltip: { title: "Solar radiation", body: "Free energy from the sun strikes your roof and is turned into electricity by the panels." },
     connects: ["solarPanels"],
   },
   solarPanels: {
-    id: "solarPanels", name: "Solar panels", tech: "solar", pick: "solar", pos: [1.35, 4.9, 1.7],
+    id: "solarPanels", name: "Solar panels", tech: "solar", pick: "solar", pos: [1.35, 6.0, 1.7],
     tooltip: { title: "Solar panels", body: "Convert sunlight into DC electrical energy on your roof." },
     connects: ["sun", "inverter"], converts: "Sunlight → DC",
   },
