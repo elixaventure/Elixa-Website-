@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { TrustShield } from "@/components/ui/TrustShield";
 import { ServiceIcon } from "@/components/brand/ServiceIcon";
 import { PageHero } from "./PageHero";
+import { ProductShowcase } from "./ProductShowcase";
 import { Faqs } from "./Faqs";
 import { CtaBanner } from "@/components/home/CtaBanner";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -96,6 +97,9 @@ export function ServicePageTemplate({ service }: { service: Service }) {
           </div>
         </Container>
       </section>
+
+      {/* Interactive 3D product studio */}
+      <ProductShowcase icon={service.icon} name={service.name} />
 
       {/* Highlights */}
       <section className="bg-cloud py-20 sm:py-24">
