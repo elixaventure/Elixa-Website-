@@ -126,8 +126,8 @@ carries the visitor's selected technologies into the quote via `?tech=slug,slug`
 This build uses clearly-labelled placeholders where real assets/approvals are needed.
 Please provide the following, and confirm entitlement before any mark is displayed:
 
-1. **Official logo** — the flame mark in `components/brand/Logo.tsx` is an on-brand
-   **stand-in**. Drop the official vector at `public/brand/elixa-logo.svg` and swap it in.
+1. **Official logo** — ✅ supplied. The real flame + wordmark are in `public/brand/`
+   (`elixa-flame.png`, `elixa-logo.png`) and used across the site and favicon.
 2. **Photography** — hero, service and project images. Replace the graphic
    placeholders (`Hero`, `ProjectsGallery`, service `heroImage` paths). Use authorised,
    photorealistic imagery; genuine product imagery where manufacturers are shown.

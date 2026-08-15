@@ -30,7 +30,8 @@ export const metadata: Metadata = {
   authors: [{ name: site.legalName }],
   robots: { index: true, follow: true },
   icons: {
-    icon: [{ url: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/favicon.svg`, type: "image/svg+xml" }],
+    icon: [{ url: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/favicon.png`, type: "image/png", sizes: "256x256" }],
+    apple: [{ url: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/favicon.png` }],
   },
 };
 
