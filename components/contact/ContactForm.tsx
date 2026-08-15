@@ -4,6 +4,7 @@ import { useState } from "react";
 import { services } from "@/content/services";
 import { site } from "@/content/site";
 import { track } from "@/lib/analytics";
+import { submitLead, FORM_ENDPOINT } from "@/lib/forms";
 
 const inputCls =
   "w-full rounded-2xl border border-navy/15 bg-mist px-4 py-3 text-navy focus:border-elixa-cyan focus:outline-none focus:ring-2 focus:ring-elixa-cyan/30";
@@ -11,22 +12,38 @@ const inputCls =
 export function ContactForm() {
   const [note, setNote] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const f = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const f = new FormData(form);
     const name = String(f.get("name") || "").trim();
     const email = String(f.get("email") || "").trim();
     if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setNote({ type: "err", msg: "Please add your name and a valid email." });
       return;
     }
-    const body = encodeURIComponent(
-      `Name: ${name}\nEmail: ${email}\nPhone: ${f.get("phone") || "—"}\nInterested in: ${f.get("service")}\n\n${f.get("message") || ""}`
-    );
+    const payload = {
+      name,
+      email,
+      phone: String(f.get("phone") || ""),
+      service: String(f.get("service") || ""),
+      message: String(f.get("message") || ""),
+      source: "contact-form",
+    };
     track("email_click", { location: "contact-form" });
+
+    // Preferred: post to the configured inbox/CRM. Fallback: mailto.
+    if (FORM_ENDPOINT && (await submitLead(payload))) {
+      setNote({ type: "ok", msg: "Thank you — your enquiry has been sent. We'll be in touch shortly." });
+      form.reset();
+      return;
+    }
+    const body = encodeURIComponent(
+      `Name: ${name}\nEmail: ${email}\nPhone: ${payload.phone || "—"}\nInterested in: ${payload.service}\n\n${payload.message}`
+    );
     window.location.href = `${site.emailHref}?subject=${encodeURIComponent("Website enquiry")}&body=${body}`;
     setNote({ type: "ok", msg: "Thanks! Your email app should open with the details ready to send." });
-    e.currentTarget.reset();
+    form.reset();
   };
 
   return (

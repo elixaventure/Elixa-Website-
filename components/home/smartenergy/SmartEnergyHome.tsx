@@ -179,7 +179,7 @@ export function SmartEnergyHome() {
           <button
             onClick={() => setFlowMode((v) => !v)}
             className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur transition",
+              "hidden rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur transition sm:inline-flex",
               flowMode ? "bg-elixa-cyan text-white" : "bg-white/85 text-navy/70"
             )}
           >
@@ -231,6 +231,21 @@ export function SmartEnergyHome() {
               <span className="mt-1 inline-block text-sm font-semibold text-elixa-green">{label}</span>
             </div>
             <ScoreRing value={score} greenness={greenness} />
+          </div>
+
+          {/* compact live metrics (mobile — desktop shows the floating dashboard) */}
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:hidden">
+            {[
+              { l: "Solar", v: `${model.solarGeneration}kW`, c: FLOW_COLORS.solar },
+              { l: "Battery", v: `${model.batteryPct}%`, c: FLOW_COLORS.stored },
+              { l: "Renewable", v: `${model.renewablePct}%`, c: FLOW_COLORS.renewable },
+            ].map((m) => (
+              <div key={m.l} className="rounded-xl bg-mist p-2 text-center">
+                <span className="mx-auto mb-1 block h-1.5 w-1.5 rounded-full" style={{ background: m.c }} />
+                <span className="block font-display text-sm font-bold text-navy">{m.v}</span>
+                <span className="text-[10px] text-navy/50">{m.l}</span>
+              </div>
+            ))}
           </div>
 
           <div className="mt-4">
@@ -391,7 +406,7 @@ function Dashboard({ model, isDay }: { model: ReturnType<typeof computeEnergy>; 
     { label: "Renewable use", value: `${model.renewablePct}`, unit: "%", c: FLOW_COLORS.renewable },
   ];
   return (
-    <div className="pointer-events-none absolute right-3 top-3 w-[150px] rounded-2xl bg-white/85 p-3 backdrop-blur sm:right-4 sm:top-4">
+    <div className="pointer-events-none absolute right-3 top-3 hidden w-[150px] rounded-2xl bg-white/85 p-3 backdrop-blur sm:right-4 sm:top-4 sm:block">
       <p className="mb-2 text-[9px] font-bold uppercase tracking-wide text-navy/45">Illustrative live flows</p>
       <div className="grid gap-1.5">
         {items.map((it) => (

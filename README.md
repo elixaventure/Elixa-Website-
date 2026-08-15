@@ -105,10 +105,19 @@ banner (Consent Mode "denied" by default) before go-live.
 
 ## Forms
 
-The site is statically exported, so the quote wizard and contact form currently
-hand off to the visitor's email client (`mailto:` to `info@elixarenewables.co.uk`).
-For server-side capture/CRM, point them at Formspree, Netlify Forms, or an API route
-(the latter requires switching off static export or adding a serverless function).
+The quote wizard and contact form submit to a real inbox/CRM when an endpoint is
+configured, and otherwise fall back to opening the visitor's email client
+(`mailto:` to `info@elixarenewables.co.uk`).
+
+To send enquiries to an inbox, set one environment variable:
+
+```
+NEXT_PUBLIC_FORM_ENDPOINT=https://formspree.io/f/xxxxxxxx
+```
+
+Any endpoint that accepts a JSON `POST` works (Formspree, your own handler, a
+serverless function, Zapier/Make webhook). The Smart Energy Home builder also
+carries the visitor's selected technologies into the quote via `?tech=slug,slug`.
 
 ---
 

@@ -6,6 +6,7 @@ import { services } from "@/content/services";
 import { site } from "@/content/site";
 import { cn } from "@/lib/cn";
 import { track } from "@/lib/analytics";
+import { submitLead, FORM_ENDPOINT } from "@/lib/forms";
 
 type Answers = {
   interests: string[];
@@ -93,11 +94,37 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
   };
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
-  const submit = () => {
+  const submit = async () => {
+    const interestLabels = a.interests
+      .map((k) => interestOptions.find((o) => o.key === k)?.label ?? k)
+      .join(", ");
+    track("quote_submit", { interests: a.interests.join(","), sector: a.sector });
+
+    // Preferred: post to the configured inbox/CRM. Fallback: mailto.
+    if (FORM_ENDPOINT) {
+      const ok = await submitLead({
+        name: a.name,
+        phone: a.phone,
+        email: a.email,
+        interested_in: interestLabels,
+        sector: a.sector,
+        postcode: a.postcode,
+        ac_rooms: wantsAc ? a.rooms : "",
+        ac_job_type: wantsAc ? a.jobType : "",
+        ac_mode: wantsAc ? a.acMode : "",
+        timeframe: a.timeframe,
+        preferred_contact: a.contactPref,
+        message: a.message,
+        source: "quote-wizard",
+      });
+      if (ok) {
+        setStep(totalSteps - 1);
+        return;
+      }
+    }
+
     const lines = [
-      `Interested in: ${a.interests
-        .map((k) => interestOptions.find((o) => o.key === k)?.label ?? k)
-        .join(", ")}`,
+      `Interested in: ${interestLabels}`,
       `Home or business: ${a.sector}`,
       `Postcode: ${a.postcode}`,
       wantsAc ? `AC rooms: ${a.rooms || "—"}` : "",
@@ -108,11 +135,8 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
       "",
       a.message ? `Message: ${a.message}` : "",
     ].filter(Boolean);
-    const body = encodeURIComponent(
-      `Name: ${a.name}\nPhone: ${a.phone}\nEmail: ${a.email}\n\n${lines.join("\n")}`
-    );
+    const body = encodeURIComponent(`Name: ${a.name}\nPhone: ${a.phone}\nEmail: ${a.email}\n\n${lines.join("\n")}`);
     const subject = encodeURIComponent("Website quote request");
-    track("quote_submit", { interests: a.interests.join(","), sector: a.sector });
     window.location.href = `${site.emailHref}?subject=${subject}&body=${body}`;
     setStep(totalSteps - 1);
   };

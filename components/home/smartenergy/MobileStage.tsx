@@ -53,7 +53,6 @@ export function MobileStage({
   }
   if (has("ev")) edges.push({ from: "home", to: "ev", color: supply });
 
-  const ink = isDay ? "#12294f" : "#eaf1fb";
   const sub = isDay ? "#5a6b82" : "#aebfd6";
 
   return (
@@ -115,10 +114,10 @@ export function MobileStage({
           );
         })}
 
-        <text x="4" y="104" fontSize="3" fill={ink} opacity="0.5" fontFamily="sans-serif">
-          Tap a node to learn more
-        </text>
       </svg>
+      <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-semibold text-navy backdrop-blur">
+        Tap a node
+      </div>
     </div>
   );
 }
