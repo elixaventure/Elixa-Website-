@@ -2,31 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, ContactShadows, Html, AdaptiveDpr, Environment, Lightformer } from "@react-three/drei";
+import { OrbitControls, ContactShadows, AdaptiveDpr, Environment, Lightformer } from "@react-three/drei";
 import { House } from "./House";
 import { Equipment } from "./Equipment";
 import { Flows } from "./Flows";
 import { NODES, FLOWS, type SystemView, type FlowCtx } from "./graph";
 import type { TechId, EnergyModel } from "../state";
-
-function Tooltip({ hovered }: { hovered: string | null }) {
-  if (!hovered) return null;
-  const n = NODES[hovered];
-  if (!n) return null;
-  return (
-    <Html position={[n.pos[0], n.pos[1] + 0.6, n.pos[2]]} center distanceFactor={12} zIndexRange={[20, 0]} pointerEvents="none">
-      <div className="pointer-events-none w-52 -translate-y-2 rounded-2xl bg-navy-900/95 px-3.5 py-2.5 text-left shadow-elevated backdrop-blur">
-        {n.converts && (
-          <span className="mb-1 inline-block rounded-full bg-elixa-cyan/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-elixa-cyan">
-            {n.converts}
-          </span>
-        )}
-        <p className="font-display text-[13px] font-bold leading-tight text-white">{n.tooltip.title}</p>
-        <p className="mt-1 text-[11px] leading-snug text-white/70">{n.tooltip.body}</p>
-      </div>
-    </Html>
-  );
-}
 
 export function Scene({
   active,
@@ -37,6 +18,7 @@ export function Scene({
   view,
   reduced,
   onPick,
+  onHoverChange,
 }: {
   active: TechId[];
   isDay: boolean;
@@ -46,8 +28,15 @@ export function Scene({
   view: SystemView;
   reduced: boolean;
   onPick: (id: TechId | "grid") => void;
+  /** notifies the parent (screen-space tooltip) — kept OUT of the canvas to
+      avoid the DOM label stealing the pointer and flickering the hover. */
+  onHoverChange?: (id: string | null) => void;
 }) {
   const [hovered, setHovered] = useState<string | null>(null);
+  const handleHover = (id: string | null) => {
+    setHovered(id);
+    onHoverChange?.(id);
+  };
 
   const highlight = useMemo(() => {
     const s = new Set<string>();
@@ -72,7 +61,7 @@ export function Scene({
       camera={{ position: [10.5, 8.6, 14.2], fov: 32 }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       className="!touch-none"
-      onPointerMissed={() => setHovered(null)}
+      onPointerMissed={() => handleHover(null)}
     >
       <AdaptiveDpr pixelated />
       <color attach="background" args={[isDay ? "#dceaf6" : "#0d1730"]} />
@@ -102,7 +91,7 @@ export function Scene({
         active={active}
         hovered={hovered}
         highlight={highlight}
-        onHover={setHovered}
+        onHover={handleHover}
         onPick={onPick}
         isDay={isDay}
         acMode={acMode}
@@ -110,8 +99,6 @@ export function Scene({
       />
 
       <Flows flows={FLOWS} ctx={ctx} view={view} reduced={reduced} />
-
-      <Tooltip hovered={hovered} />
 
       <ContactShadows position={[0, 0.02, 0]} opacity={isDay ? 0.4 : 0.25} scale={26} blur={2.6} far={8} />
 

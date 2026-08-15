@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { HouseCrossSection } from "./HouseCrossSection";
 import { cn } from "@/lib/cn";
 import type { TechId, EnergyModel } from "./state";
-import type { SystemView } from "./three/graph";
+import { NODES, type SystemView } from "./three/graph";
 
 const Scene = dynamic(() => import("./three/Scene").then((m) => m.Scene), {
   ssr: false,
@@ -54,6 +54,19 @@ export function SmartHomeStage(props: {
   const [reduced, setReduced] = useState(false);
   const [mode, setMode] = useState<"3d" | "2d">("2d");
   const [view, setView] = useState<SystemView>("all");
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [cursor, setCursor] = useState<{ x: number; y: number; flip: boolean }>({ x: 0, y: 0, flip: false });
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  const onMove = (e: React.PointerEvent) => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    setCursor({ x, y, flip: x > r.width - 250 });
+  };
+  const node = hoveredNode ? NODES[hoveredNode] : null;
 
   useEffect(() => {
     const webgl = hasWebGL();
@@ -64,11 +77,36 @@ export function SmartHomeStage(props: {
   }, []);
 
   return (
-    <div className="relative h-full w-full">
+    <div
+      ref={wrapRef}
+      className="relative h-full w-full"
+      onPointerMove={onMove}
+      onPointerLeave={() => setHoveredNode(null)}
+    >
       {mode === "3d" && can3d ? (
-        <Scene {...props} view={view} reduced={reduced} />
+        <Scene {...props} view={view} reduced={reduced} onHoverChange={setHoveredNode} />
       ) : (
         <HouseCrossSection {...props} />
+      )}
+
+      {/* cursor-following component tooltip (screen-space; never steals the 3D pointer) */}
+      {mode === "3d" && can3d && node && (
+        <div
+          className="pointer-events-none absolute z-20 w-56 rounded-2xl bg-navy-900/95 px-3.5 py-2.5 text-left shadow-elevated backdrop-blur"
+          style={{
+            left: cursor.flip ? cursor.x - 232 : cursor.x + 18,
+            top: Math.max(8, cursor.y - 10),
+          }}
+        >
+          {node.converts && (
+            <span className="mb-1 inline-block rounded-full bg-elixa-cyan/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-elixa-cyan">
+              {node.converts}
+            </span>
+          )}
+          <p className="font-display text-[13px] font-bold leading-tight text-white">{node.tooltip.title}</p>
+          <p className="mt-1 text-[11px] leading-snug text-white/70">{node.tooltip.body}</p>
+          <p className="mt-1.5 text-[10px] font-semibold text-elixa-green">Tap for details →</p>
+        </div>
       )}
 
       {/* view controls (bottom-centre, above the parent's legend) */}
