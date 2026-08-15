@@ -434,26 +434,23 @@ function EnvParticles({ color }: { color: string }) {
   );
 }
 
-/* camera idle drift within a controlled range */
-function Rig() {
-  const controls = useRef<any>(null);
-  useFrame((state) => {
-    if (!controls.current) return;
-    controls.current.update();
-  });
+/* Orbit controls target the house on every device. Auto-rotate only on desktop
+   (auto-rotate in portrait was swinging the camera off the house). */
+function Rig({ isMobile }: { isMobile: boolean }) {
   return (
     <OrbitControls
-      ref={controls}
+      makeDefault
       enablePan={false}
-      autoRotate
-      autoRotateSpeed={0.35}
-      minDistance={6}
-      maxDistance={11}
-      minPolarAngle={Math.PI / 3.4}
+      autoRotate={!isMobile}
+      autoRotateSpeed={0.32}
+      enableZoom
+      minDistance={7}
+      maxDistance={16}
+      minPolarAngle={Math.PI / 3.6}
       maxPolarAngle={Math.PI / 2.08}
-      minAzimuthAngle={-Math.PI / 2.6}
-      maxAzimuthAngle={Math.PI / 3}
-      target={[0, 1, 0]}
+      minAzimuthAngle={isMobile ? -Math.PI / 5 : -Math.PI / 2.6}
+      maxAzimuthAngle={isMobile ? Math.PI / 5 : Math.PI / 3}
+      target={[0, 1.1, 0]}
     />
   );
 }
@@ -496,6 +493,7 @@ export default function Scene({
   acMode,
   model,
   quality,
+  isMobile,
   onPick,
 }: {
   active: TechId[];
@@ -505,6 +503,7 @@ export default function Scene({
   acMode: "cool" | "heat";
   model: EnergyModel;
   quality: "high" | "low";
+  isMobile: boolean;
   onPick: (id: TechId | "grid") => void;
 }) {
   const flows = useFlows(active, isDay, model, quality);
@@ -512,12 +511,20 @@ export default function Scene({
   const sky = isDay
     ? new THREE.Color("#d7e9f6").lerp(new THREE.Color("#e3f3ea"), greenness * 0.5)
     : new THREE.Color("#132038");
+  // Stable identity so R3F applies it once and doesn't clobber CameraFit each render.
+  const camProp = useMemo(
+    () =>
+      isMobile
+        ? { position: [2.4, 4, 12.8] as [number, number, number], fov: 48 }
+        : { position: [6.8, 5, 9] as [number, number, number], fov: 40 },
+    [isMobile]
+  );
 
   return (
     <Canvas
       shadows={quality === "high"}
-      dpr={quality === "low" ? [1, 1.3] : [1, 1.8]}
-      camera={{ position: [7.5, 4.6, 7.5], fov: 38 }}
+      dpr={quality === "low" ? [1, 1.4] : [1, 1.8]}
+      camera={camProp}
       gl={{ antialias: true, powerPreference: "high-performance" }}
     >
       <color attach="background" args={[sky.getStyle()]} />
@@ -566,7 +573,7 @@ export default function Scene({
       )}
 
       <ContactShadows position={[0, 0.01, 0]} opacity={isDay ? 0.35 : 0.18} scale={16} blur={2.6} far={5} />
-      <Rig />
+      <Rig isMobile={isMobile} />
     </Canvas>
   );
 }

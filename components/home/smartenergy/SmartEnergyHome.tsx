@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ServiceIcon } from "@/components/brand/ServiceIcon";
+import { MobileStage } from "./MobileStage";
 import { site } from "@/content/site";
 import { cn } from "@/lib/cn";
 import { track } from "@/lib/analytics";
@@ -134,14 +135,16 @@ export function SmartEnergyHome() {
       {/* ================= STAGE ================= */}
       <div
         ref={stageRef}
-        className="relative h-[420px] overflow-hidden rounded-4xl border border-navy/10 shadow-elevated sm:h-[520px] lg:h-[640px]"
+        className="relative h-[420px] min-w-0 overflow-hidden rounded-4xl border border-navy/10 shadow-elevated sm:h-[520px] lg:h-[640px]"
         style={{
           background: isDay
             ? "linear-gradient(180deg,#dcecf8,#e7f1ea)"
             : "linear-gradient(180deg,#16233f,#0d1730)",
         }}
       >
-        {can3d && inView ? (
+        {isMobile ? (
+          <MobileStage active={active} isDay={isDay} model={model} acMode={acMode} onPick={(id) => setPicked(id)} />
+        ) : can3d && inView ? (
           <Scene
             active={active}
             isDay={isDay}
@@ -150,6 +153,7 @@ export function SmartEnergyHome() {
             acMode={acMode}
             model={model}
             quality={quality}
+            isMobile={isMobile}
             onPick={(id) => setPicked(id)}
           />
         ) : (
@@ -199,7 +203,7 @@ export function SmartEnergyHome() {
       </div>
 
       {/* ================= CONTROL PANEL ================= */}
-      <div className="flex flex-col gap-4">
+      <div className="flex min-w-0 flex-col gap-4">
         {/* score + grid */}
         <div className="rounded-4xl border border-navy/10 bg-white p-5 shadow-card">
           <div className="flex items-start justify-between gap-4">
