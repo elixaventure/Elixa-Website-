@@ -1,5 +1,8 @@
 "use client";
 
+import { useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import type { Group } from "three";
 import { NODES, type ComponentNode, MEDIA } from "./graph";
 import type { TechId, EnergyModel } from "../state";
 
@@ -52,6 +55,28 @@ function body(color: string, hi: boolean, extra: Record<string, unknown> = {}) {
       emissiveIntensity={hi ? 0.35 : 0.04}
       {...extra}
     />
+  );
+}
+
+/** Slow-spinning heat-pump fan. */
+function Fan() {
+  const ref = useRef<Group>(null);
+  useFrame((_, dt) => {
+    if (ref.current) ref.current.rotation.z += dt * 2.4;
+  });
+  return (
+    <group ref={ref}>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <mesh key={i} rotation={[0, 0, (i / 5) * Math.PI * 2]}>
+          <boxGeometry args={[0.4, 0.07, 0.015]} />
+          <meshStandardMaterial color="#dfe7f0" metalness={0.3} roughness={0.5} />
+        </mesh>
+      ))}
+      <mesh>
+        <cylinderGeometry args={[0.06, 0.06, 0.05, 12]} />
+        <meshStandardMaterial color="#1A3A6B" metalness={0.6} roughness={0.35} />
+      </mesh>
+    </group>
   );
 }
 
@@ -183,10 +208,33 @@ function Geo({ id, hi, isDay, acMode, model }: { id: string; hi: boolean; isDay:
     }
     case "cylinder":
       return (
-        <mesh castShadow>
-          <cylinderGeometry args={[0.28, 0.28, 1.3, 20]} />
-          {body("#fdece4", hi)}
-        </mesh>
+        <group>
+          {/* tank body + domed top */}
+          <mesh castShadow>
+            <cylinderGeometry args={[0.3, 0.3, 1.25, 20]} />
+            {body("#f6f9fc", hi)}
+          </mesh>
+          <mesh position={[0, 0.62, 0]}>
+            <sphereGeometry args={[0.3, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            {body("#f6f9fc", hi)}
+          </mesh>
+          {/* heating coil (heat pump circuit) around the lower tank */}
+          {[-0.35, -0.2, -0.05].map((y) => (
+            <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[0.32, 0.025, 10, 28]} />
+              <meshStandardMaterial color={MEDIA.heatFlow.color} emissive={MEDIA.heatFlow.color} emissiveIntensity={hi ? 0.5 : 0.2} />
+            </mesh>
+          ))}
+          {/* cold inlet (blue, low) and hot outlet (warm red, top) */}
+          <mesh position={[-0.36, -0.5, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.045, 0.045, 0.25, 10]} />
+            <meshStandardMaterial color={MEDIA.waterCold.color} />
+          </mesh>
+          <mesh position={[0.2, 0.85, 0]}>
+            <cylinderGeometry args={[0.045, 0.045, 0.28, 10]} />
+            <meshStandardMaterial color={MEDIA.waterHot.color} />
+          </mesh>
+        </group>
       );
     case "heatpump":
       return (
@@ -195,9 +243,91 @@ function Geo({ id, hi, isDay, acMode, model }: { id: string; hi: boolean; isDay:
             <boxGeometry args={[1.0, 0.8, 0.55]} />
             {body("#eef3f8", hi)}
           </mesh>
-          <mesh position={[0, 0, 0.3]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.28, 0.04, 10, 24]} />
+          {/* intake grille on the outside-air side */}
+          {[-0.25, -0.1, 0.05, 0.2].map((y) => (
+            <mesh key={y} position={[-0.51, y, 0]}>
+              <boxGeometry args={[0.02, 0.05, 0.45]} />
+              <meshStandardMaterial color="#c6d2de" metalness={0.4} roughness={0.5} />
+            </mesh>
+          ))}
+          {/* fan ring + live spinning fan */}
+          <mesh position={[0, 0, 0.28]} rotation={[0, 0, 0]}>
+            <torusGeometry args={[0.28, 0.035, 10, 28]} />
             <meshStandardMaterial color="#1A3A6B" emissive={MEDIA.heatFlow.color} emissiveIntensity={hi ? 0.3 : 0.08} />
+          </mesh>
+          <group position={[0, 0, 0.3]}>
+            <Fan />
+          </group>
+          {/* feet */}
+          {[-0.35, 0.35].map((x) => (
+            <mesh key={x} position={[x, -0.45, 0]}>
+              <boxGeometry args={[0.12, 0.1, 0.5]} />
+              <meshStandardMaterial color="#1A3A6B" roughness={0.6} />
+            </mesh>
+          ))}
+        </group>
+      );
+    case "airSource":
+      // soft translucent intake ring — the thermal particles animate into the pump
+      return (
+        <mesh rotation={[0, Math.PI / 2, 0]}>
+          <torusGeometry args={[0.3, 0.05, 10, 24]} />
+          <meshStandardMaterial
+            color={MEDIA.thermal.color}
+            emissive={MEDIA.thermal.color}
+            emissiveIntensity={hi ? 0.6 : 0.25}
+            transparent
+            opacity={0.55}
+          />
+        </mesh>
+      );
+    case "waterMain":
+      return (
+        <group>
+          {/* rising main + stopcock cap at the street */}
+          <mesh>
+            <cylinderGeometry args={[0.09, 0.09, 0.5, 12]} />
+            {body(MEDIA.waterCold.color, hi, { roughness: 0.35 })}
+          </mesh>
+          <mesh position={[0, 0.3, 0]}>
+            <cylinderGeometry args={[0.14, 0.14, 0.08, 12]} />
+            {body("#1A3A6B", hi)}
+          </mesh>
+        </group>
+      );
+    case "shower":
+      return (
+        <group>
+          {/* riser + shower head + tray */}
+          <mesh position={[0, 0.1, 0]}>
+            <cylinderGeometry args={[0.035, 0.035, 0.9, 10]} />
+            {body("#c6d2de", hi, { metalness: 0.7, roughness: 0.3 })}
+          </mesh>
+          <mesh position={[0, 0.55, 0.14]} rotation={[Math.PI / 4, 0, 0]}>
+            <cylinderGeometry args={[0.12, 0.12, 0.04, 16]} />
+            {body("#c6d2de", hi, { metalness: 0.7, roughness: 0.3 })}
+          </mesh>
+          <mesh position={[0, -0.38, 0.08]}>
+            <boxGeometry args={[0.55, 0.06, 0.55]} />
+            {body("#eef2f7", hi)}
+          </mesh>
+        </group>
+      );
+    case "kitchenTap":
+      return (
+        <group>
+          {/* worktop + swan-neck tap */}
+          <mesh position={[0, -0.18, 0]}>
+            <boxGeometry args={[0.7, 0.3, 0.45]} />
+            {body("#dfe7f0", hi)}
+          </mesh>
+          <mesh position={[0, 0.08, 0]}>
+            <cylinderGeometry args={[0.03, 0.03, 0.25, 10]} />
+            {body("#c6d2de", hi, { metalness: 0.7, roughness: 0.3 })}
+          </mesh>
+          <mesh position={[0, 0.2, 0.06]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.09, 0.028, 8, 16, Math.PI]} />
+            {body("#c6d2de", hi, { metalness: 0.7, roughness: 0.3 })}
           </mesh>
         </group>
       );

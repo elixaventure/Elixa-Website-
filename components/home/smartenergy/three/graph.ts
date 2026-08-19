@@ -153,12 +153,32 @@ export const NODES: Record<string, ComponentNode> = {
   heatpump: {
     id: "heatpump", name: "Air source heat pump", tech: "heatpump", pick: "heatpump", pos: [-3.7, 0.55, 1.0],
     tooltip: { title: "Air source heat pump", body: "Takes energy from the outside air, adds a little electricity, and delivers useful heat to your home." },
-    connects: ["cylinder"], converts: "Electricity + air → Heat",
+    connects: ["cylinder", "airSource", "consumerUnit"], converts: "Electricity + air → Heat",
+  },
+  airSource: {
+    id: "airSource", name: "Outside air", tech: "heatpump", pick: "heatpump", pos: [-5.5, 1.7, 0.4],
+    tooltip: { title: "Energy from the outside air", body: "Even cool air holds thermal energy. The heat pump draws it in and concentrates it into useful heat." },
+    connects: ["heatpump"],
   },
   cylinder: {
     id: "cylinder", name: "Hot-water cylinder", tech: "heatpump", pick: "heatpump", pos: [2.9, 0.95, 1.1],
-    tooltip: { title: "Hot-water cylinder", body: "Stores heated water for your showers, baths and taps." },
-    connects: ["heatpump"], converts: "Cold water + heat → Hot water",
+    tooltip: { title: "Hot-water cylinder", body: "Cold mains water is heated by the heat pump's coil and stored ready for your showers, baths and taps." },
+    connects: ["heatpump", "waterMain", "shower", "kitchenTap"], converts: "Cold water + heat → Hot water",
+  },
+  waterMain: {
+    id: "waterMain", name: "Street water main", tech: "heatpump", pick: "heatpump", pos: [-5.3, 0.25, 2.9],
+    tooltip: { title: "Street water main", body: "Cold mains water enters your property from the street supply and feeds the hot-water cylinder." },
+    connects: ["cylinder"],
+  },
+  shower: {
+    id: "shower", name: "Shower", tech: "heatpump", pick: "heatpump", pos: [2.2, 3.75, -1.2],
+    tooltip: { title: "Shower", body: "Hot water stored in the cylinder supplies your shower and bath." },
+    connects: ["cylinder"],
+  },
+  kitchenTap: {
+    id: "kitchenTap", name: "Kitchen tap", tech: "heatpump", pick: "heatpump", pos: [-2.5, 1.15, -1.5],
+    tooltip: { title: "Kitchen tap", body: "Hot domestic water from the cylinder, on demand at the tap." },
+    connects: ["cylinder"],
   },
   acOutdoor: {
     id: "acOutdoor", name: "AC condenser", tech: "aircon", pick: "aircon", pos: [-3.2, 0.5, 0.3],
@@ -197,9 +217,25 @@ export const FLOWS: FlowEdge[] = [
   { id: "cu-meter-exp", from: "consumerUnit", to: "meter", media: "ac", active: (c) => c.has("solar") && c.isDay && exportSurplus(c) > 0 },
   { id: "meter-grid-exp", from: "meter", to: "grid", media: "ac", active: (c) => c.has("solar") && c.isDay && exportSurplus(c) > 0 },
 
-  // ---- Phase 3+ seams (activate when their equipment is enriched) ----
+  // ---- Phase 3: battery ----
   { id: "solar-batt", from: "inverter", to: "battery", media: "stored", active: (c) => c.has("battery") && c.model.batteryCharge > 0 },
   { id: "batt-home", from: "battery", to: "consumerUnit", media: "stored", active: (c) => c.has("battery") && c.model.batteryDischarge > 0 },
+
+  // ---- Phase 4: heat pump + water ----
+  // electricity in
+  { id: "cu-hp", from: "consumerUnit", to: "heatpump", media: "ac", via: [[-0.2, 0.5, 1.9]], active: (c) => c.has("heatpump") },
+  // environmental thermal energy in
+  { id: "air-hp", from: "airSource", to: "heatpump", media: "thermal", active: (c) => c.has("heatpump") },
+  // heating flow → cylinder coil, cooler return back (closed circulating loop)
+  { id: "hp-cyl", from: "heatpump", to: "cylinder", media: "heatFlow", via: [[-1.2, 0.45, 1.5]], active: (c) => c.has("heatpump") },
+  { id: "cyl-hp", from: "cylinder", to: "heatpump", media: "heatReturn", via: [[-1.2, 0.12, 1.15]], active: (c) => c.has("heatpump") },
+  // cold mains water: street → cylinder
+  { id: "main-cyl", from: "waterMain", to: "cylinder", media: "waterCold", via: [[-1.2, 0.18, 2.35]], active: (c) => c.has("heatpump") },
+  // hot domestic water: cylinder → shower / kitchen tap
+  { id: "cyl-shower", from: "cylinder", to: "shower", media: "waterHot", via: [[2.75, 2.7, -0.2]], active: (c) => c.has("heatpump") },
+  { id: "cyl-tap", from: "cylinder", to: "kitchenTap", media: "waterHot", via: [[0.2, 1.7, -0.7]], active: (c) => c.has("heatpump") },
+
+  // ---- Phase 7 seam: EV ----
   { id: "cu-ev", from: "consumerUnit", to: "evCharger", media: "ac", via: [[3.2, 1.0, 1.9]], active: (c) => c.has("ev") },
   { id: "ev-car", from: "evCharger", to: "evCar", media: "ac", active: (c) => c.has("ev") },
 ];
