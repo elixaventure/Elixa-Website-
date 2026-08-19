@@ -162,7 +162,7 @@ export const NODES: Record<string, ComponentNode> = {
   },
   cylinder: {
     id: "cylinder", name: "Hot-water cylinder", tech: "heatpump", pick: "heatpump", pos: [2.9, 0.95, 1.1],
-    tooltip: { title: "Hot-water cylinder", body: "Cold mains water is heated by the heat pump's coil and stored ready for your showers, baths and taps." },
+    tooltip: { title: "Pre-plumbed heat-pump cylinder", body: "A pre-plumbed cylinder with buffer, built for heat pumps: cold mains water is heated by the heat pump's coil and stored ready for your showers, baths and taps." },
     connects: ["heatpump", "waterMain", "shower", "kitchenTap"], converts: "Cold water + heat → Hot water",
   },
   waterMain: {

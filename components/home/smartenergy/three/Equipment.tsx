@@ -1,10 +1,49 @@
 "use client";
 
-import { useRef } from "react";
+import { Suspense, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import * as THREE from "three";
 import type { Group } from "three";
 import { NODES, type ComponentNode, MEDIA } from "./graph";
 import type { TechId, EnergyModel } from "../state";
+
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
+const CYLINDER_GLB = `${BASE}/models/cylinder-elite.glb`;
+
+/**
+ * Real manufacturer model (UK Cylinders Elite pre-plumbed heat-pump cylinder,
+ * converted from the supplied IFC). Real-world scale: 1.86 m tall. Vertex-
+ * coloured, so we give every mesh a lit PBR material on load.
+ */
+function CylinderGLB({ hi }: { hi: boolean }) {
+  const { scene } = useGLTF(CYLINDER_GLB);
+  const model = useMemo(() => {
+    const s = scene.clone(true);
+    s.traverse((o) => {
+      if (o instanceof THREE.Mesh) {
+        o.material = new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          metalness: 0.25,
+          roughness: 0.45,
+        });
+        o.castShadow = true;
+      }
+    });
+    return s;
+  }, [scene]);
+  return (
+    <group>
+      <primitive object={model} position={[0, -0.85, 0]} />
+      {hi && (
+        <mesh position={[0, -0.83, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.42, 0.52, 32]} />
+          <meshBasicMaterial color="#1D9ED9" transparent opacity={0.6} toneMapped={false} />
+        </mesh>
+      )}
+    </group>
+  );
+}
 
 const CYAN = "#1D9ED9";
 const GREEN = "#6ABF4B";
@@ -55,6 +94,28 @@ function body(color: string, hi: boolean, extra: Record<string, unknown> = {}) {
       emissiveIntensity={hi ? 0.35 : 0.04}
       {...extra}
     />
+  );
+}
+
+/** Hand-built tank shown while the manufacturer GLB streams in. */
+function ProceduralCylinder({ hi }: { hi: boolean }) {
+  return (
+    <group>
+      <mesh castShadow>
+        <cylinderGeometry args={[0.3, 0.3, 1.25, 20]} />
+        {body("#f6f9fc", hi)}
+      </mesh>
+      <mesh position={[0, 0.62, 0]}>
+        <sphereGeometry args={[0.3, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        {body("#f6f9fc", hi)}
+      </mesh>
+      {[-0.35, -0.2, -0.05].map((y) => (
+        <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.32, 0.025, 10, 28]} />
+          <meshStandardMaterial color={MEDIA.heatFlow.color} emissive={MEDIA.heatFlow.color} emissiveIntensity={hi ? 0.5 : 0.2} />
+        </mesh>
+      ))}
+    </group>
   );
 }
 
@@ -207,34 +268,11 @@ function Geo({ id, hi, isDay, acMode, model }: { id: string; hi: boolean; isDay:
       );
     }
     case "cylinder":
+      // real manufacturer unit, procedural tank as the loading fallback
       return (
-        <group>
-          {/* tank body + domed top */}
-          <mesh castShadow>
-            <cylinderGeometry args={[0.3, 0.3, 1.25, 20]} />
-            {body("#f6f9fc", hi)}
-          </mesh>
-          <mesh position={[0, 0.62, 0]}>
-            <sphereGeometry args={[0.3, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-            {body("#f6f9fc", hi)}
-          </mesh>
-          {/* heating coil (heat pump circuit) around the lower tank */}
-          {[-0.35, -0.2, -0.05].map((y) => (
-            <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
-              <torusGeometry args={[0.32, 0.025, 10, 28]} />
-              <meshStandardMaterial color={MEDIA.heatFlow.color} emissive={MEDIA.heatFlow.color} emissiveIntensity={hi ? 0.5 : 0.2} />
-            </mesh>
-          ))}
-          {/* cold inlet (blue, low) and hot outlet (warm red, top) */}
-          <mesh position={[-0.36, -0.5, 0]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.045, 0.045, 0.25, 10]} />
-            <meshStandardMaterial color={MEDIA.waterCold.color} />
-          </mesh>
-          <mesh position={[0.2, 0.85, 0]}>
-            <cylinderGeometry args={[0.045, 0.045, 0.28, 10]} />
-            <meshStandardMaterial color={MEDIA.waterHot.color} />
-          </mesh>
-        </group>
+        <Suspense fallback={<ProceduralCylinder hi={hi} />}>
+          <CylinderGLB hi={hi} />
+        </Suspense>
       );
     case "heatpump":
       return (
