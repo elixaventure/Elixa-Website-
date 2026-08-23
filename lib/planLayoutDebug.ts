@@ -124,6 +124,7 @@ export class DebugRecorder {
 
 export const DBG = {
   ink: { 1: [30, 30, 30, 255] } as Palette,
+  reject: { 1: [230, 120, 120, 255], 2: [235, 175, 60, 255] } as Palette,
   colour: { 1: [200, 30, 30, 255], 2: [30, 40, 200, 255], 3: [40, 150, 60, 255] } as Palette,
   runs: { 1: [235, 170, 60, 255], 2: [20, 90, 220, 255] } as Palette,
   wall: { 1: [20, 90, 220, 255], 2: [225, 35, 35, 255] } as Palette,
