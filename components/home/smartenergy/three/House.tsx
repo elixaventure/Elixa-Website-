@@ -152,21 +152,40 @@ export function House({ isDay, dim, home }: { isDay: boolean; dim: number; home:
           <meshStandardMaterial color={c.floor} roughness={0.75} transparent opacity={dim} />
         </mesh>
       )}
-      {/* utility partition (ground) */}
+      {/* ---- interior room plan (parametric) ---- */}
+      {/* utility partition (ground, right) */}
       <mesh position={[1.3, 1.2, -0.4]}>
         <boxGeometry args={[0.1, 2.3, 3.2]} />
         <meshStandardMaterial color={c.interior} roughness={0.85} transparent opacity={dim * 0.9} />
       </mesh>
+      {/* lounge / kitchen-diner partition (ground, left) with doorway gap */}
+      <mesh position={[(-hx + 0.7) / 2, 1.2, 0.2]}>
+        <boxGeometry args={[hx + 0.7 - 0.6, 2.3, 0.08]} />
+        <meshStandardMaterial color={c.interior} roughness={0.85} transparent opacity={dim * 0.9} />
+      </mesh>
+      {/* bathroom walls around the shower corner (upstairs, or ground in a bungalow) */}
+      <mesh position={[(1.1 + hx) / 2, two ? 3.5 : 1.2, -0.6]}>
+        <boxGeometry args={[hx - 1.1, two ? 2.05 : 2.3, 0.08]} />
+        <meshStandardMaterial color={c.interior} roughness={0.85} transparent opacity={dim * 0.9} />
+      </mesh>
+      {two && (
+        <mesh position={[1.1, 3.5, -1.3]}>
+          <boxGeometry args={[0.08, 2.05, 1.4]} />
+          <meshStandardMaterial color={c.interior} roughness={0.85} transparent opacity={dim * 0.9} />
+        </mesh>
+      )}
       {/* upstairs bedroom divisions grow with the bedroom count */}
       {two &&
         (home.bedrooms >= 4 ? [-hx * 0.34, hx * 0.4] : [0.2])
           .slice(0, home.bedrooms - 2)
           .map((x) => (
-            <mesh key={x} position={[x, 3.5, -0.5]}>
-              <boxGeometry args={[0.08, 2.05, 2.9]} />
+            <mesh key={x} position={[x, 3.5, 0.35]}>
+              <boxGeometry args={[0.08, 2.05, 3.2]} />
               <meshStandardMaterial color={c.interior} roughness={0.85} transparent opacity={dim * 0.9} />
             </mesh>
           ))}
+
+      <RoomLabels home={home} isDay={isDay} dim={dim} />
 
       {/* ---- complete pitched roof, separated upward ---- */}
       <group position={[0, LIFT, 0]}>
@@ -199,5 +218,82 @@ export function House({ isDay, dim, home }: { isDay: boolean; dim: number; home:
         ))}
       </group>
     </group>
+  );
+}
+
+/** Floating room names — always face the camera, follow the parametric plan. */
+function RoomLabels({ home, isDay, dim }: { home: HomeConfig; isDay: boolean; dim: number }) {
+  const hx = homeHalfWidth(home);
+  const two = home.storeys === 2;
+  const labels: { text: string; pos: [number, number, number] }[] = [
+    { text: "Lounge", pos: [-(hx - 1.4), 1.5, 1.15] },
+    { text: "Kitchen · Dining", pos: [-(hx - 1.5), 1.5, -1.0] },
+    { text: "Utility", pos: [(1.3 + hx) / 2 + 0.2, 1.5, -1.2] },
+  ];
+  if (two) {
+    // bedrooms spread across the first floor, bathroom over the shower corner
+    const n = home.bedrooms;
+    for (let i = 0; i < n; i++) {
+      const x = -hx + ((i + 0.5) * 2 * hx) / n;
+      // keep the last label clear of the bathroom corner
+      if (i === n - 1) {
+        labels.push({ text: `Bedroom ${i + 1}`, pos: [Math.min(x, hx - 1.1), 3.7, 1.0] });
+      } else {
+        labels.push({ text: `Bedroom ${i + 1}`, pos: [x, 3.7, 0.3] });
+      }
+    }
+    labels.push({ text: "Bathroom", pos: [(1.1 + hx) / 2 + 0.15, 3.7, -1.35] });
+  } else {
+    labels.push({ text: "Bathroom", pos: [(1.1 + hx) / 2 + 0.15, 1.5, -1.35] });
+  }
+  return (
+    <group>
+      {labels.map((l) => (
+        <RoomLabel key={`${l.text}${l.pos[0]}`} text={l.text} pos={l.pos} isDay={isDay} dim={dim} />
+      ))}
+    </group>
+  );
+}
+
+/**
+ * Camera-facing text sprite drawn to an in-memory canvas — fully
+ * self-contained (no font fetch, works offline and under strict CSP).
+ */
+function RoomLabel({ text, pos, isDay, dim }: { text: string; pos: [number, number, number]; isDay: boolean; dim: number }) {
+  const { texture, aspect } = useMemo(() => {
+    const fs = 44;
+    const pad = 20;
+    const measure = document.createElement("canvas").getContext("2d")!;
+    measure.font = `600 ${fs}px Inter, system-ui, sans-serif`;
+    const tw = Math.ceil(measure.measureText(text).width);
+    const canvas = document.createElement("canvas");
+    canvas.width = tw + pad * 2;
+    canvas.height = fs + pad * 1.6;
+    const ctx = canvas.getContext("2d")!;
+    // soft pill behind the text for legibility against the interior
+    ctx.fillStyle = isDay ? "rgba(255,255,255,0.72)" : "rgba(13,23,48,0.72)";
+    const r = canvas.height / 2;
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.arcTo(canvas.width, 0, canvas.width, canvas.height, r);
+    ctx.arcTo(canvas.width, canvas.height, 0, canvas.height, r);
+    ctx.arcTo(0, canvas.height, 0, 0, r);
+    ctx.arcTo(0, 0, canvas.width, 0, r);
+    ctx.fill();
+    ctx.font = `600 ${fs}px Inter, system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = isDay ? "#33445e" : "#d7e2f2";
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2 + 2);
+    const t = new THREE.CanvasTexture(canvas);
+    t.anisotropy = 4;
+    return { texture: t, aspect: canvas.width / canvas.height };
+  }, [text, isDay]);
+
+  const h = 0.3;
+  return (
+    <sprite position={pos} scale={[h * aspect, h, 1]}>
+      <spriteMaterial map={texture} transparent opacity={0.95 * dim} depthWrite={false} toneMapped={false} />
+    </sprite>
   );
 }

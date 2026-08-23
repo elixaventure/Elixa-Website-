@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { services } from "@/content/services";
 import { site } from "@/content/site";
 import { cn } from "@/lib/cn";
 import { track } from "@/lib/analytics";
 import { submitLead, FORM_ENDPOINT } from "@/lib/forms";
+import { loadPlan, clearPlan } from "@/lib/planStore";
 
 type Answers = {
   interests: string[];
@@ -53,6 +54,11 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
     interests: preselect.filter((slug) => services.some((s) => s.slug === slug)),
   }));
   const [planFile, setPlanFile] = useState<File | null>(null);
+
+  // pick up a floor plan the visitor already uploaded in the Smart Energy Home
+  useEffect(() => {
+    loadPlan().then((f) => f && setPlanFile((cur) => cur ?? f));
+  }, []);
 
   const wantsAc = a.interests.includes("air-conditioning");
   const totalSteps = 6;
@@ -119,6 +125,7 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
         source: "quote-wizard",
       }, planFile);
       if (ok) {
+        clearPlan();
         setStep(totalSteps - 1);
         return;
       }
@@ -254,6 +261,7 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
                         onClick={(e) => {
                           e.preventDefault();
                           setPlanFile(null);
+                          clearPlan();
                         }}
                         className="flex-none font-semibold text-navy/40 hover:text-navy"
                         aria-label="Remove file"

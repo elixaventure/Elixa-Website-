@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { savePlan, loadPlan, clearPlan } from "@/lib/planStore";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ServiceIcon } from "@/components/brand/ServiceIcon";
@@ -30,7 +31,13 @@ export function SmartEnergyHome() {
   const [picked, setPicked] = useState<TechId | "grid" | null>(null);
   const [finale, setFinale] = useState(false);
   const [home, setHome] = useState<{ bedrooms: 2 | 3 | 4 | 5; storeys: 1 | 2 }>({ bedrooms: 3, storeys: 2 });
+  const [planName, setPlanName] = useState<string | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // a previously uploaded floor plan (it carries through to the quote)
+  useEffect(() => {
+    loadPlan().then((f) => f && setPlanName(f.name));
+  }, []);
 
   const active = useMemo(() => Array.from(selected), [selected]);
   const model = useMemo(() => computeEnergy(selected, isDay, home), [selected, isDay, home]);
@@ -221,8 +228,52 @@ export function SmartEnergyHome() {
 
         {/* technology selector */}
         <div className="rounded-4xl border border-navy/10 bg-white p-5 shadow-card">
-          {/* parametric home shape — the 3D house and energy figures follow */}
-          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-navy/50">Your home</p>
+          {/* step 1: the floor plan — we need it for the heat-loss calculation anyway */}
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-navy/50">1 · Your floor plan</p>
+          <label className="mb-2 flex cursor-pointer items-center gap-2.5 rounded-2xl border border-dashed border-navy/25 bg-mist px-3.5 py-2.5 text-sm text-navy/70 transition-colors hover:border-elixa-cyan">
+            <svg viewBox="0 0 24 24" className="h-5 w-5 flex-none text-elixa-cyan" fill="none" aria-hidden="true">
+              <path d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="flex-1 truncate">{planName ?? "Upload your floor plan — PDF or photo"}</span>
+            {planName && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  clearPlan();
+                  setPlanName(null);
+                }}
+                className="flex-none font-semibold text-navy/40 hover:text-navy"
+                aria-label="Remove floor plan"
+              >
+                ✕
+              </button>
+            )}
+            <input
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg,.webp,.heic"
+              className="sr-only"
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                if (!f) return;
+                if (f.size > 10 * 1024 * 1024) {
+                  alert("That file is over 10 MB — please choose a smaller file or a photo.");
+                  return;
+                }
+                savePlan(f);
+                setPlanName(f.name);
+                track("cta_click", { location: "smart-energy-home", label: "plan-upload" });
+              }}
+            />
+          </label>
+          <p className="mb-4 text-xs text-navy/45">
+            {planName
+              ? "✓ Saved — it will be attached to your quote for your heat-loss calculation."
+              : "We use it for your heat-loss calculation, and it travels with your quote automatically."}
+          </p>
+
+          {/* step 2: confirm the shape — the 3D house and energy figures follow */}
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-navy/50">2 · Confirm your home</p>
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <div className="inline-flex rounded-full border border-navy/15 p-0.5">
               {([2, 3, 4, 5] as const).map((b) => (
@@ -256,7 +307,7 @@ export function SmartEnergyHome() {
             </div>
           </div>
 
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-navy/50">Build your smarter home</p>
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-navy/50">3 · Build your smarter home</p>
           <div className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible">
             {TECHS.map((t) => {
               const on = selected.has(t.id);
