@@ -95,11 +95,19 @@ export function SmartEnergyHome() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // attach real-world scale to the layout whenever a floor area is known
+  // attach real-world scale to the layout whenever a floor area is known.
+  // applyScale always returns a NEW object, and leaves scale null when the
+  // area cannot be resolved (e.g. a layout stored before metrics existed), so
+  // the scale field alone cannot tell us we already tried: remember the object
+  // we produced and the area we produced it for, or the effect re-triggers on
+  // its own output forever.
+  const scaledOut = useRef<{ layout: PlanLayout; areaM2: number } | null>(null);
   useEffect(() => {
     if (!planLayout?.ok || !planAreaM2) return;
+    if (scaledOut.current?.layout === planLayout && scaledOut.current.areaM2 === planAreaM2) return;
     if (planLayout.scale && planLayout.scale.areaM2 === planAreaM2) return;
     const scaled = applyScale(planLayout, planAreaM2);
+    scaledOut.current = { layout: scaled, areaM2: planAreaM2 };
     savePlanLayout(scaled);
     setPlanLayout(scaled);
   }, [planLayout, planAreaM2]);
