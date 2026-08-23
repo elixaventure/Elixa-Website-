@@ -461,13 +461,28 @@ function Geo({ id, hi, isDay, acMode, model }: { id: string; hi: boolean; isDay:
       );
     case "ufAir":
     case "tsAir":
+    case "acAir":
       return null;
     case "acOutdoor":
       return (
-        <mesh castShadow>
-          <boxGeometry args={[0.8, 0.6, 0.4]} />
-          {body("#e8f5fc", hi)}
-        </mesh>
+        <group>
+          <mesh castShadow>
+            <boxGeometry args={[0.8, 0.6, 0.4]} />
+            {body("#e8f5fc", hi)}
+          </mesh>
+          {/* fan ring on the outward face */}
+          <mesh position={[-0.41, 0.02, 0]} rotation={[0, Math.PI / 2, 0]}>
+            <torusGeometry args={[0.2, 0.03, 10, 24]} />
+            <meshStandardMaterial color="#1A3A6B" metalness={0.5} roughness={0.4} />
+          </mesh>
+          {/* refrigerant service valves */}
+          {[0.12, -0.02].map((y) => (
+            <mesh key={y} position={[0.42, y - 0.15, 0.1]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[0.025, 0.025, 0.1, 8]} />
+              <meshStandardMaterial color={MEDIA.refrigerant.color} metalness={0.5} roughness={0.35} />
+            </mesh>
+          ))}
+        </group>
       );
     case "acIndoor": {
       const col = acMode === "cool" ? MEDIA.coolAir.color : MEDIA.warmAir.color;

@@ -204,14 +204,18 @@ export const NODES: Record<string, ComponentNode> = {
     tooltip: { title: "Room warmth", body: "Perimeter warmth from the skirting line." },
   },
   acOutdoor: {
-    id: "acOutdoor", name: "AC condenser", tech: "aircon", pick: "aircon", pos: [-3.2, 0.5, 0.3],
-    tooltip: { title: "Outdoor condenser", body: "The outdoor half of your air-conditioning system. Installed by fully qualified F-Gas engineers." },
-    connects: ["acIndoor"],
+    id: "acOutdoor", name: "AC condenser", tech: "aircon", pick: "aircon", pos: [-3.2, 0.5, -0.9],
+    tooltip: { title: "Outdoor condenser", body: "The outdoor half of your air-conditioning system, connected by the refrigerant circuit. Installed by fully qualified F-Gas engineers." },
+    connects: ["acIndoor", "consumerUnit"], converts: "Electricity → Heating / cooling",
   },
   acIndoor: {
     id: "acIndoor", name: "Indoor AC unit", tech: "aircon", pick: "aircon", pos: [-1.6, 3.7, 1.55],
     tooltip: { title: "Indoor unit", body: "Delivers cooling in summer and heating in winter — complete climate control from one system." },
     connects: ["acOutdoor"],
+  },
+  acAir: {
+    id: "acAir", name: "Conditioned air", tech: "aircon", pick: "aircon", pos: [-1.1, 2.8, 0.2],
+    tooltip: { title: "Conditioned air", body: "Soft airflow into the room — cool in summer, warm in winter." },
   },
   evCharger: {
     id: "evCharger", name: "EV charger", tech: "ev", pick: "ev", pos: [3.5, 1.0, 2.1],
@@ -269,6 +273,15 @@ export const FLOWS: FlowEdge[] = [
   { id: "hp-ts", from: "heatpump", to: "thermaskirt", media: "heatFlow", via: [[-2.2, 0.35, 0.8]], active: (c) => c.has("thermaskirt") && c.has("heatpump") },
   { id: "ts-tsair", from: "thermaskirt", to: "tsAir", media: "thermal", active: (c) => c.has("thermaskirt") },
   { id: "ts-hp-ret", from: "thermaskirt", to: "heatpump", media: "heatReturn", via: [[-2.4, 0.2, 0.2]], active: (c) => c.has("thermaskirt") && c.has("heatpump") },
+
+  // ---- Phase 6: air conditioning ----
+  // electricity in → outdoor condenser
+  { id: "cu-ac", from: "consumerUnit", to: "acOutdoor", media: "ac", via: [[-1.2, 0.4, 0.2]], active: (c) => c.has("aircon") },
+  // refrigerant circuit between outdoor and indoor units (its own visual style)
+  { id: "acout-acin", from: "acOutdoor", to: "acIndoor", media: "refrigerant", via: [[-3.3, 2.6, 0.2]], active: (c) => c.has("aircon") },
+  // conditioned air into the bedroom — style follows the selected mode
+  { id: "acin-cool", from: "acIndoor", to: "acAir", media: "coolAir", active: (c) => c.has("aircon") && c.acMode === "cool" },
+  { id: "acin-warm", from: "acIndoor", to: "acAir", media: "warmAir", active: (c) => c.has("aircon") && c.acMode === "heat" },
 
   // ---- Phase 7 seam: EV ----
   { id: "cu-ev", from: "consumerUnit", to: "evCharger", media: "ac", via: [[3.2, 1.0, 1.9]], active: (c) => c.has("ev") },
