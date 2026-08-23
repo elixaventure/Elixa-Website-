@@ -55,6 +55,34 @@ export async function loadPlan(): Promise<File | null> {
   }
 }
 
+/** The floor area used for real-world scale, m² (typed or read from the plan). */
+export async function savePlanArea(areaM2: number | null): Promise<void> {
+  const db = await openDb();
+  if (!db) return;
+  await new Promise<void>((resolve) => {
+    const tx = db.transaction(STORE, "readwrite");
+    if (areaM2 == null) tx.objectStore(STORE).delete("area");
+    else tx.objectStore(STORE).put(String(areaM2), "area");
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+  db.close();
+}
+
+export async function loadPlanArea(): Promise<number | null> {
+  const db = await openDb();
+  if (!db) return null;
+  const raw = await new Promise<string | null>((resolve) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).get("area");
+    req.onsuccess = () => resolve(typeof req.result === "string" ? req.result : null);
+    req.onerror = () => resolve(null);
+  });
+  db.close();
+  const n = raw ? parseFloat(raw) : NaN;
+  return isFinite(n) ? n : null;
+}
+
 /** What we read from the plan (bedrooms/storeys/room names), as JSON. */
 export async function savePlanAnalysis(analysis: unknown): Promise<void> {
   const db = await openDb();

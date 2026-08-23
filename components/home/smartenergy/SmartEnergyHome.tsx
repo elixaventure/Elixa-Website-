@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePlanAnalysis, loadPlanAnalysis, savePlanLayout, loadPlanLayout } from "@/lib/planStore";
+import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePlanAnalysis, loadPlanAnalysis, savePlanLayout, loadPlanLayout, savePlanArea, loadPlanArea } from "@/lib/planStore";
 import { makePlanPreview } from "@/lib/planPreview";
 import { analysePlan, type PlanAnalysis } from "@/lib/planAnalysis";
 import { extractLayout, type PlanLayout } from "@/lib/planLayout";
 import type { PlanDebug } from "@/lib/planLayoutDebug";
+import { applyScale } from "@/lib/houseModel";
 import { PlanDebugPanel } from "./PlanDebugPanel";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
@@ -40,6 +41,7 @@ export function SmartEnergyHome() {
   const [planUrl, setPlanUrl] = useState<string | null>(null);
   const [planRead, setPlanRead] = useState<PlanAnalysis | null>(null);
   const [planLayout, setPlanLayout] = useState<PlanLayout | null>(null);
+  const [planAreaM2, setPlanAreaM2] = useState<number | null>(null);
   const [layoutOn, setLayoutOn] = useState(false);
   // TEMPORARY: extraction diagnostics, opt-in via ?planDebug=1
   const [planDebug, setPlanDebug] = useState<PlanDebug | null>(null);
@@ -49,6 +51,10 @@ export function SmartEnergyHome() {
   const applyAnalysis = (a: PlanAnalysis | null) => {
     if (!a) return;
     setPlanRead(a);
+    if (a.areaM2) {
+      setPlanAreaM2((cur) => cur ?? a.areaM2!);
+      savePlanArea(a.areaM2);
+    }
     setHome((h) => ({
       bedrooms: a.bedrooms ?? h.bedrooms,
       storeys: a.storeys ?? h.storeys,
@@ -85,8 +91,18 @@ export function SmartEnergyHome() {
     });
     loadPlanAnalysis<PlanAnalysis>().then((a) => applyAnalysis(a));
     loadPlanLayout<PlanLayout>().then((l) => l && setPlanLayout(l));
+    loadPlanArea().then((n) => n && setPlanAreaM2(n));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // attach real-world scale to the layout whenever a floor area is known
+  useEffect(() => {
+    if (!planLayout?.ok || !planAreaM2) return;
+    if (planLayout.scale && planLayout.scale.areaM2 === planAreaM2) return;
+    const scaled = applyScale(planLayout, planAreaM2);
+    savePlanLayout(scaled);
+    setPlanLayout(scaled);
+  }, [planLayout, planAreaM2]);
 
   const active = useMemo(() => Array.from(selected), [selected]);
   const model = useMemo(() => computeEnergy(selected, isDay, home), [selected, isDay, home]);
@@ -300,6 +316,8 @@ export function SmartEnergyHome() {
                   setPlanRead(null);
                   setPlanLayout(null);
                   setPlanDebug(null);
+                  setPlanAreaM2(null);
+                  savePlanArea(null);
                   setLayoutOn(false);
                 }}
                 className="flex-none font-semibold text-navy/40 hover:text-navy"
@@ -364,15 +382,39 @@ export function SmartEnergyHome() {
           )}
 
           {planLayout?.ok && (
-            <button
-              onClick={() => {
-                setLayoutOn((v) => !v);
-                track("cta_click", { location: "smart-energy-home", label: "apply-layout" });
-              }}
-              className={layoutOn ? "btn-outline btn-md mb-4 w-full" : "btn-primary btn-md mb-4 w-full"}
-            >
-              {layoutOn ? "⌂ Back to the smart home view" : "🏗 Apply my exact layout to the 3D house"}
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  setLayoutOn((v) => !v);
+                  track("cta_click", { location: "smart-energy-home", label: "apply-layout" });
+                }}
+                className={layoutOn ? "btn-outline btn-md mb-4 w-full" : "btn-primary btn-md mb-4 w-full"}
+              >
+                {layoutOn ? "⌂ Back to the smart home view" : "🏗 Apply my exact layout to the 3D house"}
+              </button>
+              <label className="mb-4 flex items-center gap-2 text-xs text-navy/60">
+                <span className="flex-1">
+                  Total floor area from your plan (m²)
+                  {planLayout.scale ? " — walls are now true to scale" : " — sets true wall heights"}
+                </span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={20}
+                  max={2000}
+                  step="0.1"
+                  value={planAreaM2 ?? ""}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    const n = isFinite(v) ? v : null;
+                    setPlanAreaM2(n);
+                    savePlanArea(n);
+                  }}
+                  placeholder="e.g. 134.6"
+                  className="w-24 rounded-xl border border-navy/20 bg-white px-2.5 py-1.5 text-right text-sm font-semibold text-navy outline-none focus:border-elixa-cyan"
+                />
+              </label>
+            </>
           )}
 
           {/* step 2: confirm the shape — the 3D house and energy figures follow */}
