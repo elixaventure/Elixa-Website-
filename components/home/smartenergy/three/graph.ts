@@ -180,6 +180,29 @@ export const NODES: Record<string, ComponentNode> = {
     tooltip: { title: "Kitchen tap", body: "Hot domestic water from the cylinder, on demand at the tap." },
     connects: ["cylinder"],
   },
+  ufManifold: {
+    id: "ufManifold", name: "Underfloor manifold", tech: "underfloor", pick: "underfloor", pos: [1.7, 0.75, -1.35],
+    tooltip: { title: "Underfloor manifold", body: "Distributes warm heating water into the individual floor zones and balances the flow through each loop." },
+    connects: ["heatpump", "ufLoop"],
+  },
+  ufLoop: {
+    id: "ufLoop", name: "Underfloor pipe loops", tech: "underfloor", pick: "underfloor", pos: [-1.1, 0.22, -0.4],
+    tooltip: { title: "Underfloor pipe loops", body: "Warm water winds beneath the floor. The heat leaves the water and rises gently into the room — then the cooler water returns to be reheated." },
+    connects: ["ufManifold"], converts: "Warm water → Room heat",
+  },
+  ufAir: {
+    id: "ufAir", name: "Room warmth", tech: "underfloor", pick: "underfloor", pos: [-1.1, 1.8, -0.4],
+    tooltip: { title: "Room warmth", body: "Even, low-temperature warmth across the whole floor." },
+  },
+  thermaskirt: {
+    id: "thermaskirt", name: "ThermaSkirt", tech: "thermaskirt", pick: "thermaskirt", pos: [-0.85, 0.3, 0.2],
+    tooltip: { title: "ThermaSkirt heating profile", body: "Heating water circulates through the skirting profile around the room perimeter, releasing steady warmth into the room." },
+    connects: ["heatpump"], converts: "Warm water → Room heat",
+  },
+  tsAir: {
+    id: "tsAir", name: "Room warmth", tech: "thermaskirt", pick: "thermaskirt", pos: [-0.85, 1.8, 1.0],
+    tooltip: { title: "Room warmth", body: "Perimeter warmth from the skirting line." },
+  },
   acOutdoor: {
     id: "acOutdoor", name: "AC condenser", tech: "aircon", pick: "aircon", pos: [-3.2, 0.5, 0.3],
     tooltip: { title: "Outdoor condenser", body: "The outdoor half of your air-conditioning system. Installed by fully qualified F-Gas engineers." },
@@ -234,6 +257,18 @@ export const FLOWS: FlowEdge[] = [
   // hot domestic water: cylinder → shower / kitchen tap
   { id: "cyl-shower", from: "cylinder", to: "shower", media: "waterHot", via: [[2.75, 2.7, -0.2]], active: (c) => c.has("heatpump") },
   { id: "cyl-tap", from: "cylinder", to: "kitchenTap", media: "waterHot", via: [[0.2, 1.7, -0.7]], active: (c) => c.has("heatpump") },
+
+  // ---- Phase 5: heating emitters ----
+  // underfloor: heat pump → manifold → loops → heat into room → cooler return
+  { id: "hp-ufm", from: "heatpump", to: "ufManifold", media: "heatFlow", via: [[-1.4, 0.5, -0.8]], active: (c) => c.has("underfloor") && c.has("heatpump") },
+  { id: "ufm-loop", from: "ufManifold", to: "ufLoop", media: "heatFlow", via: [[0.3, 0.22, -1.0]], active: (c) => c.has("underfloor") },
+  { id: "loop-ufair", from: "ufLoop", to: "ufAir", media: "thermal", active: (c) => c.has("underfloor") },
+  { id: "loop-ufm-ret", from: "ufLoop", to: "ufManifold", media: "heatReturn", via: [[0.3, 0.14, -1.5]], active: (c) => c.has("underfloor") },
+  { id: "ufm-hp-ret", from: "ufManifold", to: "heatpump", media: "heatReturn", via: [[-1.4, 0.2, -1.1]], active: (c) => c.has("underfloor") && c.has("heatpump") },
+  // thermaskirt: heat pump → skirting perimeter → heat into room → return
+  { id: "hp-ts", from: "heatpump", to: "thermaskirt", media: "heatFlow", via: [[-2.2, 0.35, 0.8]], active: (c) => c.has("thermaskirt") && c.has("heatpump") },
+  { id: "ts-tsair", from: "thermaskirt", to: "tsAir", media: "thermal", active: (c) => c.has("thermaskirt") },
+  { id: "ts-hp-ret", from: "thermaskirt", to: "heatpump", media: "heatReturn", via: [[-2.4, 0.2, 0.2]], active: (c) => c.has("thermaskirt") && c.has("heatpump") },
 
   // ---- Phase 7 seam: EV ----
   { id: "cu-ev", from: "consumerUnit", to: "evCharger", media: "ac", via: [[3.2, 1.0, 1.9]], active: (c) => c.has("ev") },

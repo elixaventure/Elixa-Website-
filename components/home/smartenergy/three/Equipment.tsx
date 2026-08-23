@@ -369,6 +369,99 @@ function Geo({ id, hi, isDay, acMode, model }: { id: string; hi: boolean; isDay:
           </mesh>
         </group>
       );
+    case "ufManifold":
+      return (
+        <group>
+          <mesh castShadow>
+            <boxGeometry args={[0.55, 0.3, 0.14]} />
+            {body("#dfe7f0", hi, { metalness: 0.6, roughness: 0.3 })}
+          </mesh>
+          {/* flow (orange) and return (teal) port rails */}
+          {[0.08, -0.08].map((y, r) => (
+            <group key={y}>
+              <mesh position={[0, y, 0.08]} rotation={[0, 0, Math.PI / 2]}>
+                <cylinderGeometry args={[0.03, 0.03, 0.5, 10]} />
+                <meshStandardMaterial
+                  color={r === 0 ? MEDIA.heatFlow.color : MEDIA.heatReturn.color}
+                  emissive={r === 0 ? MEDIA.heatFlow.color : MEDIA.heatReturn.color}
+                  emissiveIntensity={hi ? 0.5 : 0.18}
+                />
+              </mesh>
+              {[-0.16, 0, 0.16].map((x) => (
+                <mesh key={x} position={[x, y - 0.09, 0.08]}>
+                  <cylinderGeometry args={[0.02, 0.02, 0.1, 8]} />
+                  <meshStandardMaterial color="#c6d2de" metalness={0.7} roughness={0.3} />
+                </mesh>
+              ))}
+            </group>
+          ))}
+        </group>
+      );
+    case "ufLoop":
+      // floor cutaway: screed patch exposing the serpentine warm-water loops
+      return (
+        <group>
+          <mesh position={[0, -0.06, 0]}>
+            <boxGeometry args={[1.7, 0.05, 1.3]} />
+            {body("#a98a5f", hi, { roughness: 0.9 })}
+          </mesh>
+          {[-0.5, -0.25, 0, 0.25, 0.5].map((z, i) => (
+            <mesh key={z} position={[0, 0, z]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[0.035, 0.035, 1.5, 10]} />
+              <meshStandardMaterial
+                color={MEDIA.heatFlow.color}
+                emissive={MEDIA.heatFlow.color}
+                emissiveIntensity={hi ? 0.55 : 0.22}
+              />
+            </mesh>
+          ))}
+          {/* return bends at alternating ends */}
+          {[-0.375, 0.125].map((z) => (
+            <mesh key={`r${z}`} position={[0.75, 0, z]} rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[0.125, 0.035, 8, 16, Math.PI]} />
+              <meshStandardMaterial color={MEDIA.heatFlow.color} emissive={MEDIA.heatFlow.color} emissiveIntensity={hi ? 0.55 : 0.22} />
+            </mesh>
+          ))}
+          {[-0.125, 0.375].map((z) => (
+            <mesh key={`l${z}`} position={[-0.75, 0, z]} rotation={[Math.PI / 2, 0, Math.PI]}>
+              <torusGeometry args={[0.125, 0.035, 8, 16, Math.PI]} />
+              <meshStandardMaterial color={MEDIA.heatFlow.color} emissive={MEDIA.heatFlow.color} emissiveIntensity={hi ? 0.55 : 0.22} />
+            </mesh>
+          ))}
+        </group>
+      );
+    case "thermaskirt":
+      // heated skirting profile around the living-room perimeter
+      return (
+        <group>
+          {/* left wall run */}
+          <mesh position={[-1.95, 0, 0]} castShadow>
+            <boxGeometry args={[0.06, 0.2, 3.5]} />
+            {body("#eef2f7", hi, { metalness: 0.45, roughness: 0.35 })}
+          </mesh>
+          {/* front + back wall runs */}
+          {[1.68, -1.68].map((z) => (
+            <mesh key={z} position={[-0.2, 0, z]} castShadow>
+              <boxGeometry args={[3.55, 0.2, 0.06]} />
+              {body("#eef2f7", hi, { metalness: 0.45, roughness: 0.35 })}
+            </mesh>
+          ))}
+          {/* warm waterline glow along each run */}
+          <mesh position={[-1.92, 0, 0]}>
+            <boxGeometry args={[0.02, 0.05, 3.44]} />
+            <meshStandardMaterial color={MEDIA.heatFlow.color} emissive={MEDIA.heatFlow.color} emissiveIntensity={hi ? 0.7 : 0.3} />
+          </mesh>
+          {[1.65, -1.65].map((z) => (
+            <mesh key={`g${z}`} position={[-0.2, 0, z]}>
+              <boxGeometry args={[3.5, 0.05, 0.02]} />
+              <meshStandardMaterial color={MEDIA.heatFlow.color} emissive={MEDIA.heatFlow.color} emissiveIntensity={hi ? 0.7 : 0.3} />
+            </mesh>
+          ))}
+        </group>
+      );
+    case "ufAir":
+    case "tsAir":
+      return null;
     case "acOutdoor":
       return (
         <mesh castShadow>
