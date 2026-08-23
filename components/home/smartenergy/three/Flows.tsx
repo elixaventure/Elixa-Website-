@@ -33,6 +33,24 @@ function ParticleGeo({ shape }: { shape: string }) {
   }
 }
 
+/**
+ * Physical carrier per media: water/heating media run in coloured pipes,
+ * refrigerant in an insulated line, electricity in slim grey conduit (the
+ * moving pulses carry the colour, like real cable runs). Sunlight, rising
+ * warmth and airflow are unducted — no pipe.
+ */
+const CARRIER: Partial<Record<string, { r: number; color: string; metalness: number; roughness: number }>> = {
+  waterCold: { r: 0.042, color: "#3e7fb2", metalness: 0.15, roughness: 0.5 },
+  waterHot: { r: 0.042, color: "#b25548", metalness: 0.15, roughness: 0.5 },
+  heatFlow: { r: 0.048, color: "#a96a3d", metalness: 0.65, roughness: 0.35 }, // copper
+  heatReturn: { r: 0.048, color: "#8a7355", metalness: 0.6, roughness: 0.4 }, // cooler copper
+  refrigerant: { r: 0.045, color: "#d9dee7", metalness: 0.2, roughness: 0.55 }, // insulated line
+  dc: { r: 0.022, color: "#5a6675", metalness: 0.3, roughness: 0.55 },
+  ac: { r: 0.022, color: "#5a6675", metalness: 0.3, roughness: 0.55 },
+  stored: { r: 0.022, color: "#5a6675", metalness: 0.3, roughness: 0.55 },
+  grid: { r: 0.022, color: "#5a6675", metalness: 0.3, roughness: 0.55 },
+};
+
 function FlowLine({
   edge,
   dim,
@@ -43,6 +61,7 @@ function FlowLine({
   reduced: boolean;
 }) {
   const media = MEDIA[edge.media];
+  const carrier = CARRIER[edge.media];
   const curve = useMemo(() => new THREE.CatmullRomCurve3(pathPoints(edge), false, "catmullrom", 0.4), [edge]);
   const linePts = useMemo(() => curve.getPoints(40), [curve]);
   const n = reduced ? Math.max(2, Math.round(COUNT[media.shape] / 2)) : COUNT[media.shape];
@@ -72,7 +91,21 @@ function FlowLine({
 
   return (
     <group>
-      <Line points={linePts} color={media.color} lineWidth={dim ? 1 : 2.2} transparent opacity={dim ? 0.1 : 0.35} />
+      {carrier ? (
+        // real pipework / conduit along the run
+        <mesh castShadow>
+          <tubeGeometry args={[curve, 36, carrier.r, 8, false]} />
+          <meshStandardMaterial
+            color={carrier.color}
+            metalness={carrier.metalness}
+            roughness={carrier.roughness}
+            transparent
+            opacity={dim ? 0.15 : 1}
+          />
+        </mesh>
+      ) : (
+        <Line points={linePts} color={media.color} lineWidth={dim ? 1 : 2.2} transparent opacity={dim ? 0.1 : 0.35} />
+      )}
       {Array.from({ length: n }).map((_, i) => (
         <mesh
           key={i}
