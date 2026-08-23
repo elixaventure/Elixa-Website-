@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview } from "@/lib/planStore";
+import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePlanAnalysis, loadPlanAnalysis } from "@/lib/planStore";
 import { makePlanPreview } from "@/lib/planPreview";
+import { analysePlan, type PlanAnalysis } from "@/lib/planAnalysis";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ServiceIcon } from "@/components/brand/ServiceIcon";
@@ -34,7 +35,17 @@ export function SmartEnergyHome() {
   const [home, setHome] = useState<{ bedrooms: 2 | 3 | 4 | 5; storeys: 1 | 2 }>({ bedrooms: 3, storeys: 2 });
   const [planName, setPlanName] = useState<string | null>(null);
   const [planUrl, setPlanUrl] = useState<string | null>(null);
+  const [planRead, setPlanRead] = useState<PlanAnalysis | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const applyAnalysis = (a: PlanAnalysis | null) => {
+    if (!a) return;
+    setPlanRead(a);
+    setHome((h) => ({
+      bedrooms: a.bedrooms ?? h.bedrooms,
+      storeys: a.storeys ?? h.storeys,
+    }));
+  };
 
   const setPreviewUrl = (blob: Blob | null) => {
     setPlanUrl((old) => {
@@ -47,6 +58,8 @@ export function SmartEnergyHome() {
   useEffect(() => {
     loadPlan().then((f) => f && setPlanName(f.name));
     loadPlanPreview().then((b) => b && setPreviewUrl(b));
+    loadPlanAnalysis<PlanAnalysis>().then((a) => applyAnalysis(a));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const active = useMemo(() => Array.from(selected), [selected]);
@@ -112,6 +125,7 @@ export function SmartEnergyHome() {
           flowMode={flowMode}
           home={home}
           planUrl={planUrl}
+          planRooms={planRead?.rooms}
           onPick={(id) => setPicked(id)}
         />
 
@@ -254,6 +268,7 @@ export function SmartEnergyHome() {
                   clearPlan();
                   setPlanName(null);
                   setPreviewUrl(null);
+                  setPlanRead(null);
                 }}
                 className="flex-none font-semibold text-navy/40 hover:text-navy"
                 aria-label="Remove floor plan"
@@ -282,14 +297,37 @@ export function SmartEnergyHome() {
                     setPreviewUrl(blob);
                   }
                 });
+                // read the plan's text and shape the house to match
+                analysePlan(f).then((a) => {
+                  if (a) {
+                    savePlanAnalysis(a);
+                    applyAnalysis(a);
+                  }
+                });
               }}
             />
           </label>
-          <p className="mb-4 text-xs text-navy/45">
-            {planName
-              ? "✓ Saved — it will be attached to your quote for your heat-loss calculation."
-              : "We use it for your heat-loss calculation, and it travels with your quote automatically."}
-          </p>
+          {planRead && (planRead.bedrooms || planRead.rooms.length > 0) ? (
+            <div className="mb-4 rounded-2xl border border-elixa-green/30 bg-elixa-gradient-soft px-3.5 py-2.5">
+              <p className="text-xs font-bold text-navy">✓ Read from your plan — the 3D home has been set to match:</p>
+              <p className="mt-1 text-xs text-navy/70">
+                {[
+                  planRead.bedrooms ? `${planRead.bedrooms} bedrooms` : null,
+                  planRead.storeys ? (planRead.storeys === 2 ? "two-storey" : "bungalow") : null,
+                  ...planRead.rooms.slice(0, 5),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+                {planRead.rooms.length > 5 ? " …" : ""}
+              </p>
+            </div>
+          ) : (
+            <p className="mb-4 text-xs text-navy/45">
+              {planName
+                ? "✓ Saved — it will be attached to your quote for your heat-loss calculation."
+                : "We use it for your heat-loss calculation, and it travels with your quote automatically."}
+            </p>
+          )}
 
           {/* step 2: confirm the shape — the 3D house and energy figures follow */}
           <p className="mb-2 text-xs font-bold uppercase tracking-wide text-navy/50">2 · Confirm your home</p>

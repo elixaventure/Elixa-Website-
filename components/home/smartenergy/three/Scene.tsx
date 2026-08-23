@@ -20,6 +20,7 @@ export function Scene({
   reduced,
   home = DEFAULT_HOME,
   planUrl,
+  planRooms,
   onPick,
   onHoverChange,
 }: {
@@ -33,6 +34,8 @@ export function Scene({
   home?: HomeConfig;
   /** object URL of the customer's rasterised floor plan, shown in-scene */
   planUrl?: string | null;
+  /** room names read from the plan — relabels the 3D rooms */
+  planRooms?: string[];
   onPick: (id: TechId | "grid") => void;
   /** notifies the parent (screen-space tooltip) — kept OUT of the canvas to
       avoid the DOM label stealing the pointer and flickering the hover. */
@@ -92,7 +95,7 @@ export function Scene({
         <Lightformer intensity={0.7} position={[-6, 3, 4]} scale={[6, 6, 1]} color={isDay ? "#cfe3ff" : "#4a5f8f"} />
       </Environment>
 
-      <House isDay={isDay} dim={houseDim} home={home} />
+      <House isDay={isDay} dim={houseDim} home={home} planRooms={planRooms} />
 
       <Equipment
         active={active}

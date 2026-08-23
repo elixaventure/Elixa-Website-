@@ -28,7 +28,7 @@ const WALL_NORMALS = {
 
 type WallId = keyof typeof WALL_NORMALS;
 
-export function House({ isDay, dim, home }: { isDay: boolean; dim: number; home: HomeConfig }) {
+export function House({ isDay, dim, home, planRooms }: { isDay: boolean; dim: number; home: HomeConfig; planRooms?: string[] }) {
   const c = useMemo(
     () =>
       isDay
@@ -185,7 +185,7 @@ export function House({ isDay, dim, home }: { isDay: boolean; dim: number; home:
             </mesh>
           ))}
 
-      <RoomLabels home={home} isDay={isDay} dim={dim} />
+      <RoomLabels home={home} isDay={isDay} dim={dim} planRooms={planRooms} />
 
       {/* ---- complete pitched roof, separated upward ---- */}
       <group position={[0, LIFT, 0]}>
@@ -222,13 +222,22 @@ export function House({ isDay, dim, home }: { isDay: boolean; dim: number; home:
 }
 
 /** Floating room names — always face the camera, follow the parametric plan. */
-function RoomLabels({ home, isDay, dim }: { home: HomeConfig; isDay: boolean; dim: number }) {
+function RoomLabels({ home, isDay, dim, planRooms }: { home: HomeConfig; isDay: boolean; dim: number; planRooms?: string[] }) {
   const hx = homeHalfWidth(home);
   const two = home.storeys === 2;
+  // ground-floor names: prefer what we read from the customer's own plan
+  const UPSTAIRS = new Set(["Bathroom", "En-suite"]);
+  const ground = (planRooms ?? []).filter((r) => !UPSTAIRS.has(r) && r !== "Utility" && r !== "Garage");
+  const groundSlots: [number, number, number][] = [
+    [-(hx - 1.4), 1.5, 1.15],
+    [-(hx - 1.5), 1.5, -1.0],
+    [0.5, 1.5, 1.1],
+    [0.5, 1.5, -1.1],
+  ];
+  const groundNames = ground.length > 0 ? ground.slice(0, 4) : ["Lounge", "Kitchen · Dining"];
   const labels: { text: string; pos: [number, number, number] }[] = [
-    { text: "Lounge", pos: [-(hx - 1.4), 1.5, 1.15] },
-    { text: "Kitchen · Dining", pos: [-(hx - 1.5), 1.5, -1.0] },
-    { text: "Utility", pos: [(1.3 + hx) / 2 + 0.2, 1.5, -1.2] },
+    ...groundNames.map((text, i) => ({ text, pos: groundSlots[i] })),
+    { text: "Utility", pos: [(1.3 + hx) / 2 + 0.2, 1.5, -1.2] as [number, number, number] },
   ];
   if (two) {
     // bedrooms spread across the first floor, bathroom over the shower corner
