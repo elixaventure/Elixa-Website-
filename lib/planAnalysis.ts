@@ -15,6 +15,8 @@ export interface PlanAnalysis {
   bedrooms?: 2 | 3 | 4 | 5;
   storeys?: 1 | 2;
   rooms: string[];
+  /** total floor area read from the plan's text, m² */
+  areaM2?: number;
 }
 
 const ROOM_VOCAB: [RegExp, string][] = [
@@ -64,7 +66,14 @@ export async function analysePlan(file: File): Promise<PlanAnalysis | null> {
       if (re.test(T) && !rooms.includes(label)) rooms.push(label);
     }
 
-    return { bedrooms, storeys, rooms };
+    // total floor area — "134.6 SQ. METRES", "134.6M2", "134.6 m²" …
+    let areaM2: number | undefined;
+    for (const m of T.matchAll(/(\d{2,4}(?:\.\d+)?)\s*(?:SQ\.?\s?M(?:ETRES)?\b|M2\b|M²)/g)) {
+      const v = parseFloat(m[1]);
+      if (v >= 25 && v <= 1500 && (!areaM2 || v > areaM2)) areaM2 = v;
+    }
+
+    return { bedrooms, storeys, rooms, areaM2 };
   } catch (e) {
     console.warn("[elixa] plan analysis failed", e);
     return null;

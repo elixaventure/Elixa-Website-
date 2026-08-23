@@ -48,6 +48,22 @@ export interface PlanLayout {
   floorD: number;
   /** crop of the source image matching the wall bbox (fractions of full image) */
   crop: { ox: number; oy: number; rw: number; rh: number };
+  /** measurements that let real-world scale be attached later */
+  metrics?: {
+    /** enclosed building footprint (walls + rooms), source-image px² */
+    footprintPx2: number;
+    /** Three.js world units per source-image pixel */
+    worldPerPx: number;
+    /** measured wall-band thickness, source px */
+    wallPx: number;
+    /** the filtered wall grid, bit-packed row-major — lets scale derivation
+     * re-seal openings once a floor area is known */
+    grid?: { w: number; h: number; cellPx: number; x0: number; y0: number; bits: string };
+  };
+  /** real-world scale — attached once a floor area is known (see houseModel) */
+  scale?: import("./houseModel").PlanScale | null;
+  /** per-property heights — defaults until a survey overrides them */
+  house?: import("./houseModel").HouseSpec;
 }
 
 const WORLD_MAX = 9; // longest side of the extruded layout, world units
@@ -153,6 +169,28 @@ function label(mask: Uint8Array, W: number, H: number): { lbl: Int32Array; comps
     }
   }
   return { lbl, comps };
+}
+
+/** bit-pack a 0/1 grid to base64 so it can travel with the layout */
+function packGrid(
+  grid: Uint8Array,
+  w: number,
+  h: number,
+  cellPx: number,
+  x0: number,
+  y0: number,
+): { w: number; h: number; cellPx: number; x0: number; y0: number; bits: string } {
+  const bytes = new Uint8Array(Math.ceil((w * h) / 8));
+  for (let i = 0; i < w * h; i++) if (grid[i]) bytes[i >> 3] |= 1 << (i & 7);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  const b64 =
+    typeof btoa === "function"
+      ? btoa(bin)
+      : (globalThis as unknown as { Buffer: { from(b: Uint8Array): { toString(e: string): string } } }).Buffer
+          .from(bytes)
+          .toString("base64");
+  return { w, h, cellPx, x0, y0, bits: b64 };
 }
 
 export async function extractLayout(
@@ -684,6 +722,62 @@ export async function extractLayout(
       }
     }
 
+    // enclosed footprint: close joinery-width gaps (doors/windows, ~1.2 m)
+    // so the outside flood cannot leak into rooms, then count every cell the
+    // flood cannot reach. Garage-door-sized openings stay open — a footprint
+    // derived this way slightly undercounts on plans with attached garages,
+    // which is accepted until openings are modelled explicitly.
+    let footprintCells = 0;
+    {
+      const D = Math.max(6, Math.round((tWall * 7) / cell / 2));
+      let a = new Uint8Array(grid);
+      for (let t = 0; t < D; t++) {
+        const src = new Uint8Array(a);
+        for (let gy = 0; gy < gh; gy++) {
+          for (let gx = 0; gx < gw; gx++) {
+            const i = gy * gw + gx;
+            if (
+              src[i] ||
+              (gx > 0 && src[i - 1]) ||
+              (gx < gw - 1 && src[i + 1]) ||
+              (gy > 0 && src[i - gw]) ||
+              (gy < gh - 1 && src[i + gw])
+            )
+              a[i] = 1;
+          }
+        }
+      }
+      const closed = erode(a, gw, gh, D);
+      const out2 = new Uint8Array(gw * gh);
+      const st: number[] = [];
+      const push2 = (gx: number, gy: number) => {
+        const i = gy * gw + gx;
+        if (gx >= 0 && gx < gw && gy >= 0 && gy < gh && !closed[i] && !out2[i]) {
+          out2[i] = 1;
+          st.push(i);
+        }
+      };
+      for (let gx = 0; gx < gw; gx++) {
+        push2(gx, 0);
+        push2(gx, gh - 1);
+      }
+      for (let gy = 0; gy < gh; gy++) {
+        push2(0, gy);
+        push2(gw - 1, gy);
+      }
+      while (st.length) {
+        const i = st.pop()!;
+        const gx = i % gw;
+        const gy = (i - gx) / gw;
+        push2(gx + 1, gy);
+        push2(gx - 1, gy);
+        push2(gx, gy + 1);
+        push2(gx, gy - 1);
+      }
+      for (let i = 0; i < gw * gh; i++) if (!out2[i]) footprintCells++;
+      dbg?.count("footprintCells", footprintCells);
+    }
+
     const unit = WORLD_MAX / Math.max(bw, bh);
     const floorW = bw * unit;
     const floorD = bh * unit;
@@ -751,6 +845,12 @@ export async function extractLayout(
       floorW,
       floorD,
       crop,
+      metrics: {
+        footprintPx2: footprintCells * cell * cell,
+        worldPerPx: unit / cell,
+        wallPx: tWall,
+        grid: packGrid(grid, gw, gh, cell, x0, y0),
+      },
       ...(dbg ? { debug: dbg.data } : {}),
     };
   } catch (e) {

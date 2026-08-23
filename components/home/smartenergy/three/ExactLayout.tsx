@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { PlanLayout, WallBox } from "@/lib/planLayout";
+import { DEFAULT_HOUSE_SPEC } from "@/lib/houseModel";
 
 export type LayoutView = "dollhouse" | "full" | "plan" | "xray";
 
@@ -31,10 +32,15 @@ export function ExactLayout({
   isDay: boolean;
   view?: LayoutView;
 }) {
-  const CEIL = 2.1; // structural wall height
-  const INNER = 0.95; // dollhouse interior display height (see over into rooms)
-  const PLINTH = 0.35; // camera-facing exterior cutaway height
-  const LOW = 0.3; // floor-plan mode height
+  // structural height comes from the house spec once real-world scale is
+  // known (floor area supplied): ceilingHeight metres × world-units/metre.
+  // Without scale we fall back to the legacy proportions.
+  const spec = layout.house ?? DEFAULT_HOUSE_SPEC;
+  const wpm = layout.scale?.worldPerMetre ?? null;
+  const CEIL = wpm ? spec.ceilingHeight * wpm : 2.1; // structural wall height
+  const INNER = wpm ? Math.min(CEIL * 0.45, 1.05 * wpm) : 0.95; // dollhouse interior display height
+  const PLINTH = wpm ? 0.42 * wpm : 0.35; // camera-facing exterior cutaway height
+  const LOW = wpm ? 0.35 * wpm : 0.3; // floor-plan mode height
 
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const heights = useRef<Float32Array | null>(null);
