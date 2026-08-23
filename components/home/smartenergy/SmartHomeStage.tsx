@@ -6,6 +6,7 @@ import { HouseCrossSection } from "./HouseCrossSection";
 import { cn } from "@/lib/cn";
 import type { TechId, EnergyModel } from "./state";
 import { layoutFor, DEFAULT_HOME, type HomeConfig, type SystemView } from "./three/graph";
+import type { PlanLayout } from "@/lib/planLayout";
 
 const Scene = dynamic(() => import("./three/Scene").then((m) => m.Scene), {
   ssr: false,
@@ -86,6 +87,9 @@ export function SmartHomeStage(props: {
   home?: HomeConfig;
   planUrl?: string | null;
   planRooms?: string[];
+  layout?: PlanLayout | null;
+  layoutOn?: boolean;
+  onLayoutToggle?: (on: boolean) => void;
   onPick: (id: TechId | "grid") => void;
 }) {
   const [can3d, setCan3d] = useState(false);
@@ -136,7 +140,7 @@ export function SmartHomeStage(props: {
       )}
 
       {/* trace journey card */}
-      {mode === "3d" && can3d && trace && journey && (
+      {mode === "3d" && can3d && !props.layoutOn && trace && journey && (
         <div className="pointer-events-none absolute left-3 top-16 z-10 w-52 rounded-2xl bg-navy-900/90 p-3.5 backdrop-blur sm:left-4 sm:top-20">
           <p className="text-[10px] font-bold uppercase tracking-wide text-elixa-cyan">
             {trace === "energy" ? "Tracing the energy" : trace === "water" ? "Tracing the water" : "Tracing the heat"}
@@ -157,7 +161,7 @@ export function SmartHomeStage(props: {
       )}
 
       {/* cursor-following component tooltip (screen-space; never steals the 3D pointer) */}
-      {mode === "3d" && can3d && node && (
+      {mode === "3d" && can3d && !props.layoutOn && node && (
         <div
           className="pointer-events-none absolute z-20 w-56 rounded-2xl bg-navy-900/95 px-3.5 py-2.5 text-left shadow-elevated backdrop-blur"
           style={{
@@ -178,7 +182,23 @@ export function SmartHomeStage(props: {
 
       {/* view controls (bottom-centre, above the parent's legend) */}
       <div className="pointer-events-none absolute inset-x-0 bottom-3 flex flex-col items-center gap-2">
-        {mode === "3d" && can3d && (
+        {mode === "3d" && can3d && props.layout?.ok && (
+          <div className="pointer-events-auto flex rounded-full bg-white/85 p-1 backdrop-blur">
+            {([false, true] as const).map((on) => (
+              <button
+                key={String(on)}
+                onClick={() => props.onLayoutToggle?.(on)}
+                className={cn(
+                  "rounded-full px-3 py-1 text-[11px] font-semibold transition",
+                  (props.layoutOn ?? false) === on ? "bg-elixa-gradient text-white" : "text-navy/55 hover:text-navy"
+                )}
+              >
+                {on ? "🏗 My exact layout" : "⌂ Smart home"}
+              </button>
+            ))}
+          </div>
+        )}
+        {mode === "3d" && can3d && !props.layoutOn && (
           <>
             <div className="pointer-events-auto flex flex-wrap justify-center gap-1 rounded-full bg-white/85 p-1 backdrop-blur">
               {TRACES.map((t) => (

@@ -85,6 +85,36 @@ export async function loadPlanAnalysis<T>(): Promise<T | null> {
   }
 }
 
+/** Extracted wall layout (JSON) for the exact-layout 3D view. */
+export async function savePlanLayout(layout: unknown): Promise<void> {
+  const db = await openDb();
+  if (!db) return;
+  await new Promise<void>((resolve) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).put(JSON.stringify(layout), "layout");
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+  db.close();
+}
+
+export async function loadPlanLayout<T>(): Promise<T | null> {
+  const db = await openDb();
+  if (!db) return null;
+  const raw = await new Promise<string | null>((resolve) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).get("layout");
+    req.onsuccess = () => resolve(typeof req.result === "string" ? req.result : null);
+    req.onerror = () => resolve(null);
+  });
+  db.close();
+  try {
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Rendered image of the plan (JPEG blob) shown live in the 3D scene. */
 export async function savePlanPreview(blob: Blob): Promise<void> {
   const db = await openDb();
@@ -119,6 +149,7 @@ export async function clearPlan(): Promise<void> {
     tx.objectStore(STORE).delete(KEY);
     tx.objectStore(STORE).delete(PREVIEW_KEY);
     tx.objectStore(STORE).delete("analysis");
+    tx.objectStore(STORE).delete("layout");
     tx.oncomplete = () => resolve();
     tx.onerror = () => resolve();
   });

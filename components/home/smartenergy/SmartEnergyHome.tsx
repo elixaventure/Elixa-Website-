@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePlanAnalysis, loadPlanAnalysis } from "@/lib/planStore";
+import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePlanAnalysis, loadPlanAnalysis, savePlanLayout, loadPlanLayout } from "@/lib/planStore";
 import { makePlanPreview } from "@/lib/planPreview";
 import { analysePlan, type PlanAnalysis } from "@/lib/planAnalysis";
+import { extractLayout, type PlanLayout } from "@/lib/planLayout";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ServiceIcon } from "@/components/brand/ServiceIcon";
@@ -36,6 +37,8 @@ export function SmartEnergyHome() {
   const [planName, setPlanName] = useState<string | null>(null);
   const [planUrl, setPlanUrl] = useState<string | null>(null);
   const [planRead, setPlanRead] = useState<PlanAnalysis | null>(null);
+  const [planLayout, setPlanLayout] = useState<PlanLayout | null>(null);
+  const [layoutOn, setLayoutOn] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const applyAnalysis = (a: PlanAnalysis | null) => {
@@ -59,6 +62,7 @@ export function SmartEnergyHome() {
     loadPlan().then((f) => f && setPlanName(f.name));
     loadPlanPreview().then((b) => b && setPreviewUrl(b));
     loadPlanAnalysis<PlanAnalysis>().then((a) => applyAnalysis(a));
+    loadPlanLayout<PlanLayout>().then((l) => l && setPlanLayout(l));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -126,6 +130,9 @@ export function SmartEnergyHome() {
           home={home}
           planUrl={planUrl}
           planRooms={planRead?.rooms}
+          layout={planLayout}
+          layoutOn={layoutOn}
+          onLayoutToggle={setLayoutOn}
           onPick={(id) => setPicked(id)}
         />
 
@@ -269,6 +276,8 @@ export function SmartEnergyHome() {
                   setPlanName(null);
                   setPreviewUrl(null);
                   setPlanRead(null);
+                  setPlanLayout(null);
+                  setLayoutOn(false);
                 }}
                 className="flex-none font-semibold text-navy/40 hover:text-navy"
                 aria-label="Remove floor plan"
@@ -295,6 +304,13 @@ export function SmartEnergyHome() {
                   if (blob) {
                     savePlanPreview(blob);
                     setPreviewUrl(blob);
+                    // extract the wall layout so it can be extruded into 3D
+                    extractLayout(blob).then((l) => {
+                      if (l) {
+                        savePlanLayout(l);
+                        setPlanLayout(l);
+                      }
+                    });
                   }
                 });
                 // read the plan's text and shape the house to match
@@ -327,6 +343,18 @@ export function SmartEnergyHome() {
                 ? "✓ Saved — it will be attached to your quote for your heat-loss calculation."
                 : "We use it for your heat-loss calculation, and it travels with your quote automatically."}
             </p>
+          )}
+
+          {planLayout?.ok && (
+            <button
+              onClick={() => {
+                setLayoutOn((v) => !v);
+                track("cta_click", { location: "smart-energy-home", label: "apply-layout" });
+              }}
+              className={layoutOn ? "btn-outline btn-md mb-4 w-full" : "btn-primary btn-md mb-4 w-full"}
+            >
+              {layoutOn ? "⌂ Back to the smart home view" : "🏗 Apply my exact layout to the 3D house"}
+            </button>
           )}
 
           {/* step 2: confirm the shape — the 3D house and energy figures follow */}

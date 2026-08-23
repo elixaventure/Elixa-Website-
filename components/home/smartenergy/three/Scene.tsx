@@ -7,6 +7,8 @@ import { House } from "./House";
 import { Equipment } from "./Equipment";
 import { Flows } from "./Flows";
 import { PlanMat } from "./PlanMat";
+import { ExactLayout } from "./ExactLayout";
+import type { PlanLayout } from "@/lib/planLayout";
 import { FLOWS, layoutFor, DEFAULT_HOME, type HomeConfig, type SystemView, type FlowCtx } from "./graph";
 import type { TechId, EnergyModel } from "../state";
 
@@ -21,6 +23,8 @@ export function Scene({
   home = DEFAULT_HOME,
   planUrl,
   planRooms,
+  layout,
+  layoutOn,
   onPick,
   onHoverChange,
 }: {
@@ -36,6 +40,9 @@ export function Scene({
   planUrl?: string | null;
   /** room names read from the plan — relabels the 3D rooms */
   planRooms?: string[];
+  /** extracted wall layout + whether to show it instead of the smart home */
+  layout?: PlanLayout | null;
+  layoutOn?: boolean;
   onPick: (id: TechId | "grid") => void;
   /** notifies the parent (screen-space tooltip) — kept OUT of the canvas to
       avoid the DOM label stealing the pointer and flickering the hover. */
@@ -95,23 +102,29 @@ export function Scene({
         <Lightformer intensity={0.7} position={[-6, 3, 4]} scale={[6, 6, 1]} color={isDay ? "#cfe3ff" : "#4a5f8f"} />
       </Environment>
 
-      <House isDay={isDay} dim={houseDim} home={home} planRooms={planRooms} />
+      {layoutOn && layout?.ok ? (
+        <ExactLayout layout={layout} planUrl={planUrl} isDay={isDay} />
+      ) : (
+        <>
+          <House isDay={isDay} dim={houseDim} home={home} planRooms={planRooms} />
 
-      <Equipment
-        active={active}
-        nodes={nodes}
-        hovered={hovered}
-        highlight={highlight}
-        onHover={handleHover}
-        onPick={onPick}
-        isDay={isDay}
-        acMode={acMode}
-        model={model}
-      />
+          <Equipment
+            active={active}
+            nodes={nodes}
+            hovered={hovered}
+            highlight={highlight}
+            onHover={handleHover}
+            onPick={onPick}
+            isDay={isDay}
+            acMode={acMode}
+            model={model}
+          />
 
-      <Flows flows={FLOWS} nodes={nodes} ctx={ctx} view={view} reduced={reduced} />
+          <Flows flows={FLOWS} nodes={nodes} ctx={ctx} view={view} reduced={reduced} />
 
-      {planUrl && <PlanMat url={planUrl} />}
+          {planUrl && <PlanMat url={planUrl} />}
+        </>
+      )}
 
       <ContactShadows position={[0, 0.02, 0]} opacity={isDay ? 0.4 : 0.25} scale={26} blur={2.6} far={8} />
 
