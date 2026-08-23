@@ -7,7 +7,7 @@ import { House } from "./House";
 import { Equipment } from "./Equipment";
 import { Flows } from "./Flows";
 import { PlanMat } from "./PlanMat";
-import { ExactLayout } from "./ExactLayout";
+import { ExactLayout, type LayoutView } from "./ExactLayout";
 import type { PlanLayout } from "@/lib/planLayout";
 import { FLOWS, layoutFor, DEFAULT_HOME, type HomeConfig, type SystemView, type FlowCtx } from "./graph";
 import type { TechId, EnergyModel } from "../state";
@@ -25,6 +25,7 @@ export function Scene({
   planRooms,
   layout,
   layoutOn,
+  layoutView,
   onPick,
   onHoverChange,
 }: {
@@ -43,6 +44,7 @@ export function Scene({
   /** extracted wall layout + whether to show it instead of the smart home */
   layout?: PlanLayout | null;
   layoutOn?: boolean;
+  layoutView?: LayoutView;
   onPick: (id: TechId | "grid") => void;
   /** notifies the parent (screen-space tooltip) — kept OUT of the canvas to
       avoid the DOM label stealing the pointer and flickering the hover. */
@@ -103,7 +105,7 @@ export function Scene({
       </Environment>
 
       {layoutOn && layout?.ok ? (
-        <ExactLayout layout={layout} planUrl={planUrl} isDay={isDay} />
+        <ExactLayout layout={layout} planUrl={planUrl} isDay={isDay} view={layoutView} />
       ) : (
         <>
           <House isDay={isDay} dim={houseDim} home={home} planRooms={planRooms} />
@@ -136,7 +138,7 @@ export function Scene({
         dampingFactor={0.08}
         minDistance={13}
         maxDistance={26}
-        minPolarAngle={Math.PI * 0.22}
+        minPolarAngle={layoutOn && layoutView === "plan" ? Math.PI * 0.02 : Math.PI * 0.22}
         maxPolarAngle={Math.PI * 0.48}
       />
     </Canvas>

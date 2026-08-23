@@ -1,18 +1,53 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import type { PlanLayout } from "@/lib/planLayout";
+import type { PlanLayout, WallBox } from "@/lib/planLayout";
+
+export type LayoutView = "dollhouse" | "full" | "plan" | "xray";
 
 /**
- * The customer's floor plan extruded into real 3D — perimeter and internal
- * walls raised from the drawing's exact positions, with the plan itself
- * draped as the floor beneath them.
+ * The customer's floor plan extruded into an architectural dollhouse.
+ *
+ * Structural height is constant (CEIL); presentation height is derived per
+ * frame and never mutates the extracted data:
+ * - Dollhouse (default): exterior walls facing the camera sink to plinth
+ *   height so the interior stays visible while orbiting; the far exterior
+ *   walls stay full so the property's shape reads; interior walls sit at
+ *   dollhouse height. Continuously updates as the camera moves.
+ * - Full house: everything at full height (exterior check).
+ * - Floor plan: all walls low, camera drifts overhead.
+ * - X-ray: full height, semi-transparent (technical view).
  */
-export function ExactLayout({ layout, planUrl, isDay }: { layout: PlanLayout; planUrl?: string | null; isDay: boolean }) {
-  const WALL_H = 2.1;
+export function ExactLayout({
+  layout,
+  planUrl,
+  isDay,
+  view = "dollhouse",
+}: {
+  layout: PlanLayout;
+  planUrl?: string | null;
+  isDay: boolean;
+  view?: LayoutView;
+}) {
+  const CEIL = 2.1; // structural wall height
+  const INNER = 0.95; // dollhouse interior display height (see over into rooms)
+  const PLINTH = 0.35; // camera-facing exterior cutaway height
+  const LOW = 0.3; // floor-plan mode height
+
   const meshRef = useRef<THREE.InstancedMesh>(null);
+  const heights = useRef<Float32Array | null>(null);
   const [tex, setTex] = useState<THREE.Texture | null>(null);
+  const camDir = useMemo(() => new THREE.Vector3(), []);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const controls = useThree((s) => s.controls) as { target?: THREE.Vector3 } | null;
+
+  const boxes: WallBox[] = layout.boxes;
+
+  useEffect(() => {
+    heights.current = new Float32Array(boxes.length).fill(view === "plan" ? LOW : CEIL);
+  }, [boxes, view]);
 
   useEffect(() => {
     if (!planUrl) return;
@@ -24,7 +59,6 @@ export function ExactLayout({ layout, planUrl, isDay }: { layout: PlanLayout; pl
       }
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = 8;
-      // crop the texture to the wall bounding box so floor and walls align
       t.offset.set(layout.crop.ox, 1 - layout.crop.oy - layout.crop.rh);
       t.repeat.set(layout.crop.rw, layout.crop.rh);
       setTex(t);
@@ -36,18 +70,46 @@ export function ExactLayout({ layout, planUrl, isDay }: { layout: PlanLayout; pl
 
   useEffect(() => () => tex?.dispose(), [tex]);
 
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-  useEffect(() => {
+  useFrame((state) => {
     const m = meshRef.current;
-    if (!m) return;
-    layout.boxes.forEach((b, i) => {
-      dummy.position.set(b.x, WALL_H / 2 + 0.06, b.z);
-      dummy.scale.set(b.w, WALL_H, b.d);
+    const hs = heights.current;
+    if (!m || !hs || hs.length !== boxes.length) return;
+
+    camDir.copy(state.camera.position).setY(0).normalize();
+
+    for (let i = 0; i < boxes.length; i++) {
+      const b = boxes[i];
+      let target = CEIL;
+      if (view === "plan") target = LOW;
+      else if (view === "full" || view === "xray") target = CEIL;
+      else {
+        // dollhouse
+        if (b.ext) {
+          const facing = (b.nx ?? 0) * camDir.x + (b.nz ?? 0) * camDir.z;
+          target = facing > 0.2 ? PLINTH : CEIL;
+        } else {
+          target = INNER;
+        }
+      }
+      hs[i] += (target - hs[i]) * 0.14;
+      dummy.position.set(b.x, hs[i] / 2 + 0.06, b.z);
+      dummy.scale.set(b.w, hs[i], b.d);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
-    });
+    }
     m.instanceMatrix.needsUpdate = true;
-  }, [layout, dummy]);
+
+    // floor-plan mode: drift the camera overhead (never fights the user hard)
+    if (view === "plan") {
+      const cam = state.camera;
+      const top = new THREE.Vector3(0.01, 15, 0.01);
+      cam.position.lerp(top, 0.06);
+      controls?.target?.lerp(new THREE.Vector3(0, 0, 0), 0.08);
+    }
+  });
+
+  const wallColor = isDay ? "#efe9df" : "#4a5674";
+  const xray = view === "xray";
 
   return (
     <group>
@@ -65,10 +127,23 @@ export function ExactLayout({ layout, planUrl, isDay }: { layout: PlanLayout; pl
           <meshStandardMaterial color="#f5f2ec" roughness={0.85} />
         )}
       </mesh>
-      {/* extruded walls, exactly where the drawing puts them */}
-      <instancedMesh ref={meshRef} args={[undefined, undefined, layout.boxes.length]} castShadow receiveShadow>
+      {/* walls — presentation height animated per frame, data untouched */}
+      <instancedMesh
+        key={`${boxes.length}-${xray ? "x" : "s"}`}
+        ref={meshRef}
+        args={[undefined, undefined, boxes.length]}
+        castShadow={!xray}
+        receiveShadow
+      >
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color={isDay ? "#efe9df" : "#4a5674"} roughness={0.8} metalness={0.02} />
+        <meshStandardMaterial
+          color={wallColor}
+          roughness={0.8}
+          metalness={0.02}
+          transparent={xray}
+          opacity={xray ? 0.3 : 1}
+          depthWrite={!xray}
+        />
       </instancedMesh>
     </group>
   );

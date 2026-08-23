@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 import type { TechId, EnergyModel } from "./state";
 import { layoutFor, DEFAULT_HOME, type HomeConfig, type SystemView } from "./three/graph";
 import type { PlanLayout } from "@/lib/planLayout";
+import type { LayoutView } from "./three/ExactLayout";
 
 const Scene = dynamic(() => import("./three/Scene").then((m) => m.Scene), {
   ssr: false,
@@ -112,6 +113,7 @@ export function SmartHomeStage(props: {
   const node = hoveredNode ? nodes[hoveredNode] : null;
 
   const [trace, setTrace] = useState<TraceId | null>(null);
+  const [layoutView, setLayoutView] = useState<LayoutView>("dollhouse");
 
   useEffect(() => {
     const webgl = hasWebGL();
@@ -134,7 +136,7 @@ export function SmartHomeStage(props: {
       onPointerLeave={() => setHoveredNode(null)}
     >
       {mode === "3d" && can3d ? (
-        <Scene {...props} view={effectiveView} reduced={reduced} onHoverChange={setHoveredNode} />
+        <Scene {...props} view={effectiveView} reduced={reduced} layoutView={layoutView} onHoverChange={setHoveredNode} />
       ) : (
         <HouseCrossSection {...props} />
       )}
@@ -194,6 +196,30 @@ export function SmartHomeStage(props: {
                 )}
               >
                 {on ? "🏗 My exact layout" : "⌂ Smart home"}
+              </button>
+            ))}
+          </div>
+        )}
+        {mode === "3d" && can3d && props.layoutOn && props.layout?.ok && (
+          <div className="pointer-events-auto flex flex-wrap justify-center gap-1 rounded-full bg-white/85 p-1 backdrop-blur">
+            {(
+              [
+                ["dollhouse", "🏠 Dollhouse"],
+                ["full", "Full house"],
+                ["plan", "Floor plan"],
+                ["xray", "X-ray"],
+              ] as [LayoutView, string][]
+            ).map(([v, label]) => (
+              <button
+                key={v}
+                onClick={() => setLayoutView(v)}
+                aria-pressed={layoutView === v}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",
+                  layoutView === v ? "bg-navy text-white" : "text-navy/55 hover:text-navy"
+                )}
+              >
+                {label}
               </button>
             ))}
           </div>

@@ -22,10 +22,22 @@
  *   6. merge cells into boxes, scale to world units with texture-crop
  */
 
+export interface WallBox {
+  x: number;
+  z: number;
+  w: number;
+  d: number;
+  /** 1 = exterior wall (touches the outside of the building) */
+  ext?: 0 | 1;
+  /** outward normal (world x/z) for exterior walls */
+  nx?: number;
+  nz?: number;
+}
+
 export interface PlanLayout {
   ok: boolean;
   /** wall footprints in world units, centred on origin (x/z = centre) */
-  boxes: { x: number; z: number; w: number; d: number }[];
+  boxes: WallBox[];
   floorW: number;
   floorD: number;
   /** crop of the source image matching the wall bbox (fractions of full image) */
@@ -353,15 +365,89 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
       }
     }
 
+    // classify exterior walls: flood the EMPTY region from the grid border;
+    // a wall box whose side neighbours that region faces the outside
+    // seal door/window openings first (dilate walls ~3 cells) so the outside
+    // flood cannot leak into the rooms through them
+    const sealed = new Uint8Array(grid);
+    for (let t = 0; t < 3; t++) {
+      const src = new Uint8Array(sealed);
+      for (let gy = 0; gy < gh; gy++) {
+        for (let gx = 0; gx < gw; gx++) {
+          const i = gy * gw + gx;
+          if (
+            src[i] ||
+            (gx > 0 && src[i - 1]) ||
+            (gx < gw - 1 && src[i + 1]) ||
+            (gy > 0 && src[i - gw]) ||
+            (gy < gh - 1 && src[i + gw])
+          )
+            sealed[i] = 1;
+        }
+      }
+    }
+    const outside = new Uint8Array(gw * gh);
+    {
+      const st: number[] = [];
+      const push = (gx: number, gy: number) => {
+        const i = gy * gw + gx;
+        if (gx >= 0 && gx < gw && gy >= 0 && gy < gh && !sealed[i] && !outside[i]) {
+          outside[i] = 1;
+          st.push(i);
+        }
+      };
+      for (let gx = 0; gx < gw; gx++) {
+        push(gx, 0);
+        push(gx, gh - 1);
+      }
+      for (let gy = 0; gy < gh; gy++) {
+        push(0, gy);
+        push(gw - 1, gy);
+      }
+      while (st.length) {
+        const i = st.pop()!;
+        const gx = i % gw;
+        const gy = (i - gx) / gw;
+        push(gx + 1, gy);
+        push(gx - 1, gy);
+        push(gx, gy + 1);
+        push(gx, gy - 1);
+      }
+    }
+    const isOut = (gx: number, gy: number) =>
+      gx < 0 || gx >= gw || gy < 0 || gy >= gh || outside[gy * gw + gx] === 1;
+
     const unit = WORLD_MAX / Math.max(bw, bh);
     const floorW = bw * unit;
     const floorD = bh * unit;
-    const boxes = merged.map((r) => ({
-      x: (r.x - x0 + r.w / 2) * unit - floorW / 2,
-      z: (r.y - y0 + r.h / 2) * unit - floorD / 2,
-      w: r.w * unit,
-      d: r.h * unit,
-    }));
+    const boxes: WallBox[] = merged.map((r) => {
+      const box: WallBox = {
+        x: (r.x - x0 + r.w / 2) * unit - floorW / 2,
+        z: (r.y - y0 + r.h / 2) * unit - floorD / 2,
+        w: r.w * unit,
+        d: r.h * unit,
+      };
+      // count outside cells hugging each side
+      let up = 0, down = 0, left = 0, right = 0;
+      for (let gx = r.x; gx < r.x + r.w; gx++) {
+        if (isOut(gx, r.y - 1)) up++;
+        if (isOut(gx, r.y + r.h)) down++;
+      }
+      for (let gy = r.y; gy < r.y + r.h; gy++) {
+        if (isOut(r.x - 1, gy)) left++;
+        if (isOut(r.x + r.w, gy)) right++;
+      }
+      const uf = up / r.w, df = down / r.w, lf = left / r.h, rf = right / r.h;
+      const best = Math.max(uf, df, lf, rf);
+      if (best >= 0.4) {
+        box.ext = 1;
+        if (best === uf) { box.nx = 0; box.nz = -1; }
+        else if (best === df) { box.nx = 0; box.nz = 1; }
+        else if (best === lf) { box.nx = -1; box.nz = 0; }
+        else { box.nx = 1; box.nz = 0; }
+      }
+      return box;
+    });
 
     const crop = {
       ox: (x0 * cell) / W,
