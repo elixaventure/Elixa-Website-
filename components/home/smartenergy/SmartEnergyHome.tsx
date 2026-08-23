@@ -5,6 +5,8 @@ import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePl
 import { makePlanPreview } from "@/lib/planPreview";
 import { analysePlan, type PlanAnalysis } from "@/lib/planAnalysis";
 import { extractLayout, type PlanLayout } from "@/lib/planLayout";
+import type { PlanDebug } from "@/lib/planLayoutDebug";
+import { PlanDebugPanel } from "./PlanDebugPanel";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ServiceIcon } from "@/components/brand/ServiceIcon";
@@ -39,6 +41,9 @@ export function SmartEnergyHome() {
   const [planRead, setPlanRead] = useState<PlanAnalysis | null>(null);
   const [planLayout, setPlanLayout] = useState<PlanLayout | null>(null);
   const [layoutOn, setLayoutOn] = useState(false);
+  // TEMPORARY: extraction diagnostics, opt-in via ?planDebug=1
+  const [planDebug, setPlanDebug] = useState<PlanDebug | null>(null);
+  const debugOn = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const applyAnalysis = (a: PlanAnalysis | null) => {
@@ -57,10 +62,27 @@ export function SmartEnergyHome() {
     });
   };
 
+  /** keep the (large) debug payload out of IndexedDB and out of the 3D props */
+  const acceptLayout = (l: (PlanLayout & { debug?: PlanDebug }) | null) => {
+    if (!l) return;
+    const { debug, ...clean } = l;
+    savePlanLayout(clean);
+    setPlanLayout(clean);
+    if (debug) setPlanDebug(debug);
+  };
+
   // a previously uploaded floor plan (it carries through to the quote)
   useEffect(() => {
+    debugOn.current =
+      typeof window !== "undefined" && new URLSearchParams(window.location.search).get("planDebug") === "1";
     loadPlan().then((f) => f && setPlanName(f.name));
-    loadPlanPreview().then((b) => b && setPreviewUrl(b));
+    loadPlanPreview().then((b) => {
+      if (!b) return;
+      setPreviewUrl(b);
+      // with the flag on, re-run extraction over the stored plan so the
+      // diagnostics are available on reload without re-uploading
+      if (debugOn.current) extractLayout(b, { debug: true }).then(acceptLayout);
+    });
     loadPlanAnalysis<PlanAnalysis>().then((a) => applyAnalysis(a));
     loadPlanLayout<PlanLayout>().then((l) => l && setPlanLayout(l));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -277,6 +299,7 @@ export function SmartEnergyHome() {
                   setPreviewUrl(null);
                   setPlanRead(null);
                   setPlanLayout(null);
+                  setPlanDebug(null);
                   setLayoutOn(false);
                 }}
                 className="flex-none font-semibold text-navy/40 hover:text-navy"
@@ -305,12 +328,7 @@ export function SmartEnergyHome() {
                     savePlanPreview(blob);
                     setPreviewUrl(blob);
                     // extract the wall layout so it can be extruded into 3D
-                    extractLayout(blob).then((l) => {
-                      if (l) {
-                        savePlanLayout(l);
-                        setPlanLayout(l);
-                      }
-                    });
+                    extractLayout(blob, { debug: debugOn.current }).then(acceptLayout);
                   }
                 });
                 // read the plan's text and shape the house to match
@@ -471,6 +489,8 @@ export function SmartEnergyHome() {
           </div>
         </div>
       </div>
+
+      {planDebug && <PlanDebugPanel debug={planDebug} planUrl={planUrl} />}
     </div>
   );
 }
