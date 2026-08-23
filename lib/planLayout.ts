@@ -22,6 +22,8 @@
  *   6. merge cells into boxes, scale to world units with texture-crop
  */
 
+import { DebugRecorder, DBG, type PlanDebug, type Palette } from "./planLayoutDebug";
+
 export interface WallBox {
   x: number;
   z: number;
@@ -149,7 +151,10 @@ function label(mask: Uint8Array, W: number, H: number): { lbl: Int32Array; comps
   return { lbl, comps };
 }
 
-export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
+export async function extractLayout(
+  preview: Blob,
+  opts?: { debug?: boolean },
+): Promise<(PlanLayout & { debug?: PlanDebug }) | null> {
   try {
     const bmp = await createImageBitmap(preview);
     const W = bmp.width;
@@ -161,6 +166,8 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
     ctx.drawImage(bmp, 0, 0);
     bmp.close();
     const img = ctx.getImageData(0, 0, W, H).data;
+    // TEMPORARY diagnostics — null (and therefore free) unless ?planDebug=1
+    const dbg = opts?.debug ? new DebugRecorder(W, H) : null;
 
     // 1. ink mask minus interiors of flat dark regions (grey room fills)
     const lum = new Int16Array(W * H);
@@ -176,6 +183,30 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
       for (let i = 0; i < W * H; i++) flat[i] = blur[i] < 140 ? 1 : 0;
       const flatInt = erode(flat, W, H, 4);
       for (let i = 0; i < W * H; i++) if (flatInt[i]) mask[i] = 0;
+    }
+    if (dbg) {
+      let ink = 0;
+      for (let i = 0; i < W * H; i++) ink += mask[i];
+      dbg.count("inkPx", ink);
+      dbg.stage("ink", "1 · INK MASK", mask, DBG.ink, "luminance < 155, minus eroded flat fills");
+      // observation only: how much of that ink is coloured design markup
+      const col = new Uint8Array(W * H);
+      let red = 0, blue = 0, green = 0, colInk = 0;
+      for (let i = 0, q = 0; i < W * H; i++, q += 4) {
+        const r = img[q], g = img[q + 1], b = img[q + 2];
+        const sat = Math.max(r, g, b) - Math.min(r, g, b);
+        if (sat <= 55) continue;
+        let v = 0;
+        if (r > g + 40 && r > b + 40) { v = 1; red++; }
+        else if (b > r + 35 && b > g + 20) { v = 2; blue++; }
+        else if (g > r + 30 && g > b + 30) { v = 3; green++; }
+        if (v) { col[i] = v; if (mask[i]) colInk++; }
+      }
+      dbg.count("markupRedPx", red);
+      dbg.count("markupBluePx", blue);
+      dbg.count("markupGreenPx", green);
+      dbg.count("markupCountedAsInkPx", colInk);
+      dbg.stage("markup", "2 · DESIGN MARKUP", col, DBG.colour, "red = flow, blue = return, green = connection");
     }
 
     // 2. remove frame-shaped components (sheet borders, phone-UI bars)
@@ -228,18 +259,34 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
       }
     }
 
+    if (dbg) {
+      dbg.count("minRun", minRun);
+      dbg.count("minStub", minStub);
+      dbg.count("gapMax", gapMax);
+      const runs = new Uint8Array(W * H);
+      for (let i = 0; i < W * H; i++) runs[i] = Math.max(maskH[i], maskV[i]);
+      dbg.stage("runs", "3 · RUNS", runs, DBG.runs, "blue = long (>=" + minRun + "px), amber = stub");
+    }
+
     // 4. walls = thick long-run bands + parallel-pair fills
     const wall = new Uint8Array(W * H);
+    const prov = dbg ? new Uint8Array(W * H) : null; // 1 = band, 2 = pair fill
     for (let y = 1; y < H - 1; y++) {
       for (let x = 0; x < W; x++) {
         const i = y * W + x;
-        if (maskH[i] === 2 && maskH[i - W] === 2 && maskH[i + W] === 2) wall[i] = 1;
+        if (maskH[i] === 2 && maskH[i - W] === 2 && maskH[i + W] === 2) {
+          wall[i] = 1;
+          if (prov) prov[i] = 1;
+        }
       }
     }
     for (let y = 0; y < H; y++) {
       for (let x = 1; x < W - 1; x++) {
         const i = y * W + x;
-        if (maskV[i] === 2 && maskV[i - 1] === 2 && maskV[i + 1] === 2) wall[i] = 1;
+        if (maskV[i] === 2 && maskV[i - 1] === 2 && maskV[i + 1] === 2) {
+          wall[i] = 1;
+          if (prov) prov[i] = 1;
+        }
       }
     }
     for (let x = 0; x < W; x++) {
@@ -249,7 +296,11 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
         const v = maskH[y * W + x];
         if (!v) continue;
         if (prev >= 0 && y - prev >= 2 && y - prev <= gapMax && (v === 2 || prevV === 2)) {
-          for (let k = prev; k <= y; k++) wall[k * W + x] = 1;
+          for (let k = prev; k <= y; k++) {
+            const j = k * W + x;
+            if (prov && !wall[j]) prov[j] = 2;
+            wall[j] = 1;
+          }
         }
         prev = y;
         prevV = v;
@@ -262,11 +313,26 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
         const v = maskV[y * W + x];
         if (!v) continue;
         if (prev >= 0 && x - prev >= 2 && x - prev <= gapMax && (v === 2 || prevV === 2)) {
-          for (let k = prev; k <= x; k++) wall[y * W + k] = 1;
+          for (let k = prev; k <= x; k++) {
+            const j = y * W + k;
+            if (prov && !wall[j]) prov[j] = 2;
+            wall[j] = 1;
+          }
         }
         prev = x;
         prevV = v;
       }
+    }
+
+    if (dbg && prov) {
+      let band = 0, fill = 0;
+      for (let i = 0; i < W * H; i++) {
+        if (prov[i] === 1) band++;
+        else if (prov[i] === 2) fill++;
+      }
+      dbg.count("wallPxFromBand", band);
+      dbg.count("wallPxFromPairFill", fill);
+      dbg.stage("wall", "4 · RAW WALL MASK", prov, DBG.wall, "blue = long-run band, red = parallel-pair fill");
     }
 
     // 5. grid downsample + filters
@@ -281,15 +347,22 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
         if (sum >= cell * cell * 0.4) grid[gy * gw + gx] = 1;
       }
     }
+    dbg?.gridStage("gridRaw", "5 · RAW COMPONENTS", grid, gw, gh, DBG.ink, "before any component filtering");
     {
       const { lbl, comps } = label(grid, gw, gh);
       const drop = new Set<number>();
+      const why = dbg ? new Map<number, number>() : null;
       comps.forEach((cc, id) => {
         const bw = cc.x1 - cc.x0 + 1;
         const bh = cc.y1 - cc.y0 + 1;
         const fill = cc.area / (bw * bh);
-        if (cc.area < 12) drop.add(id); // specks
-        else if (fill > 0.55 && bw > 8 && bh > 8) drop.add(id); // solid blobs
+        if (cc.area < 12) {
+          drop.add(id); // specks
+          why?.set(id, 2);
+        } else if (fill > 0.55 && bw > 8 && bh > 8) {
+          drop.add(id); // solid blobs
+          why?.set(id, 3);
+        }
       });
       // keep only structure intersecting the union of LARGE wall clusters
       const seeds = comps.map((cc, id) => ({ cc, id })).filter(({ cc, id }) => !drop.has(id) && cc.area >= 150);
@@ -305,8 +378,30 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
         const my = (y1 - y0) * 0.15;
         comps.forEach((cc, id) => {
           if (drop.has(id) || cc.area >= 150) return;
-          if (cc.x1 < x0 - mx || cc.x0 > x1 + mx || cc.y1 < y0 - my || cc.y0 > y1 + my) drop.add(id);
+          if (cc.x1 < x0 - mx || cc.x0 > x1 + mx || cc.y1 < y0 - my || cc.y0 > y1 + my) {
+            drop.add(id);
+            why?.set(id, 4);
+          }
         });
+      }
+      if (dbg && why) {
+        const verdict = new Uint8Array(gw * gh);
+        for (let i = 0; i < gw * gh; i++) {
+          if (!grid[i]) continue;
+          verdict[i] = drop.has(lbl[i]) ? why.get(lbl[i]) ?? 2 : 1;
+        }
+        let speck = 0, blob = 0, outside = 0;
+        why.forEach((v) => {
+          if (v === 2) speck++;
+          else if (v === 3) blob++;
+          else outside++;
+        });
+        dbg.count("components", comps.length);
+        dbg.count("rejectedSpeck", speck);
+        dbg.count("rejectedBlob", blob);
+        dbg.count("rejectedIsolated", outside);
+        dbg.gridStage("verdict", "6 · ACCEPTED vs REJECTED", verdict, gw, gh, DBG.verdict,
+          "navy = accepted, pink = speck, amber = solid blob, violet = isolated");
       }
       if (drop.size) for (let i = 0; i < gw * gh; i++) if (grid[i] && drop.has(lbl[i])) grid[i] = 0;
     }
@@ -456,8 +551,36 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
       rh: (bh * cell) / H,
     };
 
+    if (dbg) {
+      const finalGrid = new Uint8Array(gw * gh);
+      for (const r of merged)
+        for (let gy = r.y; gy < r.y + r.h; gy++)
+          for (let gx = r.x; gx < r.x + r.w; gx++) finalGrid[gy * gw + gx] = 1;
+      dbg.count("boxes", boxes.length);
+      dbg.count("boxesOneCellTall", merged.filter((r) => r.h === 1).length);
+      dbg.gridStage("final", "7 · FINAL WALL BOXES", finalGrid, gw, gh,
+        { 1: [25, 35, 60, 255] } as Palette, boxes.length + " boxes sent to Three.js");
+      const c = dbg.data.counts;
+      console.info(
+        "[elixa] layout debug:",
+        "ink=" + c.inkPx,
+        "markupAsInk=" + c.markupCountedAsInkPx,
+        "wallFromBand=" + c.wallPxFromBand,
+        "wallFromPairFill=" + c.wallPxFromPairFill,
+        "components=" + c.components,
+        "rejected{speck:" + c.rejectedSpeck + ",blob:" + c.rejectedBlob + ",isolated:" + c.rejectedIsolated + "}",
+        "boxes=" + c.boxes,
+      );
+    }
     console.info("[elixa] layout extracted:", boxes.length, "wall boxes");
-    return { ok: boxes.length >= 8 && boxes.length <= 8000, boxes, floorW, floorD, crop };
+    return {
+      ok: boxes.length >= 8 && boxes.length <= 8000,
+      boxes,
+      floorW,
+      floorD,
+      crop,
+      ...(dbg ? { debug: dbg.data } : {}),
+    };
   } catch (e) {
     console.warn("[elixa] layout extraction failed", e);
     return null;
