@@ -283,9 +283,16 @@ export const FLOWS: FlowEdge[] = [
   { id: "acin-cool", from: "acIndoor", to: "acAir", media: "coolAir", active: (c) => c.has("aircon") && c.acMode === "cool" },
   { id: "acin-warm", from: "acIndoor", to: "acAir", media: "warmAir", active: (c) => c.has("aircon") && c.acMode === "heat" },
 
-  // ---- Phase 7 seam: EV ----
-  { id: "cu-ev", from: "consumerUnit", to: "evCharger", media: "ac", via: [[3.2, 1.0, 1.9]], active: (c) => c.has("ev") },
-  { id: "ev-car", from: "evCharger", to: "evCar", media: "ac", active: (c) => c.has("ev") },
+  // ---- Phase 7: EV charging — the cable's media follows the live source ----
+  // daytime with solar: the car charges on your own generation
+  { id: "cu-ev-solar", from: "consumerUnit", to: "evCharger", media: "ac", via: [[3.2, 1.0, 1.9]], active: (c) => c.has("ev") && c.has("solar") && c.isDay },
+  { id: "ev-car-solar", from: "evCharger", to: "evCar", media: "ac", active: (c) => c.has("ev") && c.has("solar") && c.isDay },
+  // otherwise the battery supplies the charge…
+  { id: "cu-ev-batt", from: "consumerUnit", to: "evCharger", media: "stored", via: [[3.2, 1.0, 1.9]], active: (c) => c.has("ev") && !(c.has("solar") && c.isDay) && c.has("battery") },
+  { id: "ev-car-batt", from: "evCharger", to: "evCar", media: "stored", active: (c) => c.has("ev") && !(c.has("solar") && c.isDay) && c.has("battery") },
+  // …and the grid covers the rest
+  { id: "cu-ev-grid", from: "consumerUnit", to: "evCharger", media: "grid", via: [[3.2, 1.0, 1.9]], active: (c) => c.has("ev") && !(c.has("solar") && c.isDay) && !c.has("battery") },
+  { id: "ev-car-grid", from: "evCharger", to: "evCar", media: "grid", active: (c) => c.has("ev") && !(c.has("solar") && c.isDay) && !c.has("battery") },
 ];
 
 /** Surplus solar available to export after home + battery charging (illustrative). */

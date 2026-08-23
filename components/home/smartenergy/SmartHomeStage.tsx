@@ -36,6 +36,41 @@ const VIEWS: { id: SystemView; label: string }[] = [
   { id: "cooling", label: "Cooling" },
 ];
 
+type TraceId = "energy" | "water" | "heat";
+
+const TRACES: { id: TraceId; label: string; view: SystemView }[] = [
+  { id: "energy", label: "⚡ Trace energy", view: "electricity" },
+  { id: "water", label: "💧 Trace water", view: "water" },
+  { id: "heat", label: "♨ Trace heat", view: "heating" },
+];
+
+/** The journey steps for each trace, derived from the current system state. */
+function traceSteps(trace: TraceId, active: TechId[], isDay: boolean): { steps: string[]; hint?: string } {
+  const has = (t: TechId) => active.includes(t);
+  if (trace === "energy") {
+    const steps: string[] = [];
+    if (has("solar") && isDay) steps.push("☀ Sun", "Solar panels", "⚡ DC electricity", "Inverter · DC → AC", "Consumer unit", "Home");
+    else if (has("battery")) steps.push("🔋 Battery · stored energy", "Consumer unit", "Home");
+    else steps.push("Grid", "Import meter", "Consumer unit", "Home");
+    if (has("solar") && isDay && has("battery")) steps.push("Surplus → 🔋 Battery");
+    if (has("ev")) steps.push("→ 🚗 EV charger");
+    if (!has("solar") && !has("battery")) steps.push("(add Solar & Battery to power this journey yourself)");
+    return { steps };
+  }
+  if (trace === "water") {
+    if (!has("heatpump")) return { steps: [], hint: "Add the Air Source Heat Pump to trace the hot-water journey." };
+    return {
+      steps: ["💧 Street water main", "Cold mains water", "Cylinder", "+ ♨ Thermal energy", "🚿 Hot water", "Shower · bath · taps"],
+    };
+  }
+  // heat
+  if (!has("heatpump")) return { steps: [], hint: "Add the Air Source Heat Pump to trace the heating journey." };
+  const emitter = has("underfloor") ? "Underfloor loops" : has("thermaskirt") ? "ThermaSkirt" : "Cylinder coil";
+  return {
+    steps: ["♨ Outside-air energy", "+ ⚡ Electricity", "Heat pump", "🟠 Heating flow", emitter, "Room warmth", "🔵 Cooler return", "Heat pump"],
+  };
+}
+
 /**
  * Central visual for the Smart Energy Home. Renders the premium interactive 3D
  * scene when the device supports it, and falls back to the 2D cross-section
@@ -68,13 +103,20 @@ export function SmartHomeStage(props: {
   };
   const node = hoveredNode ? NODES[hoveredNode] : null;
 
+  const [trace, setTrace] = useState<TraceId | null>(null);
+
   useEffect(() => {
     const webgl = hasWebGL();
     const rm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // small screens get fewer particles too (Phase 8 mobile performance)
     setCan3d(webgl);
-    setReduced(rm);
+    setReduced(rm || window.innerWidth < 640);
     setMode(webgl ? "3d" : "2d");
   }, []);
+
+  // a trace takes over the view mode while active
+  const effectiveView = trace ? TRACES.find((t) => t.id === trace)!.view : view;
+  const journey = trace ? traceSteps(trace, props.active, props.isDay) : null;
 
   return (
     <div
@@ -84,9 +126,30 @@ export function SmartHomeStage(props: {
       onPointerLeave={() => setHoveredNode(null)}
     >
       {mode === "3d" && can3d ? (
-        <Scene {...props} view={view} reduced={reduced} onHoverChange={setHoveredNode} />
+        <Scene {...props} view={effectiveView} reduced={reduced} onHoverChange={setHoveredNode} />
       ) : (
         <HouseCrossSection {...props} />
+      )}
+
+      {/* trace journey card */}
+      {mode === "3d" && can3d && trace && journey && (
+        <div className="pointer-events-none absolute left-3 top-16 z-10 w-52 rounded-2xl bg-navy-900/90 p-3.5 backdrop-blur sm:left-4 sm:top-20">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-elixa-cyan">
+            {trace === "energy" ? "Tracing the energy" : trace === "water" ? "Tracing the water" : "Tracing the heat"}
+          </p>
+          {journey.hint ? (
+            <p className="mt-2 text-xs leading-snug text-white/75">{journey.hint}</p>
+          ) : (
+            <ol className="mt-2 grid gap-1">
+              {journey.steps.map((s, i) => (
+                <li key={i} className="flex items-start gap-1.5 text-[11px] leading-tight text-white/85">
+                  <span className="mt-px text-[9px] font-bold text-elixa-green">{i + 1}</span>
+                  {s}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       )}
 
       {/* cursor-following component tooltip (screen-space; never steals the 3D pointer) */}
@@ -112,20 +175,40 @@ export function SmartHomeStage(props: {
       {/* view controls (bottom-centre, above the parent's legend) */}
       <div className="pointer-events-none absolute inset-x-0 bottom-3 flex flex-col items-center gap-2">
         {mode === "3d" && can3d && (
-          <div className="pointer-events-auto flex flex-wrap justify-center gap-1 rounded-full bg-white/85 p-1 backdrop-blur">
-            {VIEWS.map((v) => (
-              <button
-                key={v.id}
-                onClick={() => setView(v.id)}
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",
-                  view === v.id ? "bg-navy text-white" : "text-navy/55 hover:text-navy"
-                )}
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="pointer-events-auto flex flex-wrap justify-center gap-1 rounded-full bg-white/85 p-1 backdrop-blur">
+              {TRACES.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTrace((cur) => (cur === t.id ? null : t.id))}
+                  aria-pressed={trace === t.id}
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",
+                    trace === t.id ? "bg-elixa-gradient text-white" : "text-navy/55 hover:text-navy"
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="pointer-events-auto flex flex-wrap justify-center gap-1 rounded-full bg-white/85 p-1 backdrop-blur">
+              {VIEWS.map((v) => (
+                <button
+                  key={v.id}
+                  onClick={() => {
+                    setTrace(null);
+                    setView(v.id);
+                  }}
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",
+                    !trace && view === v.id ? "bg-navy text-white" : "text-navy/55 hover:text-navy"
+                  )}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
