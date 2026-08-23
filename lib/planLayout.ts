@@ -5,8 +5,11 @@
  *
  *   1. threshold the plan to ink/no-ink
  *   2. flood away anything touching the sheet edge (drawing frame, title block)
- *   3. morphological open+close tuned so THIN ink (dimension lines, text,
- *      hatching) dissolves while THICK ink (walls) survives
+ *   3. trace LONG straight horizontal/vertical ink lines (walls are the only
+ *      long solid lines — structural grids are dashed, hatching is diagonal,
+ *      text is short) and fill between PARALLEL LINE PAIRS a wall's thickness
+ *      apart (walls are always drawn as twin boundary lines; dimension lines
+ *      are single, so they are rejected)
  *   4. downsample to a grid and merge filled cells into wall boxes
  *
  * Output boxes are in world units, centred, ready to extrude. Includes the
@@ -23,7 +26,7 @@ export interface PlanLayout {
   crop: { ox: number; oy: number; rw: number; rh: number };
 }
 
-const TARGET_W = 720; // processing resolution
+const TARGET_W = 1500; // processing resolution (preview is <=1400, so usually 1:1)
 const WORLD_MAX = 9; // longest side of the extruded layout, world units
 
 function pass(src: Uint8Array, dst: Uint8Array, W: number, H: number, horizontal: boolean, erode: boolean) {
@@ -114,14 +117,76 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
       }
     }
 
-    // 3. close hard (fuse hatched double-line walls into solid bands), then
-    //    open harder (dissolve dimension lines, text and other thin ink)
-    mask = morph(mask, W, H, "dilate", 4);
-    mask = morph(mask, W, H, "erode", 7);
-    mask = morph(mask, W, H, "dilate", 3);
+    // 3. trace long straight lines, then fill between parallel pairs
+    const minRun = Math.round(Math.max(W, H) * 0.022); // ~0.6 m of wall at 1:50
+    const gapMax = Math.round(Math.max(W, H) * 0.02) + 6; // max wall thickness px
+    const minStub = 9; // short ink runs (wall piers between windows) may pair with a long line
+
+    // 1 = short stub (wall piers between window/door openings), 2 = long line
+    const maskH = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) {
+      let start = -1;
+      for (let x = 0; x <= W; x++) {
+        const on = x < W && mask[y * W + x];
+        if (on && start < 0) start = x;
+        if (!on && start >= 0) {
+          const len = x - start;
+          const v = len >= minRun ? 2 : len >= minStub ? 1 : 0;
+          if (v) for (let k = start; k < x; k++) maskH[y * W + k] = v;
+          start = -1;
+        }
+      }
+    }
+    const maskV = new Uint8Array(W * H);
+    for (let x = 0; x < W; x++) {
+      let start = -1;
+      for (let y = 0; y <= H; y++) {
+        const on = y < H && mask[y * W + x];
+        if (on && start < 0) start = y;
+        if (!on && start >= 0) {
+          const len = y - start;
+          const v = len >= minRun ? 2 : len >= minStub ? 1 : 0;
+          if (v) for (let k = start; k < y; k++) maskV[k * W + x] = v;
+          start = -1;
+        }
+      }
+    }
+
+    // pair-fill: solid wall bands between twin boundary lines. At least one
+    // side of a pair must be a LONG line — so isolated dimension lines and
+    // free-floating text never pair, but a long façade line pairs with the
+    // short wall piers between its windows.
+    const wall = new Uint8Array(W * H);
+    for (let x = 0; x < W; x++) {
+      let prev = -1;
+      let prevV = 0;
+      for (let y = 0; y < H; y++) {
+        const v = maskH[y * W + x];
+        if (!v) continue;
+        if (prev >= 0 && y - prev >= 2 && y - prev <= gapMax && (v === 2 || prevV === 2)) {
+          for (let k = prev; k <= y; k++) wall[k * W + x] = 1;
+        }
+        prev = y;
+        prevV = v;
+      }
+    }
+    for (let y = 0; y < H; y++) {
+      let prev = -1;
+      let prevV = 0;
+      for (let x = 0; x < W; x++) {
+        const v = maskV[y * W + x];
+        if (!v) continue;
+        if (prev >= 0 && x - prev >= 2 && x - prev <= gapMax && (v === 2 || prevV === 2)) {
+          for (let k = prev; k <= x; k++) wall[y * W + k] = 1;
+        }
+        prev = x;
+        prevV = v;
+      }
+    }
+    mask = wall;
 
     // 4. grid downsample
-    const cell = 3;
+    const cell = Math.max(3, Math.round(W / 300));
     const gw = Math.floor(W / cell);
     const gh = Math.floor(H / cell);
     const grid = new Uint8Array(gw * gh);
@@ -168,7 +233,7 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
       for (let id = 0; id < nComp; id++) {
         const bw = bx1[id] - bx0[id] + 1, bh = by1[id] - by0[id] + 1;
         const fill = areas[id] / (bw * bh);
-        if (areas[id] < 8) drop.add(id); // specks
+        if (areas[id] < 12) drop.add(id); // specks
         else if (fill > 0.55 && bw > 8 && bh > 8) drop.add(id); // solid blobs
       }
       filled = 0;
@@ -249,6 +314,7 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
       rh: (bh * cell) / H,
     };
 
+    console.info("[elixa] layout extracted:", boxes.length, "wall boxes");
     return { ok: boxes.length >= 8 && boxes.length <= 6000, boxes, floorW, floorD, crop };
   } catch (e) {
     console.warn("[elixa] layout extraction failed", e);
