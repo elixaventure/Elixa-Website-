@@ -6,7 +6,7 @@
  */
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
-const MAX_DIM = 1400;
+const MAX_DIM = 2400; // high enough that CAD hairline wall boundaries rasterise solid
 
 async function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
   return new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/jpeg", 0.85));
@@ -38,7 +38,7 @@ async function pdfToPreview(file: File): Promise<Blob | null> {
     const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
     const page = await doc.getPage(1);
     const vp1 = page.getViewport({ scale: 1 });
-    const scale = Math.min(2.5, MAX_DIM / Math.max(vp1.width, vp1.height));
+    const scale = Math.min(3.2, MAX_DIM / Math.max(vp1.width, vp1.height));
     const vp = page.getViewport({ scale });
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(vp.width);

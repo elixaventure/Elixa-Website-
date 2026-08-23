@@ -1,19 +1,25 @@
 /**
  * Extracts the wall layout from a rasterised floor plan so it can be extruded
  * into real 3D walls — perimeter and internal walls in the drawing's exact
- * positions. Pure client-side image processing, no AI service:
+ * positions. Pure client-side image processing, no AI service. Tuned and
+ * verified against both major drawing styles:
+ *   - CAD sheets (hairline boundaries + hatched wall bands, dimension chains)
+ *   - estate-agent plans (solid black wall bands, grey room fills)
  *
- *   1. threshold the plan to ink/no-ink
- *   2. flood away anything touching the sheet edge (drawing frame, title block)
- *   3. trace LONG straight horizontal/vertical ink lines (walls are the only
- *      long solid lines — structural grids are dashed, hatching is diagonal,
- *      text is short) and fill between PARALLEL LINE PAIRS a wall's thickness
- *      apart (walls are always drawn as twin boundary lines; dimension lines
- *      are single, so they are rejected)
- *   4. downsample to a grid and merge filled cells into wall boxes
- *
- * Output boxes are in world units, centred, ready to extrude. Includes the
- * texture crop so the plan image can be draped as the floor beneath the walls.
+ * Pipeline:
+ *   1. ink = dark pixels, minus the INTERIOR of flat dark regions (grey room
+ *      fills are detected on a blurred copy where hairlines vanish)
+ *   2. remove frame-shaped components (sheet borders, phone-UI bars)
+ *   3. trace LONG straight horizontal/vertical runs — walls are the only long
+ *      solid lines (grids are dashed, hatching diagonal, text short)
+ *   4. walls = thick bands of long runs (solid-wall plans) + fills between
+ *      parallel line pairs where at least one side is long (twin boundary
+ *      lines; a long facade line pairs with short piers between windows —
+ *      isolated dimension lines never pair)
+ *   5. grid downsample → speck/blob filters → keep components intersecting
+ *      the union of all large wall clusters (kills headings/annotations
+ *      without dropping the wings of L-shaped homes)
+ *   6. merge cells into boxes, scale to world units with texture-crop
  */
 
 export interface PlanLayout {
@@ -26,103 +32,161 @@ export interface PlanLayout {
   crop: { ox: number; oy: number; rw: number; rh: number };
 }
 
-const TARGET_W = 1500; // processing resolution (preview is <=1400, so usually 1:1)
 const WORLD_MAX = 9; // longest side of the extruded layout, world units
 
-function pass(src: Uint8Array, dst: Uint8Array, W: number, H: number, horizontal: boolean, erode: boolean) {
+/** separable 5x5 box blur on a luminance array */
+function boxBlur(lum: Int16Array, W: number, H: number): Int16Array {
+  const r = 2;
+  const tmp = new Int16Array(W * H);
+  const out = new Int16Array(W * H);
   for (let y = 0; y < H; y++) {
+    let sum = 0;
+    for (let x = -r; x <= r; x++) sum += lum[y * W + Math.min(W - 1, Math.max(0, x))];
     for (let x = 0; x < W; x++) {
-      const i = y * W + x;
-      let v = src[i];
-      if (horizontal) {
-        const a = x > 0 ? src[i - 1] : erode ? 0 : 0;
-        const b = x < W - 1 ? src[i + 1] : erode ? 0 : 0;
-        v = erode ? (src[i] && a && b ? 1 : 0) : src[i] || a || b ? 1 : 0;
-      } else {
-        const a = y > 0 ? src[i - W] : erode ? 0 : 0;
-        const b = y < H - 1 ? src[i + W] : erode ? 0 : 0;
-        v = erode ? (src[i] && a && b ? 1 : 0) : src[i] || a || b ? 1 : 0;
-      }
-      dst[i] = v;
+      tmp[y * W + x] = sum / (2 * r + 1);
+      const add = Math.min(W - 1, x + r + 1);
+      const sub = Math.max(0, x - r);
+      sum += lum[y * W + add] - lum[y * W + sub];
     }
   }
+  for (let x = 0; x < W; x++) {
+    let sum = 0;
+    for (let y = -r; y <= r; y++) sum += tmp[Math.min(H - 1, Math.max(0, y)) * W + x];
+    for (let y = 0; y < H; y++) {
+      out[y * W + x] = sum / (2 * r + 1);
+      const add = Math.min(H - 1, y + r + 1);
+      const sub = Math.max(0, y - r);
+      sum += tmp[add * W + x] - tmp[sub * W + x];
+    }
+  }
+  return out;
 }
 
-function morph(mask: Uint8Array, W: number, H: number, op: "erode" | "dilate", times: number): Uint8Array {
-  const erode = op === "erode";
+/** binary erosion (cross), n iterations */
+function erode(mask: Uint8Array, W: number, H: number, n: number): Uint8Array {
   let a = mask;
   let b = new Uint8Array(W * H);
-  const tmp = new Uint8Array(W * H);
-  for (let t = 0; t < times; t++) {
-    pass(a, tmp, W, H, true, erode);
-    pass(tmp, b, W, H, false, erode);
-    const s = a;
+  for (let t = 0; t < n; t++) {
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        b[i] =
+          a[i] &&
+          (x > 0 ? a[i - 1] : 0) &&
+          (x < W - 1 ? a[i + 1] : 0) &&
+          (y > 0 ? a[i - W] : 0) &&
+          (y < H - 1 ? a[i + W] : 0)
+            ? 1
+            : 0;
+      }
+    }
+    const s = a === mask ? new Uint8Array(W * H) : a;
     a = b;
-    b = s; // previous buffer becomes scratch for the next round
+    b = s;
   }
   return a;
+}
+
+interface Comp {
+  area: number;
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+}
+
+/** connected-component labelling (4-neighbour), returns labels + stats */
+function label(mask: Uint8Array, W: number, H: number): { lbl: Int32Array; comps: Comp[] } {
+  const lbl = new Int32Array(W * H).fill(-1);
+  const comps: Comp[] = [];
+  const stack: number[] = [];
+  for (let i = 0; i < W * H; i++) {
+    if (!mask[i] || lbl[i] >= 0) continue;
+    const id = comps.length;
+    const c: Comp = { area: 0, x0: W, x1: 0, y0: H, y1: 0 };
+    comps.push(c);
+    lbl[i] = id;
+    stack.push(i);
+    while (stack.length) {
+      const j = stack.pop()!;
+      const x = j % W;
+      const y = (j - x) / W;
+      c.area++;
+      if (x < c.x0) c.x0 = x;
+      if (x > c.x1) c.x1 = x;
+      if (y < c.y0) c.y0 = y;
+      if (y > c.y1) c.y1 = y;
+      if (x > 0 && mask[j - 1] && lbl[j - 1] < 0) {
+        lbl[j - 1] = id;
+        stack.push(j - 1);
+      }
+      if (x < W - 1 && mask[j + 1] && lbl[j + 1] < 0) {
+        lbl[j + 1] = id;
+        stack.push(j + 1);
+      }
+      if (y > 0 && mask[j - W] && lbl[j - W] < 0) {
+        lbl[j - W] = id;
+        stack.push(j - W);
+      }
+      if (y < H - 1 && mask[j + W] && lbl[j + W] < 0) {
+        lbl[j + W] = id;
+        stack.push(j + W);
+      }
+    }
+  }
+  return { lbl, comps };
 }
 
 export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
   try {
     const bmp = await createImageBitmap(preview);
-    const scale = Math.min(1, TARGET_W / bmp.width);
-    const W = Math.max(64, Math.round(bmp.width * scale));
-    const H = Math.max(64, Math.round(bmp.height * scale));
+    const W = bmp.width;
+    const H = bmp.height;
     const c = document.createElement("canvas");
     c.width = W;
     c.height = H;
     const ctx = c.getContext("2d", { willReadFrequently: true })!;
-    ctx.drawImage(bmp, 0, 0, W, H);
+    ctx.drawImage(bmp, 0, 0);
     bmp.close();
     const img = ctx.getImageData(0, 0, W, H).data;
 
-    // 1. ink mask
-    let mask = new Uint8Array(W * H);
+    // 1. ink mask minus interiors of flat dark regions (grey room fills)
+    const lum = new Int16Array(W * H);
+    const mask = new Uint8Array(W * H);
     for (let i = 0, p = 0; i < W * H; i++, p += 4) {
       const l = 0.299 * img[p] + 0.587 * img[p + 1] + 0.114 * img[p + 2];
-      mask[i] = l < 150 ? 1 : 0;
+      lum[i] = l;
+      mask[i] = l < 155 ? 1 : 0;
+    }
+    {
+      const blur = boxBlur(lum, W, H);
+      const flat = new Uint8Array(W * H);
+      for (let i = 0; i < W * H; i++) flat[i] = blur[i] < 140 ? 1 : 0;
+      const flatInt = erode(flat, W, H, 4);
+      for (let i = 0; i < W * H; i++) if (flatInt[i]) mask[i] = 0;
     }
 
-    // 2. flood away the sheet frame / title block (anything touching the edge band)
-    const band = Math.max(2, Math.round(Math.min(W, H) * 0.04));
-    const stack: number[] = [];
-    const seen = new Uint8Array(W * H);
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        if (x < band || x >= W - band || y < band || y >= H - band) {
-          const i = y * W + x;
-          if (mask[i] && !seen[i]) {
-            seen[i] = 1;
-            stack.push(i);
-          }
-        }
-      }
-    }
-    while (stack.length) {
-      const i = stack.pop()!;
-      mask[i] = 0;
-      const x = i % W;
-      const y = (i - x) / W;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-        const xx = x + dx;
-        const yy = y + dy;
-        if (xx >= 0 && xx < W && yy >= 0 && yy < H) {
-          const j = yy * W + xx;
-          if (mask[j] && !seen[j]) {
-            seen[j] = 1;
-            stack.push(j);
-          }
-        }
-      }
+    // 2. remove frame-shaped components (sheet borders, phone-UI bars)
+    {
+      const { lbl, comps } = label(mask, W, H);
+      const e = 2;
+      const drop = new Set<number>();
+      comps.forEach((cc, id) => {
+        const edges =
+          (cc.x0 <= e ? 1 : 0) + (cc.x1 >= W - 1 - e ? 1 : 0) + (cc.y0 <= e ? 1 : 0) + (cc.y1 >= H - 1 - e ? 1 : 0);
+        const bw = cc.x1 - cc.x0 + 1;
+        const bh = cc.y1 - cc.y0 + 1;
+        if (edges >= 3 || (edges >= 1 && bw > 0.85 * W && bh > 0.85 * H)) drop.add(id);
+      });
+      if (drop.size) for (let i = 0; i < W * H; i++) if (mask[i] && drop.has(lbl[i])) mask[i] = 0;
     }
 
-    // 3. trace long straight lines, then fill between parallel pairs
-    const minRun = Math.round(Math.max(W, H) * 0.022); // ~0.6 m of wall at 1:50
-    const gapMax = Math.round(Math.max(W, H) * 0.02) + 6; // max wall thickness px
-    const minStub = 9; // short ink runs (wall piers between windows) may pair with a long line
+    // 3. long-run tracing (2 = long, 1 = short stub such as a window pier)
+    const maxDim = Math.max(W, H);
+    const minRun = Math.round(maxDim * 0.022);
+    const minStub = Math.max(6, Math.round(maxDim * 0.006));
+    const gapMax = Math.round(maxDim * 0.02) + 6;
 
-    // 1 = short stub (wall piers between window/door openings), 2 = long line
     const maskH = new Uint8Array(W * H);
     for (let y = 0; y < H; y++) {
       let start = -1;
@@ -152,11 +216,20 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
       }
     }
 
-    // pair-fill: solid wall bands between twin boundary lines. At least one
-    // side of a pair must be a LONG line — so isolated dimension lines and
-    // free-floating text never pair, but a long façade line pairs with the
-    // short wall piers between its windows.
+    // 4. walls = thick long-run bands + parallel-pair fills
     const wall = new Uint8Array(W * H);
+    for (let y = 1; y < H - 1; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        if (maskH[i] === 2 && maskH[i - W] === 2 && maskH[i + W] === 2) wall[i] = 1;
+      }
+    }
+    for (let y = 0; y < H; y++) {
+      for (let x = 1; x < W - 1; x++) {
+        const i = y * W + x;
+        if (maskV[i] === 2 && maskV[i - 1] === 2 && maskV[i + 1] === 2) wall[i] = 1;
+      }
+    }
     for (let x = 0; x < W; x++) {
       let prev = -1;
       let prevV = 0;
@@ -183,84 +256,68 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
         prevV = v;
       }
     }
-    mask = wall;
 
-    // 4. grid downsample
+    // 5. grid downsample + filters
     const cell = Math.max(3, Math.round(W / 300));
     const gw = Math.floor(W / cell);
     const gh = Math.floor(H / cell);
     const grid = new Uint8Array(gw * gh);
-    let filled = 0;
     for (let gy = 0; gy < gh; gy++) {
       for (let gx = 0; gx < gw; gx++) {
         let sum = 0;
-        for (let dy = 0; dy < cell; dy++) for (let dx = 0; dx < cell; dx++) sum += mask[(gy * cell + dy) * W + gx * cell + dx];
-        if (sum >= cell * cell * 0.4) {
-          grid[gy * gw + gx] = 1;
-          filled++;
-        }
+        for (let dy = 0; dy < cell; dy++) for (let dx = 0; dx < cell; dx++) sum += wall[(gy * cell + dy) * W + gx * cell + dx];
+        if (sum >= cell * cell * 0.4) grid[gy * gw + gx] = 1;
       }
     }
-    // 4b. component filter: keep thin connected structures (walls), drop
-    //     solid blobs (photos, logos) and specks (text residue)
     {
-      const comp = new Int32Array(gw * gh).fill(-1);
-      let nComp = 0;
-      const areas: number[] = [];
-      const bx0: number[] = [], bx1: number[] = [], by0: number[] = [], by1: number[] = [];
-      const q: number[] = [];
-      for (let i = 0; i < gw * gh; i++) {
-        if (!grid[i] || comp[i] >= 0) continue;
-        const id = nComp++;
-        areas.push(0); bx0.push(gw); bx1.push(0); by0.push(gh); by1.push(0);
-        comp[i] = id; q.push(i);
-        while (q.length) {
-          const j = q.pop()!;
-          const x = j % gw, y = (j - x) / gw;
-          areas[id]++;
-          if (x < bx0[id]) bx0[id] = x; if (x > bx1[id]) bx1[id] = x;
-          if (y < by0[id]) by0[id] = y; if (y > by1[id]) by1[id] = y;
-          for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]] as const) {
-            const xx = x + dx, yy = y + dy;
-            if (xx >= 0 && xx < gw && yy >= 0 && yy < gh) {
-              const k = yy * gw + xx;
-              if (grid[k] && comp[k] < 0) { comp[k] = id; q.push(k); }
-            }
-          }
-        }
-      }
+      const { lbl, comps } = label(grid, gw, gh);
       const drop = new Set<number>();
-      for (let id = 0; id < nComp; id++) {
-        const bw = bx1[id] - bx0[id] + 1, bh = by1[id] - by0[id] + 1;
-        const fill = areas[id] / (bw * bh);
-        if (areas[id] < 12) drop.add(id); // specks
+      comps.forEach((cc, id) => {
+        const bw = cc.x1 - cc.x0 + 1;
+        const bh = cc.y1 - cc.y0 + 1;
+        const fill = cc.area / (bw * bh);
+        if (cc.area < 12) drop.add(id); // specks
         else if (fill > 0.55 && bw > 8 && bh > 8) drop.add(id); // solid blobs
+      });
+      // keep only structure intersecting the union of LARGE wall clusters
+      const seeds = comps.map((cc, id) => ({ cc, id })).filter(({ cc, id }) => !drop.has(id) && cc.area >= 150);
+      if (seeds.length) {
+        let x0 = gw, x1 = 0, y0 = gh, y1 = 0;
+        for (const { cc } of seeds) {
+          if (cc.x0 < x0) x0 = cc.x0;
+          if (cc.x1 > x1) x1 = cc.x1;
+          if (cc.y0 < y0) y0 = cc.y0;
+          if (cc.y1 > y1) y1 = cc.y1;
+        }
+        const mx = (x1 - x0) * 0.15;
+        const my = (y1 - y0) * 0.15;
+        comps.forEach((cc, id) => {
+          if (drop.has(id) || cc.area >= 150) return;
+          if (cc.x1 < x0 - mx || cc.x0 > x1 + mx || cc.y1 < y0 - my || cc.y0 > y1 + my) drop.add(id);
+        });
       }
-      filled = 0;
-      for (let i = 0; i < gw * gh; i++) {
-        if (grid[i] && drop.has(comp[i])) grid[i] = 0;
-        if (grid[i]) filled++;
-      }
+      if (drop.size) for (let i = 0; i < gw * gh; i++) if (grid[i] && drop.has(lbl[i])) grid[i] = 0;
     }
-
-    const ratio = filled / (gw * gh);
-    if (ratio < 0.004 || ratio > 0.3) return { ok: false, boxes: [], floorW: 0, floorD: 0, crop: { ox: 0, oy: 0, rw: 1, rh: 1 } };
 
     // content bbox
     let x0 = gw, x1 = 0, y0 = gh, y1 = 0;
+    let filled = 0;
     for (let gy = 0; gy < gh; gy++)
       for (let gx = 0; gx < gw; gx++)
         if (grid[gy * gw + gx]) {
+          filled++;
           if (gx < x0) x0 = gx;
           if (gx > x1) x1 = gx;
           if (gy < y0) y0 = gy;
           if (gy > y1) y1 = gy;
         }
+    const empty = { ok: false, boxes: [], floorW: 0, floorD: 0, crop: { ox: 0, oy: 0, rw: 1, rh: 1 } };
+    if (filled < 60) return empty;
     const bw = x1 - x0 + 1;
     const bh = y1 - y0 + 1;
-    if (bw < 8 || bh < 8) return { ok: false, boxes: [], floorW: 0, floorD: 0, crop: { ox: 0, oy: 0, rw: 1, rh: 1 } };
+    if (bw < 8 || bh < 8) return empty;
 
-    // horizontal runs → vertical merge
+    // 6. horizontal runs → vertical merge → boxes
     type Run = { x: number; y: number; w: number; h: number };
     const runs: Run[] = [];
     for (let gy = y0; gy <= y1; gy++) {
@@ -296,7 +353,6 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
       }
     }
 
-    // scale to world units
     const unit = WORLD_MAX / Math.max(bw, bh);
     const floorW = bw * unit;
     const floorD = bh * unit;
@@ -315,7 +371,7 @@ export async function extractLayout(preview: Blob): Promise<PlanLayout | null> {
     };
 
     console.info("[elixa] layout extracted:", boxes.length, "wall boxes");
-    return { ok: boxes.length >= 8 && boxes.length <= 6000, boxes, floorW, floorD, crop };
+    return { ok: boxes.length >= 8 && boxes.length <= 8000, boxes, floorW, floorD, crop };
   } catch (e) {
     console.warn("[elixa] layout extraction failed", e);
     return null;
