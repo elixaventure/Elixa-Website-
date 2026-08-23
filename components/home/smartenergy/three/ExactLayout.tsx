@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import type { PlanLayout, WallBox } from "@/lib/planLayout";
+import type { PlanLayout, WallBox, WallOpening } from "@/lib/planLayout";
 import { DEFAULT_HOUSE_SPEC } from "@/lib/houseModel";
 
 export type LayoutView = "dollhouse" | "full" | "plan" | "xray";
@@ -44,16 +44,30 @@ export function ExactLayout({
 
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const heights = useRef<Float32Array | null>(null);
+  const openHeights = useRef<Float32Array | null>(null);
   const [tex, setTex] = useState<THREE.Texture | null>(null);
   const camDir = useMemo(() => new THREE.Vector3(), []);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const controls = useThree((s) => s.controls) as { target?: THREE.Vector3 } | null;
 
   const boxes: WallBox[] = layout.boxes;
+  const openings: WallOpening[] = useMemo(() => layout.openings ?? [], [layout.openings]);
+
+  // Joinery heights as a FRACTION of the ceiling, so this is one code path
+  // whether or not real-world scale is known: with scale, CEIL is
+  // ceilingHeight×wpm and the fraction reproduces the spec's metres exactly;
+  // without it, the proportions still read correctly against the legacy CEIL.
+  const doorHead = (CEIL * spec.internalDoorHeight) / spec.ceilingHeight;
+  const sillTop = (CEIL * spec.windowSillHeight) / spec.ceilingHeight;
+  const windowHead = (CEIL * spec.windowHeadHeight) / spec.ceilingHeight;
+
+  // every opening contributes a lintel above it, and a window also a sill below
+  const total = boxes.length + openings.length * 2;
 
   useEffect(() => {
     heights.current = new Float32Array(boxes.length).fill(view === "plan" ? LOW : CEIL);
-  }, [boxes, view]);
+    openHeights.current = new Float32Array(openings.length).fill(view === "plan" ? LOW : CEIL);
+  }, [boxes, openings, view]);
 
   useEffect(() => {
     if (!planUrl) return;
@@ -79,7 +93,8 @@ export function ExactLayout({
   useFrame((state) => {
     const m = meshRef.current;
     const hs = heights.current;
-    if (!m || !hs || hs.length !== boxes.length) return;
+    const oh = openHeights.current;
+    if (!m || !hs || !oh || hs.length !== boxes.length || oh.length !== openings.length) return;
 
     camDir.copy(state.camera.position).setY(0).normalize();
 
@@ -102,6 +117,41 @@ export function ExactLayout({
       dummy.scale.set(b.w, hs[i], b.d);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
+    }
+
+    // Bridge each opening: a lintel from head height to the top of the wall,
+    // and for a window a sill from the floor up. The void between them is the
+    // hole. Both follow the same display height as the wall they sit in, so a
+    // dollhouse cutaway takes the lintel down with the wall instead of leaving
+    // it hanging. A block with no height left (wall already below it) is
+    // collapsed to zero scale rather than drawn.
+    let k = boxes.length;
+    const put = (o: WallOpening, from: number, to: number) => {
+      const h = Math.max(0, to - from);
+      if (h <= 0.001) dummy.scale.set(0, 0, 0);
+      else dummy.scale.set(o.w, h, o.d);
+      dummy.position.set(o.x, h > 0.001 ? from + h / 2 + 0.06 : -10, o.z);
+      dummy.updateMatrix();
+      m.setMatrixAt(k++, dummy.matrix);
+    };
+    for (let oi = 0; oi < openings.length; oi++) {
+      const o = openings[oi];
+      let target = CEIL;
+      if (view === "plan") target = LOW;
+      else if (view !== "full" && view !== "xray") {
+        if (o.ext) {
+          const facing = (o.nx ?? 0) * camDir.x + (o.nz ?? 0) * camDir.z;
+          target = facing > 0.2 ? PLINTH : CEIL;
+        } else {
+          target = INNER;
+        }
+      }
+      // lerped on the same curve as the walls, so they rise and fall together
+      oh[oi] += (target - oh[oi]) * 0.14;
+      const wallTop = oh[oi];
+      const head = o.kind === "window" ? windowHead : doorHead;
+      put(o, Math.min(head, wallTop), wallTop); // lintel
+      put(o, 0, o.kind === "window" ? Math.min(sillTop, wallTop) : 0); // sill
     }
     m.instanceMatrix.needsUpdate = true;
 
@@ -135,9 +185,9 @@ export function ExactLayout({
       </mesh>
       {/* walls — presentation height animated per frame, data untouched */}
       <instancedMesh
-        key={`${boxes.length}-${xray ? "x" : "s"}`}
+        key={`${total}-${xray ? "x" : "s"}`}
         ref={meshRef}
-        args={[undefined, undefined, boxes.length]}
+        args={[undefined, undefined, total]}
         castShadow={!xray}
         receiveShadow
       >

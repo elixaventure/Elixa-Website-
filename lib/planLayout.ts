@@ -40,10 +40,24 @@ export interface WallBox {
   nz?: number;
 }
 
+/**
+ * A door or window: the footprint of a GAP in a wall run, not a solid.
+ *
+ * The wall boxes either side of it already exist — the gap is what separates
+ * them. This records the void so the renderer can bridge it with a lintel
+ * (and a sill, for a window) instead of leaving a full-height hole.
+ */
+export interface WallOpening extends WallBox {
+  /** doors run to the floor; windows get a sill below them */
+  kind: "door" | "window";
+}
+
 export interface PlanLayout {
   ok: boolean;
   /** wall footprints in world units, centred on origin (x/z = centre) */
   boxes: WallBox[];
+  /** door/window voids found between collinear wall boxes */
+  openings?: WallOpening[];
   floorW: number;
   floorD: number;
   /** crop of the source image matching the wall bbox (fractions of full image) */
@@ -556,24 +570,37 @@ export async function extractLayout(
       }
     }
     // classify exterior walls: flood the EMPTY region from the grid border;
-    // a wall box whose side neighbours that region faces the outside
-    // seal door/window openings first (dilate walls ~3 cells) so the outside
-    // flood cannot leak into the rooms through them
-    const sealed = new Uint8Array(grid);
-    for (let t = 0; t < 3; t++) {
-      const src = new Uint8Array(sealed);
+    // a wall box whose side neighbours that region faces the outside.
+    //
+    // The openings must be sealed first or the flood pours through every door
+    // and window and marks the whole interior as outside. The seal is a
+    // DIRECTIONAL closing — bridge gaps between wall cells along each row and
+    // each column — for two reasons a morphological dilate cannot match:
+    // a dilate-only seal buries every wall under its own band, so the cell
+    // beside a wall is never flooded and nothing is ever classed exterior;
+    // and a dilate+erode wide enough for a patio door swells past the sheet
+    // edge, where the erode cannot bring it back. Bridging only ever fills
+    // BETWEEN existing wall cells, so every wall face stays exactly where the
+    // drawing put it. Sized at ~3 m, wider than any opening, narrower than
+    // the span a house is ever open across.
+    const bridge = Math.max(4, Math.round((tWall / cell) * 20));
+    const envelope = new Uint8Array(grid);
+    for (let gy = 0; gy < gh; gy++) {
+      let last = -1e9;
+      for (let gx = 0; gx < gw; gx++) {
+        if (!grid[gy * gw + gx]) continue;
+        if (gx - last > 1 && gx - last <= bridge + 1)
+          for (let k = last + 1; k < gx; k++) envelope[gy * gw + k] = 1;
+        last = gx;
+      }
+    }
+    for (let gx = 0; gx < gw; gx++) {
+      let last = -1e9;
       for (let gy = 0; gy < gh; gy++) {
-        for (let gx = 0; gx < gw; gx++) {
-          const i = gy * gw + gx;
-          if (
-            src[i] ||
-            (gx > 0 && src[i - 1]) ||
-            (gx < gw - 1 && src[i + 1]) ||
-            (gy > 0 && src[i - gw]) ||
-            (gy < gh - 1 && src[i + gw])
-          )
-            sealed[i] = 1;
-        }
+        if (!grid[gy * gw + gx]) continue;
+        if (gy - last > 1 && gy - last <= bridge + 1)
+          for (let k = last + 1; k < gy; k++) envelope[k * gw + gx] = 1;
+        last = gy;
       }
     }
     const outside = new Uint8Array(gw * gh);
@@ -581,7 +608,7 @@ export async function extractLayout(
       const st: number[] = [];
       const push = (gx: number, gy: number) => {
         const i = gy * gw + gx;
-        if (gx >= 0 && gx < gw && gy >= 0 && gy < gh && !sealed[i] && !outside[i]) {
+        if (gx >= 0 && gx < gw && gy >= 0 && gy < gh && !envelope[i] && !outside[i]) {
           outside[i] = 1;
           st.push(i);
         }
@@ -810,6 +837,90 @@ export async function extractLayout(
       return box;
     });
 
+    // 9. openings. A door or window is a GAP in a wall, and the run merge has
+    // already split the wall into two collinear boxes either side of it — the
+    // grid keeps those gaps, because every sealing pass above (exterior flood,
+    // footprint closing) works on a copy. So an opening is a pair of aligned,
+    // same-thickness runs separated along their shared axis by a plausible
+    // joinery width. Widths are measured in wall thicknesses rather than
+    // metres, because real-world scale is not known until a floor area is
+    // supplied (see houseModel), and a wall is the one length the drawing
+    // always gives us.
+    const openings: WallOpening[] = [];
+    {
+      const tCells = Math.max(1, tWall / cell);
+      const gapMin = Math.max(2, Math.round(tCells * 2.5)); // ~0.4 m at a 0.15 m wall
+      const gapMax = Math.max(gapMin + 1, Math.round(tCells * 20)); // ~3.0 m
+      const minFlank = 3; // each side must be a real wall, not a speck
+
+      /** nearest matching partner along `axis`, or null */
+      const pair = (list: Run[], axis: "x" | "z") => {
+        for (const a of list) {
+          const aEnd = axis === "x" ? a.x + a.w : a.y + a.h;
+          let best: Run | null = null;
+          let bestGap = Infinity;
+          for (const b of list) {
+            if (b === a) continue;
+            // collinear: same cross-axis position and the same thickness
+            const off = axis === "x" ? Math.abs(a.y - b.y) : Math.abs(a.x - b.x);
+            const thick = axis === "x" ? Math.abs(a.h - b.h) : Math.abs(a.w - b.w);
+            if (off > 1 || thick > 1) continue;
+            const gap = (axis === "x" ? b.x : b.y) - aEnd;
+            // nearest neighbour wins outright — the width test comes AFTER.
+            // Range-testing here would let the loop skip over a too-close
+            // fragment and pair with something far beyond it, inventing an
+            // opening that spans intact wall.
+            if (gap < 0 || gap >= bestGap) continue;
+            best = b;
+            bestGap = gap;
+          }
+          if (!best || bestGap < gapMin || bestGap > gapMax) continue;
+          const b = best;
+          const r: Run =
+            axis === "x"
+              ? { x: aEnd, y: Math.min(a.y, b.y), w: bestGap, h: Math.max(a.h, b.h) }
+              : { x: Math.min(a.x, b.x), y: aEnd, w: Math.max(a.w, b.w), h: bestGap };
+
+          // a gap in an exterior wall is a window; inside the house it is a door.
+          // (A patio door or external door reads as a window in this pass — it
+          // needs real metres to tell them apart, which arrives with scale.)
+          let sideA = 0;
+          let sideB = 0;
+          let span = 0;
+          if (axis === "x") {
+            for (let gx = r.x; gx < r.x + r.w; gx++, span++) {
+              if (isOut(gx, r.y - 1)) sideA++;
+              if (isOut(gx, r.y + r.h)) sideB++;
+            }
+          } else {
+            for (let gy = r.y; gy < r.y + r.h; gy++, span++) {
+              if (isOut(r.x - 1, gy)) sideA++;
+              if (isOut(r.x + r.w, gy)) sideB++;
+            }
+          }
+          const frac = span > 0 ? Math.max(sideA, sideB) / span : 0;
+          const ext = frac >= 0.4;
+          // the outward normal must match the wall it sits in, or the dollhouse
+          // cutaway sinks the wall and leaves the lintel floating in mid-air
+          const nx = !ext ? 0 : axis === "x" ? 0 : sideA >= sideB ? -1 : 1;
+          const nz = !ext ? 0 : axis === "x" ? (sideA >= sideB ? -1 : 1) : 0;
+          openings.push({
+            x: (r.x - x0 + r.w / 2) * unit - floorW / 2,
+            z: (r.y - y0 + r.h / 2) * unit - floorD / 2,
+            w: r.w * unit,
+            d: r.h * unit,
+            kind: ext ? "window" : "door",
+            ...(ext ? { ext: 1 as const, nx, nz } : {}),
+          });
+        }
+      };
+
+      pair(merged.filter((r) => r.w > r.h && r.w >= minFlank), "x");
+      pair(merged.filter((r) => r.h > r.w && r.h >= minFlank), "z");
+      dbg?.count("openings", openings.length);
+      dbg?.count("openingsWindow", openings.filter((o) => o.kind === "window").length);
+    }
+
     const crop = {
       ox: (x0 * cell) / W,
       oy: (y0 * cell) / H,
@@ -842,6 +953,7 @@ export async function extractLayout(
     return {
       ok: boxes.length >= 8 && boxes.length <= 8000,
       boxes,
+      openings,
       floorW,
       floorD,
       crop,
