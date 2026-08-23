@@ -84,6 +84,7 @@ export function SmartHomeStage(props: {
   model: EnergyModel;
   flowMode: boolean;
   home?: HomeConfig;
+  planUrl?: string | null;
   onPick: (id: TechId | "grid") => void;
 }) {
   const [can3d, setCan3d] = useState(false);

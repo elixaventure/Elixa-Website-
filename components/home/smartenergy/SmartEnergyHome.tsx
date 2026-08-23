@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { savePlan, loadPlan, clearPlan } from "@/lib/planStore";
+import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview } from "@/lib/planStore";
+import { makePlanPreview } from "@/lib/planPreview";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ServiceIcon } from "@/components/brand/ServiceIcon";
@@ -32,11 +33,20 @@ export function SmartEnergyHome() {
   const [finale, setFinale] = useState(false);
   const [home, setHome] = useState<{ bedrooms: 2 | 3 | 4 | 5; storeys: 1 | 2 }>({ bedrooms: 3, storeys: 2 });
   const [planName, setPlanName] = useState<string | null>(null);
+  const [planUrl, setPlanUrl] = useState<string | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const setPreviewUrl = (blob: Blob | null) => {
+    setPlanUrl((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return blob ? URL.createObjectURL(blob) : null;
+    });
+  };
 
   // a previously uploaded floor plan (it carries through to the quote)
   useEffect(() => {
     loadPlan().then((f) => f && setPlanName(f.name));
+    loadPlanPreview().then((b) => b && setPreviewUrl(b));
   }, []);
 
   const active = useMemo(() => Array.from(selected), [selected]);
@@ -101,6 +111,7 @@ export function SmartEnergyHome() {
           model={model}
           flowMode={flowMode}
           home={home}
+          planUrl={planUrl}
           onPick={(id) => setPicked(id)}
         />
 
@@ -242,6 +253,7 @@ export function SmartEnergyHome() {
                   e.preventDefault();
                   clearPlan();
                   setPlanName(null);
+                  setPreviewUrl(null);
                 }}
                 className="flex-none font-semibold text-navy/40 hover:text-navy"
                 aria-label="Remove floor plan"
@@ -263,6 +275,13 @@ export function SmartEnergyHome() {
                 savePlan(f);
                 setPlanName(f.name);
                 track("cta_click", { location: "smart-energy-home", label: "plan-upload" });
+                // rasterise it live so the plan appears inside the 3D scene
+                makePlanPreview(f).then((blob) => {
+                  if (blob) {
+                    savePlanPreview(blob);
+                    setPreviewUrl(blob);
+                  }
+                });
               }}
             />
           </label>

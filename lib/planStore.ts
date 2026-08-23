@@ -8,6 +8,7 @@
 const DB = "elixa";
 const STORE = "floor-plan";
 const KEY = "current";
+const PREVIEW_KEY = "preview";
 
 function openDb(): Promise<IDBDatabase | null> {
   return new Promise((resolve) => {
@@ -54,12 +55,39 @@ export async function loadPlan(): Promise<File | null> {
   }
 }
 
+/** Rendered image of the plan (JPEG blob) shown live in the 3D scene. */
+export async function savePlanPreview(blob: Blob): Promise<void> {
+  const db = await openDb();
+  if (!db) return;
+  await new Promise<void>((resolve) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).put(blob, PREVIEW_KEY);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+  db.close();
+}
+
+export async function loadPlanPreview(): Promise<Blob | null> {
+  const db = await openDb();
+  if (!db) return null;
+  const blob = await new Promise<Blob | null>((resolve) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).get(PREVIEW_KEY);
+    req.onsuccess = () => resolve(req.result ?? null);
+    req.onerror = () => resolve(null);
+  });
+  db.close();
+  return blob instanceof Blob ? blob : null;
+}
+
 export async function clearPlan(): Promise<void> {
   const db = await openDb();
   if (!db) return;
   await new Promise<void>((resolve) => {
     const tx = db.transaction(STORE, "readwrite");
     tx.objectStore(STORE).delete(KEY);
+    tx.objectStore(STORE).delete(PREVIEW_KEY);
     tx.oncomplete = () => resolve();
     tx.onerror = () => resolve();
   });

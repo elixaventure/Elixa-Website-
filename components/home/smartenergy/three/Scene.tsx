@@ -6,6 +6,7 @@ import { OrbitControls, ContactShadows, AdaptiveDpr, Environment, Lightformer } 
 import { House } from "./House";
 import { Equipment } from "./Equipment";
 import { Flows } from "./Flows";
+import { PlanMat } from "./PlanMat";
 import { FLOWS, layoutFor, DEFAULT_HOME, type HomeConfig, type SystemView, type FlowCtx } from "./graph";
 import type { TechId, EnergyModel } from "../state";
 
@@ -18,6 +19,7 @@ export function Scene({
   view,
   reduced,
   home = DEFAULT_HOME,
+  planUrl,
   onPick,
   onHoverChange,
 }: {
@@ -29,6 +31,8 @@ export function Scene({
   view: SystemView;
   reduced: boolean;
   home?: HomeConfig;
+  /** object URL of the customer's rasterised floor plan, shown in-scene */
+  planUrl?: string | null;
   onPick: (id: TechId | "grid") => void;
   /** notifies the parent (screen-space tooltip) — kept OUT of the canvas to
       avoid the DOM label stealing the pointer and flickering the hover. */
@@ -103,6 +107,8 @@ export function Scene({
       />
 
       <Flows flows={FLOWS} nodes={nodes} ctx={ctx} view={view} reduced={reduced} />
+
+      {planUrl && <PlanMat url={planUrl} />}
 
       <ContactShadows position={[0, 0.02, 0]} opacity={isDay ? 0.4 : 0.25} scale={26} blur={2.6} far={8} />
 
