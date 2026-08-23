@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { HouseCrossSection } from "./HouseCrossSection";
 import { cn } from "@/lib/cn";
 import type { TechId, EnergyModel } from "./state";
-import { NODES, type SystemView } from "./three/graph";
+import { layoutFor, DEFAULT_HOME, type HomeConfig, type SystemView } from "./three/graph";
 
 const Scene = dynamic(() => import("./three/Scene").then((m) => m.Scene), {
   ssr: false,
@@ -83,6 +83,7 @@ export function SmartHomeStage(props: {
   acMode: "cool" | "heat";
   model: EnergyModel;
   flowMode: boolean;
+  home?: HomeConfig;
   onPick: (id: TechId | "grid") => void;
 }) {
   const [can3d, setCan3d] = useState(false);
@@ -101,7 +102,8 @@ export function SmartHomeStage(props: {
     const y = e.clientY - r.top;
     setCursor({ x, y, flip: x > r.width - 250 });
   };
-  const node = hoveredNode ? NODES[hoveredNode] : null;
+  const nodes = layoutFor(props.home ?? DEFAULT_HOME);
+  const node = hoveredNode ? nodes[hoveredNode] : null;
 
   const [trace, setTrace] = useState<TraceId | null>(null);
 

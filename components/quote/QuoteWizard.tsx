@@ -52,6 +52,7 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
     ...initial,
     interests: preselect.filter((slug) => services.some((s) => s.slug === slug)),
   }));
+  const [planFile, setPlanFile] = useState<File | null>(null);
 
   const wantsAc = a.interests.includes("air-conditioning");
   const totalSteps = 6;
@@ -116,7 +117,7 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
         preferred_contact: a.contactPref,
         message: a.message,
         source: "quote-wizard",
-      });
+      }, planFile);
       if (ok) {
         setStep(totalSteps - 1);
         return;
@@ -134,6 +135,7 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
       `Preferred contact: ${a.contactPref}`,
       "",
       a.message ? `Message: ${a.message}` : "",
+      planFile ? `Floor plan: I have one — please attach "${planFile.name}" to this email before sending.` : "",
     ].filter(Boolean);
     const body = encodeURIComponent(`Name: ${a.name}\nPhone: ${a.phone}\nEmail: ${a.email}\n\n${lines.join("\n")}`);
     const subject = encodeURIComponent("Website quote request");
@@ -235,6 +237,48 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
                   placeholder="Anything else you'd like us to know? (optional)"
                   className="mt-5 w-full rounded-2xl border border-navy/15 bg-mist px-4 py-3 text-navy focus:border-elixa-cyan focus:outline-none focus:ring-2 focus:ring-elixa-cyan/30"
                 />
+
+                {/* optional floor plan — travels with the lead to the survey team */}
+                <div className="mt-5">
+                  <p className="mb-2 text-sm font-semibold text-navy">Got a floor plan? (optional)</p>
+                  <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-navy/25 bg-mist px-4 py-3 text-sm text-navy/70 transition-colors hover:border-elixa-cyan">
+                    <svg viewBox="0 0 24 24" className="h-5 w-5 flex-none text-elixa-cyan" fill="none" aria-hidden="true">
+                      <path d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span className="flex-1 truncate">
+                      {planFile ? planFile.name : "Upload a floor plan or sketch — PDF or photo, up to 10 MB"}
+                    </span>
+                    {planFile && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setPlanFile(null);
+                        }}
+                        className="flex-none font-semibold text-navy/40 hover:text-navy"
+                        aria-label="Remove file"
+                      >
+                        ✕
+                      </button>
+                    )}
+                    <input
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg,.webp,.heic"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] ?? null;
+                        if (f && f.size > 10 * 1024 * 1024) {
+                          alert("That file is over 10 MB — please choose a smaller file or a photo.");
+                          return;
+                        }
+                        setPlanFile(f);
+                      }}
+                    />
+                  </label>
+                  <p className="mt-1.5 text-xs text-navy/45">
+                    It helps our surveyors size your system before we visit.
+                  </p>
+                </div>
               </Step>
             )}
 

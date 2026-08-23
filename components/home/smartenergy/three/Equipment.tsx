@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import type { Group } from "three";
-import { NODES, type ComponentNode, MEDIA } from "./graph";
+import { type ComponentNode, MEDIA } from "./graph";
 import type { TechId, EnergyModel } from "../state";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
@@ -542,6 +542,7 @@ const CORE = new Set(["consumerUnit", "meter", "grid", "homeLoad"]);
 
 export function Equipment({
   active,
+  nodes,
   hovered,
   highlight,
   onHover,
@@ -551,6 +552,7 @@ export function Equipment({
   model,
 }: {
   active: TechId[];
+  nodes: Record<string, ComponentNode>;
   hovered: string | null;
   highlight: Set<string>;
   onHover: (id: string | null) => void;
@@ -570,7 +572,7 @@ export function Equipment({
 
   return (
     <group>
-      {Object.values(NODES).map((n) => {
+      {Object.values(nodes).map((n) => {
         if (!show(n)) return null;
         const hi = hovered === n.id || highlight.has(n.id);
         return (

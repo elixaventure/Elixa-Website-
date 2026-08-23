@@ -29,10 +29,11 @@ export function SmartEnergyHome() {
   const [acMode, setAcMode] = useState<"cool" | "heat">("cool");
   const [picked, setPicked] = useState<TechId | "grid" | null>(null);
   const [finale, setFinale] = useState(false);
+  const [home, setHome] = useState<{ bedrooms: 2 | 3 | 4 | 5; storeys: 1 | 2 }>({ bedrooms: 3, storeys: 2 });
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const active = useMemo(() => Array.from(selected), [selected]);
-  const model = useMemo(() => computeEnergy(selected, isDay), [selected, isDay]);
+  const model = useMemo(() => computeEnergy(selected, isDay, home), [selected, isDay, home]);
   const { score, label } = useMemo(() => energyScore(selected), [selected]);
   const grid = useMemo(() => gridDependency(model), [model]);
   const combo = useMemo(() => comboMessage(selected), [selected]);
@@ -92,6 +93,7 @@ export function SmartEnergyHome() {
           acMode={acMode}
           model={model}
           flowMode={flowMode}
+          home={home}
           onPick={(id) => setPicked(id)}
         />
 
@@ -219,6 +221,41 @@ export function SmartEnergyHome() {
 
         {/* technology selector */}
         <div className="rounded-4xl border border-navy/10 bg-white p-5 shadow-card">
+          {/* parametric home shape — the 3D house and energy figures follow */}
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-navy/50">Your home</p>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-full border border-navy/15 p-0.5">
+              {([2, 3, 4, 5] as const).map((b) => (
+                <button
+                  key={b}
+                  onClick={() => setHome((h) => ({ ...h, bedrooms: b }))}
+                  aria-pressed={home.bedrooms === b}
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-xs font-semibold transition",
+                    home.bedrooms === b ? "bg-navy text-white" : "text-navy/60"
+                  )}
+                >
+                  {b} bed
+                </button>
+              ))}
+            </div>
+            <div className="inline-flex rounded-full border border-navy/15 p-0.5">
+              {([2, 1] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setHome((h) => ({ ...h, storeys: s }))}
+                  aria-pressed={home.storeys === s}
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-xs font-semibold transition",
+                    home.storeys === s ? "bg-navy text-white" : "text-navy/60"
+                  )}
+                >
+                  {s === 2 ? "Two-storey" : "Bungalow"}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <p className="mb-3 text-xs font-bold uppercase tracking-wide text-navy/50">Build your smarter home</p>
           <div className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible">
             {TECHS.map((t) => {

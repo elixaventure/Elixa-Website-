@@ -4,14 +4,14 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Line } from "@react-three/drei";
 import * as THREE from "three";
-import { MEDIA, NODES, type FlowEdge, type FlowCtx, type MediaId, type SystemView } from "./graph";
+import { MEDIA, type ComponentNode, type FlowEdge, type FlowCtx, type MediaId, type SystemView } from "./graph";
 
 /** Particle count per media shape (halved on mobile). */
 const COUNT: Record<string, number> = { ray: 4, pulse: 5, droplet: 4, ribbon: 3, glow: 3 };
 
-function pathPoints(edge: FlowEdge): THREE.Vector3[] {
-  const a = NODES[edge.from].pos;
-  const b = NODES[edge.to].pos;
+function pathPoints(edge: FlowEdge, nodes: Record<string, ComponentNode>): THREE.Vector3[] {
+  const a = nodes[edge.from].pos;
+  const b = nodes[edge.to].pos;
   const pts = [new THREE.Vector3(...a)];
   edge.via?.forEach((v) => pts.push(new THREE.Vector3(...v)));
   pts.push(new THREE.Vector3(...b));
@@ -53,16 +53,18 @@ const CARRIER: Partial<Record<string, { r: number; color: string; metalness: num
 
 function FlowLine({
   edge,
+  nodes,
   dim,
   reduced,
 }: {
   edge: FlowEdge;
+  nodes: Record<string, ComponentNode>;
   dim: boolean;
   reduced: boolean;
 }) {
   const media = MEDIA[edge.media];
   const carrier = CARRIER[edge.media];
-  const curve = useMemo(() => new THREE.CatmullRomCurve3(pathPoints(edge), false, "catmullrom", 0.4), [edge]);
+  const curve = useMemo(() => new THREE.CatmullRomCurve3(pathPoints(edge, nodes), false, "catmullrom", 0.4), [edge, nodes]);
   const linePts = useMemo(() => curve.getPoints(40), [curve]);
   const n = reduced ? Math.max(2, Math.round(COUNT[media.shape] / 2)) : COUNT[media.shape];
   const refs = useRef<(THREE.Mesh | null)[]>([]);
@@ -129,11 +131,13 @@ function FlowLine({
 
 export function Flows({
   flows,
+  nodes,
   ctx,
   view,
   reduced,
 }: {
   flows: FlowEdge[];
+  nodes: Record<string, ComponentNode>;
   ctx: FlowCtx;
   view: SystemView;
   reduced: boolean;
@@ -143,7 +147,7 @@ export function Flows({
     <group>
       {active.map((edge) => {
         const inView = view === "all" || MEDIA[edge.media].system === view;
-        return <FlowLine key={edge.id} edge={edge} dim={!inView} reduced={reduced} />;
+        return <FlowLine key={edge.id} edge={edge} nodes={nodes} dim={!inView} reduced={reduced} />;
       })}
     </group>
   );

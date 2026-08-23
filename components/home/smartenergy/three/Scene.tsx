@@ -6,7 +6,7 @@ import { OrbitControls, ContactShadows, AdaptiveDpr, Environment, Lightformer } 
 import { House } from "./House";
 import { Equipment } from "./Equipment";
 import { Flows } from "./Flows";
-import { NODES, FLOWS, type SystemView, type FlowCtx } from "./graph";
+import { FLOWS, layoutFor, DEFAULT_HOME, type HomeConfig, type SystemView, type FlowCtx } from "./graph";
 import type { TechId, EnergyModel } from "../state";
 
 export function Scene({
@@ -17,6 +17,7 @@ export function Scene({
   flowMode,
   view,
   reduced,
+  home = DEFAULT_HOME,
   onPick,
   onHoverChange,
 }: {
@@ -27,12 +28,14 @@ export function Scene({
   flowMode: boolean;
   view: SystemView;
   reduced: boolean;
+  home?: HomeConfig;
   onPick: (id: TechId | "grid") => void;
   /** notifies the parent (screen-space tooltip) — kept OUT of the canvas to
       avoid the DOM label stealing the pointer and flickering the hover. */
   onHoverChange?: (id: string | null) => void;
 }) {
   const [hovered, setHovered] = useState<string | null>(null);
+  const nodes = useMemo(() => layoutFor(home), [home]);
   const handleHover = (id: string | null) => {
     setHovered(id);
     onHoverChange?.(id);
@@ -42,10 +45,10 @@ export function Scene({
     const s = new Set<string>();
     if (hovered) {
       s.add(hovered);
-      NODES[hovered]?.connects?.forEach((c) => s.add(c));
+      nodes[hovered]?.connects?.forEach((c) => s.add(c));
     }
     return s;
-  }, [hovered]);
+  }, [hovered, nodes]);
 
   const ctx: FlowCtx = useMemo(
     () => ({ has: (t: TechId) => active.includes(t), isDay, model, acMode }),
@@ -85,10 +88,11 @@ export function Scene({
         <Lightformer intensity={0.7} position={[-6, 3, 4]} scale={[6, 6, 1]} color={isDay ? "#cfe3ff" : "#4a5f8f"} />
       </Environment>
 
-      <House isDay={isDay} dim={houseDim} />
+      <House isDay={isDay} dim={houseDim} home={home} />
 
       <Equipment
         active={active}
+        nodes={nodes}
         hovered={hovered}
         highlight={highlight}
         onHover={handleHover}
@@ -98,7 +102,7 @@ export function Scene({
         model={model}
       />
 
-      <Flows flows={FLOWS} ctx={ctx} view={view} reduced={reduced} />
+      <Flows flows={FLOWS} nodes={nodes} ctx={ctx} view={view} reduced={reduced} />
 
       <ContactShadows position={[0, 0.02, 0]} opacity={isDay ? 0.4 : 0.25} scale={26} blur={2.6} far={8} />
 

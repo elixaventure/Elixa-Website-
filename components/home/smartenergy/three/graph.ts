@@ -306,3 +306,53 @@ function exportSurplus(c: FlowCtx): number {
 export function componentsFor(tech: TechId | "core"): ComponentNode[] {
   return Object.values(NODES).filter((n) => n.tech === tech);
 }
+
+/* ------------------------------------------------- parametric home layout --- */
+
+export interface HomeConfig {
+  bedrooms: 2 | 3 | 4 | 5;
+  storeys: 1 | 2;
+}
+
+export const DEFAULT_HOME: HomeConfig = { bedrooms: 3, storeys: 2 };
+
+/** Half-width of the house footprint per bedroom count (base layout is 3-bed). */
+export function homeHalfWidth(home: HomeConfig): number {
+  return { 2: 2.6, 3: 3.0, 4: 3.6, 5: 4.1 }[home.bedrooms];
+}
+
+/** Wall height for the storey count (two-storey base is 4.6). */
+export function homeWallHeight(home: HomeConfig): number {
+  return home.storeys === 2 ? 4.6 : 2.4;
+}
+
+/**
+ * Re-derive the component graph for a home shape. Base positions are authored
+ * for the 3-bed two-storey layout; wall-mounted and external kit slides
+ * outward with the walls, and first-floor kit drops to the ground floor in a
+ * bungalow. Flows automatically follow because they read these positions.
+ */
+export function layoutFor(home: HomeConfig): Record<string, ComponentNode> {
+  const dx = homeHalfWidth(home) - 3.0;
+  const bungalow = home.storeys === 1;
+  // components anchored to the right wall / right exterior slide out with it
+  const shiftRight = new Set(["meter", "grid", "evCharger", "evCar", "cylinder", "consumerUnit"]);
+  // anchored to the left wall / left exterior
+  const shiftLeft = new Set(["heatpump", "airSource", "acOutdoor", "waterMain"]);
+
+  const out: Record<string, ComponentNode> = {};
+  for (const [id, n] of Object.entries(NODES)) {
+    let [x, y, z] = n.pos;
+    if (shiftRight.has(id)) x += dx;
+    if (shiftLeft.has(id)) x -= dx;
+    if (bungalow) {
+      if (id === "acIndoor") y = 1.9;
+      if (id === "acAir") y = 1.3;
+      if (id === "shower") y = 1.15;
+      if (id === "solarPanels") y -= 2.2;
+      if (id === "sun") y -= 1.4;
+    }
+    out[id] = { ...n, pos: [x, y, z] };
+  }
+  return out;
+}

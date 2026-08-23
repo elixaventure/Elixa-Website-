@@ -8,14 +8,23 @@
 
 export const FORM_ENDPOINT = process.env.NEXT_PUBLIC_FORM_ENDPOINT ?? "";
 
-export async function submitLead(data: Record<string, unknown>): Promise<boolean> {
+export async function submitLead(data: Record<string, unknown>, file?: File | null): Promise<boolean> {
   if (!FORM_ENDPOINT) return false;
   try {
-    const res = await fetch(FORM_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(data),
-    });
+    let res: Response;
+    if (file) {
+      // multipart so the attachment (e.g. a floor plan) rides along with the lead
+      const fd = new FormData();
+      Object.entries(data).forEach(([k, v]) => fd.append(k, String(v ?? "")));
+      fd.append("floor_plan", file, file.name);
+      res = await fetch(FORM_ENDPOINT, { method: "POST", headers: { Accept: "application/json" }, body: fd });
+    } else {
+      res = await fetch(FORM_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(data),
+      });
+    }
     return res.ok;
   } catch {
     return false;

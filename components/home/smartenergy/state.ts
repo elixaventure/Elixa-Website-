@@ -76,17 +76,24 @@ export interface EnergyModel {
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
 
-/** The illustrative simulation. Pure function of selection + time of day. */
-export function computeEnergy(sel: Set<TechId>, isDay: boolean): EnergyModel {
+/** Shape of the customer's home — scales the illustrative model. */
+export interface HomeShape {
+  bedrooms: number;
+  storeys: number;
+}
+
+/** The illustrative simulation. Pure function of selection + time of day + home size. */
+export function computeEnergy(sel: Set<TechId>, isDay: boolean, home: HomeShape = { bedrooms: 3, storeys: 2 }): EnergyModel {
   const has = (t: TechId) => sel.has(t);
 
-  const base = 2.1;
-  const heatDemand = has("heatpump") ? 1.1 : 0;
+  // bigger homes use (and generate) more — 3-bed two-storey is the baseline
+  const base = r1(1.2 + 0.3 * home.bedrooms);
+  const heatDemand = has("heatpump") ? r1(0.8 + 0.1 * home.bedrooms) : 0;
   const acDemand = has("aircon") ? 0.8 : 0;
   const evDemand = has("ev") ? 1.4 : 0;
   const homeDemand = r1(base + heatDemand + acDemand + evDemand);
 
-  const solarGeneration = has("solar") && isDay ? 3.8 : 0;
+  const solarGeneration = has("solar") && isDay ? r1(2.9 + 0.3 * home.bedrooms) : 0;
 
   let remaining = homeDemand;
   const solarToHome = Math.min(solarGeneration, remaining);
