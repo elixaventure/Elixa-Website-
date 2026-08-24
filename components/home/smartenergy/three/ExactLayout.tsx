@@ -34,9 +34,14 @@ export function ExactLayout({
 }) {
   // structural height comes from the house spec once real-world scale is
   // known (floor area supplied): ceilingHeight metres × world-units/metre.
-  // Without scale we fall back to the legacy proportions.
+  // Without an area, scale is estimated from the measured wall thickness
+  // (~280 mm) so a long narrow building never gets billboard-height walls;
+  // the legacy fixed height only remains for layouts with no metrics at all.
   const spec = layout.house ?? DEFAULT_HOUSE_SPEC;
-  const wpm = layout.scale?.worldPerMetre ?? null;
+  const m = layout.metrics;
+  const wpm =
+    layout.scale?.worldPerMetre ??
+    (m && m.wallPx > 0 ? (m.worldPerPx * m.wallPx) / 0.28 : null);
   const CEIL = wpm ? spec.ceilingHeight * wpm : 2.1; // structural wall height
   const INNER = wpm ? Math.min(CEIL * 0.45, 1.05 * wpm) : 0.95; // dollhouse interior display height
   const PLINTH = wpm ? 0.42 * wpm : 0.35; // camera-facing exterior cutaway height
