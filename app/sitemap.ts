@@ -7,6 +7,7 @@ export const dynamic = "force-static";
 export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
     "",
+    "/smart-energy-home",
     "/about",
     "/projects",
     "/grants-funding",

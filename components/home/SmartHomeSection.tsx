@@ -1,6 +1,6 @@
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { SmartHome3D } from "./smarthome/SmartHome3D";
+import { SmartEnergyHome } from "./smartenergy/SmartEnergyHome";
 
 export function SmartHomeSection() {
   return (
@@ -8,11 +8,11 @@ export function SmartHomeSection() {
       <Container>
         <SectionHeading
           kicker="The Elixa smart-energy home"
-          title="Explore the connected home."
-          intro="Select a technology to see how it fits — from solar on the roof to climate control inside and charging on the drive."
+          title="Build your smarter home."
+          intro="Add technologies and watch a conventional home become greener, smarter and more energy-independent — with live energy flowing from the sun to your rooms, battery and car."
         />
         <div className="mt-14">
-          <SmartHome3D />
+          <SmartEnergyHome />
         </div>
       </Container>
     </section>

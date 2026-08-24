@@ -1,0 +1,11 @@
+name = "elixa-plan-api"
+main = "worker.js"
+compatibility_date = "2026-08-01"
+
+[vars]
+RAPIDAPI_HOST = "floor-plan-digitalization.p.rapidapi.com"
+PLAN_PATH = "/plan_recognition"
+ALLOWED_ORIGINS = "https://elixaventure.github.io"
+
+# The API key is a secret, never a var:
+#   wrangler secret put RAPIDAPI_KEY

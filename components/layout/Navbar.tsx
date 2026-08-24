@@ -35,6 +35,7 @@ export function Navbar() {
   const solid = !transparent;
 
   return (
+    <>
     <header
       className={cn(
         "fixed inset-x-0 top-0 z-50 transition-all duration-300 ease-elixa",
@@ -100,48 +101,51 @@ export function Navbar() {
           </button>
         </div>
       </nav>
-
-      {/* Mobile drawer */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 top-[var(--nav-h)] z-40 bg-navy-900/98 xl:hidden"
-          >
-            <div className="container-x flex h-[calc(100vh-var(--nav-h))] flex-col overflow-y-auto py-6">
-              <div className="grid grid-cols-2 gap-2">
-                {primaryNav.map((item, i) => (
-                  <motion.div
-                    key={item.href}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.03 * i }}
-                  >
-                    <Link
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className="block rounded-2xl border border-white/10 bg-white/5 px-4 py-4 font-display text-base font-semibold text-white"
-                    >
-                      {item.label}
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-              <div className="mt-6 grid gap-3">
-                <Link href="/quote" onClick={() => setOpen(false)} className="btn-primary btn-lg w-full">
-                  Get a Free Quote
-                </Link>
-                <a href={site.phoneHref} onClick={() => track("phone_click", { location: "mobile-menu" })} className="btn-ghost btn-lg w-full">
-                  Call {site.phoneDisplay}
-                </a>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </header>
+
+    {/* Mobile drawer — sibling of <header> so the header's backdrop-filter does
+        NOT become the containing block for this position:fixed overlay */}
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 top-[var(--nav-h)] z-40 xl:hidden"
+          style={{ backgroundColor: "#0b1830" }}
+        >
+          <div className="container-x flex h-[calc(100vh-var(--nav-h))] flex-col overflow-y-auto py-6">
+            <div className="grid grid-cols-2 gap-2">
+              {primaryNav.map((item, i) => (
+                <motion.div
+                  key={item.href}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.03 * i }}
+                >
+                  <Link
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="block rounded-2xl border border-white/10 bg-white/5 px-4 py-4 font-display text-base font-semibold text-white"
+                  >
+                    {item.label}
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+            <div className="mt-6 grid gap-3">
+              <Link href="/quote" onClick={() => setOpen(false)} className="btn-primary btn-lg w-full">
+                Get a Free Quote
+              </Link>
+              <a href={site.phoneHref} onClick={() => track("phone_click", { location: "mobile-menu" })} className="btn-ghost btn-lg w-full">
+                Call {site.phoneDisplay}
+              </a>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }
 

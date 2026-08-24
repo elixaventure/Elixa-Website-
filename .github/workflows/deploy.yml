@@ -35,6 +35,10 @@ jobs:
         env:
           # Repo is served at https://<owner>.github.io/Elixa-Website-/
           NEXT_PUBLIC_BASE_PATH: /Elixa-Website-
+          # Optional hosted plan-recognition relay (workers/plan-api). Unset →
+          # the in-browser extractor is the only path; set the repo variable
+          # to the deployed Worker URL to switch the API on.
+          NEXT_PUBLIC_PLAN_API_URL: ${{ vars.NEXT_PUBLIC_PLAN_API_URL }}
       - run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:

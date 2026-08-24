@@ -77,6 +77,15 @@
   }
 }
 
+/* Flowing-energy dashes for the cutaway house */
+@keyframes flowdash {
+  to { stroke-dashoffset: -240; }
+}
+@keyframes softpulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
 /* Thin, on-brand scrollbar */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb {

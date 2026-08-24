@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { services } from "@/content/services";
 import { site } from "@/content/site";
 import { cn } from "@/lib/cn";
 import { track } from "@/lib/analytics";
+import { submitLead, FORM_ENDPOINT } from "@/lib/forms";
+import { loadPlan, clearPlan } from "@/lib/planStore";
 
 type Answers = {
   interests: string[];
@@ -45,12 +47,18 @@ const interestOptions = [
   { key: "advice", label: "Not sure / advice needed" },
 ];
 
-export function QuoteWizard({ preselect }: { preselect?: string }) {
+export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
   const [step, setStep] = useState(0);
   const [a, setA] = useState<Answers>(() => ({
     ...initial,
-    interests: preselect && services.some((s) => s.slug === preselect) ? [preselect] : [],
+    interests: preselect.filter((slug) => services.some((s) => s.slug === slug)),
   }));
+  const [planFile, setPlanFile] = useState<File | null>(null);
+
+  // pick up a floor plan the visitor already uploaded in the Smart Energy Home
+  useEffect(() => {
+    loadPlan().then((f) => f && setPlanFile((cur) => cur ?? f));
+  }, []);
 
   const wantsAc = a.interests.includes("air-conditioning");
   const totalSteps = 6;
@@ -93,11 +101,38 @@ export function QuoteWizard({ preselect }: { preselect?: string }) {
   };
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
-  const submit = () => {
+  const submit = async () => {
+    const interestLabels = a.interests
+      .map((k) => interestOptions.find((o) => o.key === k)?.label ?? k)
+      .join(", ");
+    track("quote_submit", { interests: a.interests.join(","), sector: a.sector });
+
+    // Preferred: post to the configured inbox/CRM. Fallback: mailto.
+    if (FORM_ENDPOINT) {
+      const ok = await submitLead({
+        name: a.name,
+        phone: a.phone,
+        email: a.email,
+        interested_in: interestLabels,
+        sector: a.sector,
+        postcode: a.postcode,
+        ac_rooms: wantsAc ? a.rooms : "",
+        ac_job_type: wantsAc ? a.jobType : "",
+        ac_mode: wantsAc ? a.acMode : "",
+        timeframe: a.timeframe,
+        preferred_contact: a.contactPref,
+        message: a.message,
+        source: "quote-wizard",
+      }, planFile);
+      if (ok) {
+        clearPlan();
+        setStep(totalSteps - 1);
+        return;
+      }
+    }
+
     const lines = [
-      `Interested in: ${a.interests
-        .map((k) => interestOptions.find((o) => o.key === k)?.label ?? k)
-        .join(", ")}`,
+      `Interested in: ${interestLabels}`,
       `Home or business: ${a.sector}`,
       `Postcode: ${a.postcode}`,
       wantsAc ? `AC rooms: ${a.rooms || "—"}` : "",
@@ -107,12 +142,10 @@ export function QuoteWizard({ preselect }: { preselect?: string }) {
       `Preferred contact: ${a.contactPref}`,
       "",
       a.message ? `Message: ${a.message}` : "",
+      planFile ? `Floor plan: I have one — please attach "${planFile.name}" to this email before sending.` : "",
     ].filter(Boolean);
-    const body = encodeURIComponent(
-      `Name: ${a.name}\nPhone: ${a.phone}\nEmail: ${a.email}\n\n${lines.join("\n")}`
-    );
+    const body = encodeURIComponent(`Name: ${a.name}\nPhone: ${a.phone}\nEmail: ${a.email}\n\n${lines.join("\n")}`);
     const subject = encodeURIComponent("Website quote request");
-    track("quote_submit", { interests: a.interests.join(","), sector: a.sector });
     window.location.href = `${site.emailHref}?subject=${subject}&body=${body}`;
     setStep(totalSteps - 1);
   };
@@ -211,6 +244,49 @@ export function QuoteWizard({ preselect }: { preselect?: string }) {
                   placeholder="Anything else you'd like us to know? (optional)"
                   className="mt-5 w-full rounded-2xl border border-navy/15 bg-mist px-4 py-3 text-navy focus:border-elixa-cyan focus:outline-none focus:ring-2 focus:ring-elixa-cyan/30"
                 />
+
+                {/* optional floor plan — travels with the lead to the survey team */}
+                <div className="mt-5">
+                  <p className="mb-2 text-sm font-semibold text-navy">Got a floor plan? (optional)</p>
+                  <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-navy/25 bg-mist px-4 py-3 text-sm text-navy/70 transition-colors hover:border-elixa-cyan">
+                    <svg viewBox="0 0 24 24" className="h-5 w-5 flex-none text-elixa-cyan" fill="none" aria-hidden="true">
+                      <path d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span className="flex-1 truncate">
+                      {planFile ? planFile.name : "Upload a floor plan or sketch — PDF or photo, up to 10 MB"}
+                    </span>
+                    {planFile && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setPlanFile(null);
+                          clearPlan();
+                        }}
+                        className="flex-none font-semibold text-navy/40 hover:text-navy"
+                        aria-label="Remove file"
+                      >
+                        ✕
+                      </button>
+                    )}
+                    <input
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg,.webp,.heic"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] ?? null;
+                        if (f && f.size > 10 * 1024 * 1024) {
+                          alert("That file is over 10 MB — please choose a smaller file or a photo.");
+                          return;
+                        }
+                        setPlanFile(f);
+                      }}
+                    />
+                  </label>
+                  <p className="mt-1.5 text-xs text-navy/45">
+                    It helps our surveyors size your system before we visit.
+                  </p>
+                </div>
               </Step>
             )}
 

@@ -62,6 +62,7 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
   {
     title: "Company",
     items: [
+      { label: "Smart Energy Home", href: "/smart-energy-home" },
       { label: "About Elixa", href: "/about" },
       { label: "Projects", href: "/projects" },
       { label: "Grants & Funding", href: "/grants-funding" },

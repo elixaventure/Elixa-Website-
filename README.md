@@ -105,10 +105,19 @@ banner (Consent Mode "denied" by default) before go-live.
 
 ## Forms
 
-The site is statically exported, so the quote wizard and contact form currently
-hand off to the visitor's email client (`mailto:` to `info@elixarenewables.co.uk`).
-For server-side capture/CRM, point them at Formspree, Netlify Forms, or an API route
-(the latter requires switching off static export or adding a serverless function).
+The quote wizard and contact form submit to a real inbox/CRM when an endpoint is
+configured, and otherwise fall back to opening the visitor's email client
+(`mailto:` to `info@elixarenewables.co.uk`).
+
+To send enquiries to an inbox, set one environment variable:
+
+```
+NEXT_PUBLIC_FORM_ENDPOINT=https://formspree.io/f/xxxxxxxx
+```
+
+Any endpoint that accepts a JSON `POST` works (Formspree, your own handler, a
+serverless function, Zapier/Make webhook). The Smart Energy Home builder also
+carries the visitor's selected technologies into the quote via `?tech=slug,slug`.
 
 ---
 
@@ -117,8 +126,8 @@ For server-side capture/CRM, point them at Formspree, Netlify Forms, or an API r
 This build uses clearly-labelled placeholders where real assets/approvals are needed.
 Please provide the following, and confirm entitlement before any mark is displayed:
 
-1. **Official logo** — the flame mark in `components/brand/Logo.tsx` is an on-brand
-   **stand-in**. Drop the official vector at `public/brand/elixa-logo.svg` and swap it in.
+1. **Official logo** — ✅ supplied. The real flame + wordmark are in `public/brand/`
+   (`elixa-flame.png`, `elixa-logo.png`) and used across the site and favicon.
 2. **Photography** — hero, service and project images. Replace the graphic
    placeholders (`Hero`, `ProjectsGallery`, service `heroImage` paths). Use authorised,
    photorealistic imagery; genuine product imagery where manufacturers are shown.
