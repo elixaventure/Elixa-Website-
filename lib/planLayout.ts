@@ -40,6 +40,30 @@ export interface WallBox {
   nz?: number;
 }
 
+export type OpeningType = "internal-door" | "external-door" | "patio-door" | "window" | "open-passage";
+
+/** A classified opening in the wall network (normalised, world units). */
+export interface PlanOpening {
+  id: string;
+  type: OpeningType;
+  /** centre of the opening, world coords */
+  x: number;
+  z: number;
+  /** wall direction the opening lies along */
+  along: "x" | "z";
+  /** width along the wall, world units */
+  w: number;
+  /** wall thickness, world units */
+  t: number;
+  ext: 0 | 1;
+  /** outward normal for exterior openings */
+  nx?: number;
+  nz?: number;
+  /** estimated real-world width, metres (wall-thickness heuristic) */
+  widthM: number;
+  confidence: number;
+}
+
 export interface PlanLayout {
   ok: boolean;
   /** wall footprints in world units, centred on origin (x/z = centre) */
@@ -60,6 +84,8 @@ export interface PlanLayout {
      * re-seal openings once a floor area is known */
     grid?: { w: number; h: number; cellPx: number; x0: number; y0: number; bits: string };
   };
+  /** classified door/window openings for the dollhouse joinery */
+  openings?: PlanOpening[];
   /** real-world scale — attached once a floor area is known (see houseModel) */
   scale?: import("./houseModel").PlanScale | null;
   /** per-property heights — defaults until a survey overrides them */
@@ -217,6 +243,7 @@ export async function extractLayout(
     // 1. pixel classification: saturated ink is annotation, never structure
     const lum = new Int16Array(N);
     const mask = new Uint8Array(N);
+    const sat = new Uint8Array(N); // saturated ink (design markup), dark enough to be a drawn line
     const markup = dbg ? new Uint8Array(N) : null; // 1 red, 2 blue, 3 green
     let markupPx = 0;
     let markupRed = 0;
@@ -231,6 +258,7 @@ export async function extractLayout(
       lum[i] = 0.299 * r + 0.587 * g + 0.114 * b;
       if (mx - mn > 55) {
         // coloured = design markup / leader lines: excluded from structure
+        if (lum[i] < 190) sat[i] = 1;
         markupPx++;
         if (markup) {
           if (r > g + 40 && r > b + 40) {
@@ -298,6 +326,10 @@ export async function extractLayout(
         }
       }
     }
+    // snapshot of the ink BEFORE small-component rejection: door-swing arcs
+    // live here, and they are the door/window discriminator later on
+    const preMask = new Uint8Array(mask);
+
     if (dbg && markup) {
       dbg.count("markupRedPx", markupRed);
       dbg.count("markupBluePx", markupBlue);
@@ -388,6 +420,34 @@ export async function extractLayout(
         }
       }
     }
+    // very-long SATURATED lines: heat-loss designs draw pipe/skirting runs
+    // exactly along a wall face, and markup rejection then leaves that wall
+    // with a single boundary line. A long coloured line is allowed to stand
+    // in as the missing partner in pair fill (never coloured-with-coloured).
+    const satH = new Uint8Array(N);
+    for (let y = 0; y < H; y++) {
+      let start = -1;
+      for (let x = 0; x <= W; x++) {
+        const on = x < W && sat[y * W + x];
+        if (on && start < 0) start = x;
+        if (!on && start >= 0) {
+          if (x - start >= pairMin) for (let k = start; k < x; k++) satH[y * W + k] = 1;
+          start = -1;
+        }
+      }
+    }
+    const satV = new Uint8Array(N);
+    for (let x = 0; x < W; x++) {
+      let start = -1;
+      for (let y = 0; y <= H; y++) {
+        const on = y < H && sat[y * W + x];
+        if (on && start < 0) start = y;
+        if (!on && start >= 0) {
+          if (y - start >= pairMin) for (let k = start; k < y; k++) satV[k * W + x] = 1;
+          start = -1;
+        }
+      }
+    }
 
     // 5. measure the drawing's wall-band thickness: mode of the cross-axis
     // thickness of long-run bands. Derives the pair-fill gap from the drawing
@@ -414,6 +474,40 @@ export async function extractLayout(
         }
       }
     }
+    // Hairline (CAD) drawings: the band histogram measures the LINE width
+    // (1-2 px), not the wall — their walls are twin hairlines a real wall
+    // thickness apart (usually hatched between). Measure that separation
+    // directly: mode of the distance between consecutive very-long parallel
+    // lines, taking the widest separation that is nearly as common as the
+    // mode so hollow external walls fill as well as the thinner partitions.
+    if (tWall <= 4) {
+      const sep = new Int32Array(80);
+      for (let x = 0; x < W; x += 2) {
+        let prev = -1;
+        for (let y = 0; y < H; y++) {
+          if (maskH[y * W + x] === 3) {
+            const d = y - prev;
+            if (prev >= 0 && d >= 4 && d < 80) sep[d]++;
+            prev = y;
+          }
+        }
+      }
+      for (let y = 0; y < H; y += 2) {
+        let prev = -1;
+        for (let x = 0; x < W; x++) {
+          if (maskV[y * W + x] === 3) {
+            const d = x - prev;
+            if (prev >= 0 && d >= 4 && d < 80) sep[d]++;
+            prev = x;
+          }
+        }
+      }
+      let peak = 0;
+      for (let d = 4; d < 56; d++) peak = Math.max(peak, sep[d]);
+      if (peak > Math.max(40, maxDim * 0.015)) {
+        for (let d = 4; d < 56; d++) if (sep[d] >= peak * 0.5) tWall = d;
+      }
+    }
     const gapMax = Math.max(8, Math.round(tWall * 1.6));
 
     if (dbg) {
@@ -432,13 +526,16 @@ export async function extractLayout(
     // line, furniture edge or leftover text stroke never has a long partner
     // at wall distance, so it can no longer inflate into wall mass.
     const wall = new Uint8Array(N);
-    const prov = dbg ? new Uint8Array(N) : null; // 1 = band, 2 = pair fill
+    // provenance is load-bearing, not just diagnostics: the thickness veto
+    // must never delete PAIR-FILLED interiors (they were white paper, so the
+    // run masks read 0 there — exactly what the veto uses to spot bold text).
+    const prov = new Uint8Array(N); // 1 = band, 2 = pair fill
     for (let y = 1; y < H - 1; y++) {
       for (let x = 0; x < W; x++) {
         const i = y * W + x;
         if (maskH[i] >= 2 && maskH[i - W] >= 2 && maskH[i + W] >= 2) {
           wall[i] = 1;
-          if (prov) prov[i] = 1;
+          prov[i] = 1;
         }
       }
     }
@@ -447,20 +544,27 @@ export async function extractLayout(
         const i = y * W + x;
         if (maskV[i] >= 2 && maskV[i - 1] >= 2 && maskV[i + 1] >= 2) {
           wall[i] = 1;
-          if (prov) prov[i] = 1;
+          prov[i] = 1;
         }
       }
     }
+    // kinds in the pair scan: 2 = medium neutral line (blocks pairing),
+    // 3 = long neutral line, 4 = long saturated line. Stubs (hatch fragments,
+    // partial text strokes) neither pair nor block — hatched CAD wall bands
+    // are full of them between the two boundary lines. A pair fills when at
+    // least one side is a long NEUTRAL line (3+3 or 3+4, never 4+4).
     for (let x = 0; x < W; x++) {
       let prev = -1;
       let prevV = 0;
       for (let y = 0; y < H; y++) {
-        const v = maskH[y * W + x];
+        const i2 = y * W + x;
+        const nv = maskH[i2];
+        const v = nv >= 2 ? nv : satH[i2] ? 4 : 0;
         if (!v) continue;
-        if (prev >= 0 && y - prev >= 2 && y - prev <= gapMax && v === 3 && prevV === 3) {
+        if (prev >= 0 && y - prev >= 2 && y - prev <= gapMax && prevV >= 3 && v >= 3 && (v === 3 || prevV === 3)) {
           for (let k = prev; k <= y; k++) {
             const j = k * W + x;
-            if (prov && !wall[j]) prov[j] = 2;
+            if (!wall[j]) prov[j] = 2;
             wall[j] = 1;
           }
         }
@@ -472,12 +576,14 @@ export async function extractLayout(
       let prev = -1;
       let prevV = 0;
       for (let x = 0; x < W; x++) {
-        const v = maskV[y * W + x];
+        const i2 = y * W + x;
+        const nv = maskV[i2];
+        const v = nv >= 2 ? nv : satV[i2] ? 4 : 0;
         if (!v) continue;
-        if (prev >= 0 && x - prev >= 2 && x - prev <= gapMax && v === 3 && prevV === 3) {
+        if (prev >= 0 && x - prev >= 2 && x - prev <= gapMax && prevV >= 3 && v >= 3 && (v === 3 || prevV === 3)) {
           for (let k = prev; k <= x; k++) {
             const j = y * W + k;
-            if (prov && !wall[j]) prov[j] = 2;
+            if (!wall[j]) prov[j] = 2;
             wall[j] = 1;
           }
         }
@@ -500,9 +606,9 @@ export async function extractLayout(
             if (y - start > tMax) {
               for (let k = start; k < y; k++) {
                 const j = k * W + x;
-                if (maskV[j] < 2) {
+                if (maskV[j] < 2 && prov[j] !== 2) {
                   wall[j] = 0;
-                  if (prov) prov[j] = 0;
+                  prov[j] = 0;
                 }
               }
             }
@@ -519,9 +625,9 @@ export async function extractLayout(
             if (x - start > tMax) {
               for (let k = start; k < x; k++) {
                 const j = y * W + k;
-                if (maskH[j] < 2) {
+                if (maskH[j] < 2 && prov[j] !== 2) {
                   wall[j] = 0;
-                  if (prov) prov[j] = 0;
+                  prov[j] = 0;
                 }
               }
             }
@@ -553,6 +659,15 @@ export async function extractLayout(
         let sum = 0;
         for (let dy = 0; dy < cell; dy++) for (let dx = 0; dx < cell; dx++) sum += wall[(gy * cell + dy) * W + gx * cell + dx];
         if (sum >= cell * cell * 0.4) grid[gy * gw + gx] = 1;
+      }
+    }
+    // pre-rejection ink per cell (0..cell²) — used to sniff door-swing arcs
+    const inkGrid = new Uint16Array(gw * gh);
+    for (let gy = 0; gy < gh; gy++) {
+      for (let gx = 0; gx < gw; gx++) {
+        let sum = 0;
+        for (let dy = 0; dy < cell; dy++) for (let dx = 0; dx < cell; dx++) sum += preMask[(gy * cell + dy) * W + gx * cell + dx];
+        inkGrid[gy * gw + gx] = sum;
       }
     }
     // classify exterior walls: flood the EMPTY region from the grid border;
@@ -626,6 +741,19 @@ export async function extractLayout(
           drop.add(id); // solid blobs — real wall clusters never fill their box
           why?.set(id, 3);
           return;
+        }
+        // photographic insets (product shots, logos): a box-shaped component
+        // whose bbox is both well covered by wall cells AND dense with raw ink.
+        // Real wall clusters fill <15% of their bbox and sit on white paper.
+        if (fill > 0.25 && bw > 12 && bh > 12) {
+          let ink = 0;
+          for (let gy = cc.y0; gy <= cc.y1; gy++)
+            for (let gx = cc.x0; gx <= cc.x1; gx++) ink += inkGrid[gy * gw + gx];
+          if (ink / (bw * bh * cell * cell) > 0.25) {
+            drop.add(id);
+            why?.set(id, 3);
+            return;
+          }
         }
       });
       if (dbg && why) {
@@ -838,10 +966,363 @@ export async function extractLayout(
         "boxes=" + cts.boxes,
       );
     }
+    // 9. detect + classify openings.
+    //
+    // Two detectors feed one classifier:
+    //  a) GAP CANDIDATES — collinear wall rectangles whose ends face each
+    //     other across a joinery-sized gap with nothing in between. Plans draw
+    //     most windows and patio doors as clean breaks in a wall run, often
+    //     far too wide for any morphological closing to span.
+    //  b) BRIDGE CELLS — a wall-scale closing over the sealed grid marks the
+    //     remaining small gaps (door leaves, awkward junctions): cells the
+    //     closing filled that have wall on both sides along one axis.
+    //
+    // Classification needs a trustworthy "outside", so the border flood runs
+    // over the closing of the grid WITH the candidates sealed — it cannot pour
+    // in through the very openings being classified. Small rooms whose walls
+    // are mostly backed by true outside (balconies, porches) become exterior
+    // ANNEXES: an opening onto one is a door to the outdoors, not an internal.
+    const openings: PlanOpening[] = [];
+    {
+      const metresPerPxE = 0.28 / Math.max(2, tWall); // walls are ~280 mm thick
+      const cellM = Math.max(cell * metresPerPxE, 0.02); // metres per grid cell
+      const tGrid = Math.max(2, Math.round(tWall / cell));
+      const N2 = gw * gh;
+      const NB4 = [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as const;
+
+      // -- a) geometric gap candidates ------------------------------------
+      type GapRect = { x0: number; y0: number; x1: number; y1: number; along: "x" | "z" };
+      const cands: GapRect[] = [];
+      const minGapC = Math.max(2, Math.round(0.45 / cellM));
+      const maxGapC = Math.ceil(4.2 / cellM);
+      const thickMax = Math.ceil(tGrid * 2.5);
+      const blocked = (bx0: number, by0: number, bx1: number, by1: number): boolean => {
+        for (const r of merged) {
+          if (r.x <= bx1 && r.x + r.w - 1 >= bx0 && r.y <= by1 && r.y + r.h - 1 >= by0) return true;
+        }
+        return false;
+      };
+      if (merged.length <= 600) {
+        const horiz = merged.filter((r) => r.h <= thickMax && r.w >= 2);
+        for (const a of horiz) {
+          for (const b of horiz) {
+            if (a === b) continue;
+            const g = b.x - (a.x + a.w);
+            if (g < minGapC || g > maxGapC) continue;
+            if (Math.abs(a.y + a.h / 2 - (b.y + b.h / 2)) > Math.max(a.h, b.h) / 2 + 1) continue;
+            const yy0 = Math.max(a.y, b.y);
+            const yy1 = Math.min(a.y + a.h, b.y + b.h) - 1;
+            const cy = Math.round((a.y + a.h / 2 + b.y + b.h / 2) / 2);
+            const ry0 = yy1 >= yy0 ? yy0 : cy;
+            const ry1 = yy1 >= yy0 ? yy1 : cy;
+            if (blocked(a.x + a.w, ry0, b.x - 1, ry1)) continue;
+            cands.push({ x0: a.x + a.w, y0: ry0, x1: b.x - 1, y1: ry1, along: "x" });
+          }
+        }
+        const vert = merged.filter((r) => r.w <= thickMax && r.h >= 2);
+        for (const a of vert) {
+          for (const b of vert) {
+            if (a === b) continue;
+            const g = b.y - (a.y + a.h);
+            if (g < minGapC || g > maxGapC) continue;
+            if (Math.abs(a.x + a.w / 2 - (b.x + b.w / 2)) > Math.max(a.w, b.w) / 2 + 1) continue;
+            const xx0 = Math.max(a.x, b.x);
+            const xx1 = Math.min(a.x + a.w, b.x + b.w) - 1;
+            const cx = Math.round((a.x + a.w / 2 + b.x + b.w / 2) / 2);
+            const rx0 = xx1 >= xx0 ? xx0 : cx;
+            const rx1 = xx1 >= xx0 ? xx1 : cx;
+            if (blocked(rx0, a.y + a.h, rx1, b.y - 1)) continue;
+            cands.push({ x0: rx0, y0: a.y + a.h, x1: rx1, y1: b.y - 1, along: "z" });
+          }
+        }
+      }
+
+      // -- sealed grid, wall-scale closing, true outside -------------------
+      const grid2 = new Uint8Array(grid);
+      for (const c of cands)
+        for (let gy = c.y0; gy <= c.y1; gy++)
+          for (let gx = c.x0; gx <= c.x1; gx++) grid2[gy * gw + gx] = 1;
+
+      const D3 = Math.min(30, Math.max(8, Math.ceil(1.6 / cellM)));
+      let a3 = new Uint8Array(grid2);
+      for (let t = 0; t < D3; t++) {
+        const src = new Uint8Array(a3);
+        for (let gy = 0; gy < gh; gy++) {
+          for (let gx = 0; gx < gw; gx++) {
+            const i = gy * gw + gx;
+            if (
+              src[i] ||
+              (gx > 0 && src[i - 1]) ||
+              (gx < gw - 1 && src[i + 1]) ||
+              (gy > 0 && src[i - gw]) ||
+              (gy < gh - 1 && src[i + gw])
+            )
+              a3[i] = 1;
+          }
+        }
+      }
+      const closed3 = erode(a3, gw, gh, D3);
+
+      const outFlood = new Uint8Array(N2);
+      {
+        const st: number[] = [];
+        const push3 = (gx: number, gy: number) => {
+          const i = gy * gw + gx;
+          if (gx >= 0 && gx < gw && gy >= 0 && gy < gh && !closed3[i] && !outFlood[i]) {
+            outFlood[i] = 1;
+            st.push(i);
+          }
+        };
+        for (let gx = 0; gx < gw; gx++) {
+          push3(gx, 0);
+          push3(gx, gh - 1);
+        }
+        for (let gy = 0; gy < gh; gy++) {
+          push3(0, gy);
+          push3(gw - 1, gy);
+        }
+        while (st.length) {
+          const i = st.pop()!;
+          const gx = i % gw;
+          const gy = (i - gx) / gw;
+          push3(gx + 1, gy);
+          push3(gx - 1, gy);
+          push3(gx, gy + 1);
+          push3(gx, gy - 1);
+        }
+      }
+
+      // -- exterior annexes (balconies, porches) ---------------------------
+      const annex = new Uint8Array(N2);
+      {
+        const seen = new Uint8Array(N2);
+        for (let s = 0; s < N2; s++) {
+          if (grid2[s] || outFlood[s] || seen[s]) continue;
+          const cells: number[] = [];
+          const st = [s];
+          seen[s] = 1;
+          while (st.length) {
+            const i = st.pop()!;
+            cells.push(i);
+            const gx = i % gw;
+            const gy = (i - gx) / gw;
+            for (const [dx, dy] of NB4) {
+              const nx = gx + dx;
+              const ny = gy + dy;
+              if (nx < 0 || nx >= gw || ny < 0 || ny >= gh) continue;
+              const ni = ny * gw + nx;
+              if (!grid2[ni] && !outFlood[ni] && !seen[ni]) {
+                seen[ni] = 1;
+                st.push(ni);
+              }
+            }
+          }
+          const areaM2 = cells.length * cellM * cellM;
+          if (areaM2 < 0.8 || areaM2 > 14) continue;
+          // fraction of the region's walled boundary backed by true outside
+          let extP = 0;
+          let inP = 0;
+          for (const i of cells) {
+            const gx = i % gw;
+            const gy = (i - gx) / gw;
+            for (const [dx, dy] of NB4) {
+              const nx = gx + dx;
+              const ny = gy + dy;
+              if (nx < 0 || nx >= gw || ny < 0 || ny >= gh) continue;
+              if (!grid2[ny * gw + nx]) continue;
+              // first non-wall cell beyond this wall, within joinery reach
+              for (let k = 2; k <= tGrid + 3; k++) {
+                const px = gx + dx * k;
+                const py = gy + dy * k;
+                if (px < 0 || px >= gw || py < 0 || py >= gh) {
+                  extP++;
+                  break;
+                }
+                const pi = py * gw + px;
+                if (grid2[pi]) continue;
+                if (outFlood[pi]) extP++;
+                else inP++;
+                break;
+              }
+            }
+          }
+          if (extP >= (extP + inP) * 0.45 && extP > 0) for (const i of cells) annex[i] = 1;
+        }
+      }
+
+      // -- b) bridge cells over the sealed grid ----------------------------
+      const K = Math.min(26, Math.max(8, Math.ceil(1.7 / cellM)));
+      const bridgeH = new Uint8Array(N2);
+      const bridgeV = new Uint8Array(N2);
+      for (let gy = 0; gy < gh; gy++) {
+        for (let gx = 0; gx < gw; gx++) {
+          const i = gy * gw + gx;
+          if (grid2[i] || !closed3[i]) continue;
+          let L = 0, R = 0, U = 0, D = 0;
+          for (let k = 1; k <= K; k++) if (gx - k >= 0 && grid2[i - k]) { L = k; break; }
+          for (let k = 1; k <= K; k++) if (gx + k < gw && grid2[i + k]) { R = k; break; }
+          for (let k = 1; k <= K; k++) if (gy - k >= 0 && grid2[i - k * gw]) { U = k; break; }
+          for (let k = 1; k <= K; k++) if (gy + k < gh && grid2[i + k * gw]) { D = k; break; }
+          const h = L > 0 && R > 0;
+          const v = U > 0 && D > 0;
+          if (h && !v) bridgeH[i] = 1;
+          else if (v && !h) bridgeV[i] = 1;
+          else if (h && v) {
+            if (L + R <= U + D) bridgeH[i] = 1;
+            else bridgeV[i] = 1;
+          }
+        }
+      }
+
+      // -- classify + emit -------------------------------------------------
+      const isOutdoor = (gx: number, gy: number): 0 | 1 | 2 => {
+        if (gx < 0 || gx >= gw || gy < 0 || gy >= gh) return 1;
+        const i = gy * gw + gx;
+        if (outFlood[i]) return 1;
+        if (annex[i]) return 2;
+        return 0;
+      };
+
+      /** mean pre-rejection ink density over a patch (door-swing arc test) */
+      const arcScore = (cx0: number, cx1: number, cy0: number, cy1: number): number => {
+        let sum = 0;
+        let n = 0;
+        for (let gy = Math.max(0, cy0); gy <= Math.min(gh - 1, cy1); gy++) {
+          for (let gx = Math.max(0, cx0); gx <= Math.min(gw - 1, cx1); gx++) {
+            const i = gy * gw + gx;
+            if (grid2[i] || outFlood[i]) continue;
+            sum += inkGrid[i];
+            n++;
+          }
+        }
+        return n ? sum / (n * cell * cell) : 0;
+      };
+
+      const emitted: { x0: number; y0: number; x1: number; y1: number }[] = [];
+      const overlapsEmitted = (x0c: number, y0c: number, x1c: number, y1c: number) =>
+        emitted.some((e) => e.x0 <= x1c + 3 && e.x1 >= x0c - 3 && e.y0 <= y1c + 3 && e.y1 >= y0c - 3);
+
+      const emit = (cx0: number, cy0: number, cx1: number, cy1: number, along: "x" | "z", fromCand: boolean) => {
+        const lenCells = along === "x" ? cx1 - cx0 + 1 : cy1 - cy0 + 1;
+        const thkCells = along === "x" ? cy1 - cy0 + 1 : cx1 - cx0 + 1;
+        if (lenCells < 2) return;
+        if (!fromCand && thkCells > tGrid + 3) return;
+        const widthM = lenCells * cellM;
+        if (widthM < 0.45 || widthM > (fromCand ? 4.2 : 3.4)) return;
+        if (overlapsEmitted(cx0, cy0, cx1, cy1)) return;
+
+        // which side of the wall run faces the outdoors (outside or annex)?
+        let ext: 0 | 1 = 0;
+        let annexHit = false;
+        let nnx = 0;
+        let nnz = 0;
+        const probe = tGrid + 4;
+        const side = (dx: number, dy: number): [number, boolean] => {
+          let hits = 0;
+          let viaAnnex = false;
+          const n = along === "x" ? cx1 - cx0 + 1 : cy1 - cy0 + 1;
+          for (let s = 0; s < n; s++) {
+            const bx = along === "x" ? cx0 + s : dx < 0 ? cx0 : cx1;
+            const by = along === "x" ? (dy < 0 ? cy0 : cy1) : cy0 + s;
+            for (let k = 1; k <= probe; k++) {
+              const r = isOutdoor(bx + dx * k, by + dy * k);
+              if (r) {
+                hits++;
+                if (r === 2) viaAnnex = true;
+                break;
+              }
+            }
+          }
+          return [hits, viaAnnex];
+        };
+        const n = lenCells;
+        if (along === "x") {
+          const [up, upA] = side(0, -1);
+          const [down, downA] = side(0, 1);
+          if (up > n * 0.5 || down > n * 0.5) {
+            ext = 1;
+            nnz = up >= down ? -1 : 1;
+            annexHit = up >= down ? upA : downA;
+          }
+        } else {
+          const [left, leftA] = side(-1, 0);
+          const [right, rightA] = side(1, 0);
+          if (left > n * 0.5 || right > n * 0.5) {
+            ext = 1;
+            nnx = left >= right ? -1 : 1;
+            annexHit = left >= right ? leftA : rightA;
+          }
+        }
+
+        // door-swing arc on the interior side(s)
+        const pad = lenCells;
+        let arc = 0;
+        if (along === "x") {
+          const a1 = nnz === -1 ? 0 : arcScore(cx0, cx1, cy0 - pad, cy0 - 1);
+          const a2 = nnz === 1 ? 0 : arcScore(cx0, cx1, cy1 + 1, cy1 + pad);
+          arc = Math.max(a1, a2);
+        } else {
+          const a1 = nnx === -1 ? 0 : arcScore(cx0 - pad, cx0 - 1, cy0, cy1);
+          const a2 = nnx === 1 ? 0 : arcScore(cx1 + 1, cx1 + pad, cy0, cy1);
+          arc = Math.max(a1, a2);
+        }
+        const hasArc = arc > 0.05;
+
+        let type: OpeningType;
+        let confidence: number;
+        if (ext) {
+          // patio doors are only called when the opening demonstrably leads
+          // somewhere outdoors-but-enclosed (balcony, porch) — a wide opening
+          // in a plain exterior wall is far more often a wide window.
+          if (annexHit && widthM >= 1.4) { type = "patio-door"; confidence = 0.8; }
+          else if (annexHit) { type = "external-door"; confidence = 0.55; }
+          else if (hasArc && widthM <= 1.5) { type = "external-door"; confidence = 0.7; }
+          else { type = "window"; confidence = widthM >= 2.0 ? 0.55 : 0.75; }
+        } else {
+          if (hasArc && widthM <= 1.7) { type = "internal-door"; confidence = 0.8; }
+          else if (widthM <= 1.5) { type = "internal-door"; confidence = 0.6; }
+          else { type = "open-passage"; confidence = 0.55; }
+        }
+
+        emitted.push({ x0: cx0, y0: cy0, x1: cx1, y1: cy1 });
+        openings.push({
+          id: `o${openings.length}`,
+          type,
+          x: ((cx0 + cx1 + 1) / 2 - x0) * unit - floorW / 2,
+          z: ((cy0 + cy1 + 1) / 2 - y0) * unit - floorD / 2,
+          along,
+          w: lenCells * unit,
+          t: Math.max(thkCells, tGrid) * unit,
+          ext,
+          ...(ext ? { nx: nnx, nz: nnz } : {}),
+          widthM: Math.round(widthM * 100) / 100,
+          confidence,
+        });
+      };
+
+      // geometric candidates first (cleanest extents), then bridge comps
+      for (const c of cands) emit(c.x0, c.y0, c.x1, c.y1, c.along, true);
+      const compsH = label(bridgeH, gw, gh).comps;
+      for (const cc of compsH) emit(cc.x0, cc.y0, cc.x1, cc.y1, "x", false);
+      const compsV = label(bridgeV, gw, gh).comps;
+      for (const cc of compsV) emit(cc.x0, cc.y0, cc.x1, cc.y1, "z", false);
+    }
+    {
+      const byType: Record<string, number> = {};
+      for (const o of openings) byType[o.type] = (byType[o.type] ?? 0) + 1;
+      console.info("[elixa] openings:", openings.length, JSON.stringify(byType));
+    }
+
     console.info("[elixa] layout extracted:", boxes.length, "wall boxes");
     return {
       ok: boxes.length >= 8 && boxes.length <= 8000,
       boxes,
+      openings,
       floorW,
       floorD,
       crop,

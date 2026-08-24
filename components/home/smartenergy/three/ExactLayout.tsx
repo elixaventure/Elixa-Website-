@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import type { PlanLayout, WallBox } from "@/lib/planLayout";
+import type { PlanLayout, PlanOpening, WallBox } from "@/lib/planLayout";
 import { DEFAULT_HOUSE_SPEC } from "@/lib/houseModel";
 
 export type LayoutView = "dollhouse" | "full" | "plan" | "xray";
@@ -50,10 +50,14 @@ export function ExactLayout({
   const controls = useThree((s) => s.controls) as { target?: THREE.Vector3 } | null;
 
   const boxes: WallBox[] = layout.boxes;
+  const openings: PlanOpening[] = layout.openings ?? [];
+  const openRefs = useRef<(THREE.Group | null)[]>([]);
+  const openScales = useRef<Float32Array | null>(null);
 
   useEffect(() => {
     heights.current = new Float32Array(boxes.length).fill(view === "plan" ? LOW : CEIL);
-  }, [boxes, view]);
+    openScales.current = new Float32Array(openings.length).fill(1);
+  }, [boxes, openings, view]);
 
   useEffect(() => {
     if (!planUrl) return;
@@ -105,6 +109,28 @@ export function ExactLayout({
     }
     m.instanceMatrix.needsUpdate = true;
 
+    // joinery follows its wall's display height (squashes with the cutaway)
+    const os = openScales.current;
+    if (os && os.length === openings.length) {
+      for (let i = 0; i < openings.length; i++) {
+        const g = openRefs.current[i];
+        if (!g) continue;
+        const o = openings[i];
+        let ratio = 1;
+        if (view === "plan") ratio = LOW / CEIL;
+        else if (view === "dollhouse") {
+          if (o.ext) {
+            const facing = (o.nx ?? 0) * camDir.x + (o.nz ?? 0) * camDir.z;
+            ratio = facing > 0.2 ? PLINTH / CEIL : 1;
+          } else {
+            ratio = INNER / CEIL;
+          }
+        }
+        os[i] += (ratio - os[i]) * 0.14;
+        g.scale.y = os[i];
+      }
+    }
+
     // floor-plan mode: drift the camera overhead (never fights the user hard)
     if (view === "plan") {
       const cam = state.camera;
@@ -151,6 +177,139 @@ export function ExactLayout({
           depthWrite={!xray}
         />
       </instancedMesh>
+
+      {/* joinery — classified openings become real windows and doors */}
+      {openings.map((o, i) => (
+        <group
+          key={o.id}
+          position={[o.x, 0.06, o.z]}
+          rotation={[0, o.along === "z" ? Math.PI / 2 : 0, 0]}
+          ref={(el) => {
+            openRefs.current[i] = el;
+          }}
+        >
+          <OpeningJoinery o={o} ceil={CEIL} metre={wpm ?? CEIL / 2.4} />
+        </group>
+      ))}
     </group>
   );
+}
+
+/* ---------------------------------------------------------------- joinery --- */
+
+const FRAME = "#f7f4ee";
+const GLASS = "#aecfe8";
+const LEAF_IN = "#e9e3d9";
+const LEAF_OUT = "#7c8ca1";
+
+/**
+ * Placeholder architectural joinery for one classified opening, authored in
+ * local space: width along x, wall thickness along z, y up from the slab.
+ */
+function OpeningJoinery({ o, ceil, metre }: { o: PlanOpening; ceil: number; metre: number }) {
+  const sill = Math.min(0.9 * metre, ceil * 0.42);
+  const top = Math.min(2.0 * metre, ceil * 0.9);
+  const w = o.w;
+  const t = o.t;
+  const jamb = Math.min(0.07 * metre, w * 0.12);
+  const header = (
+    <mesh position={[0, (top + ceil) / 2, 0]} castShadow>
+      <boxGeometry args={[w, Math.max(ceil - top, 0.02), t]} />
+      <meshStandardMaterial color={FRAME} roughness={0.8} />
+    </mesh>
+  );
+  const jambs = (
+    <>
+      <mesh position={[-w / 2 + jamb / 2, top / 2, 0]}>
+        <boxGeometry args={[jamb, top, t]} />
+        <meshStandardMaterial color={FRAME} roughness={0.7} />
+      </mesh>
+      <mesh position={[w / 2 - jamb / 2, top / 2, 0]}>
+        <boxGeometry args={[jamb, top, t]} />
+        <meshStandardMaterial color={FRAME} roughness={0.7} />
+      </mesh>
+    </>
+  );
+
+  switch (o.type) {
+    case "window":
+      return (
+        <group>
+          {/* wall below and above the glass stays solid */}
+          <mesh position={[0, sill / 2, 0]} castShadow>
+            <boxGeometry args={[w, sill, t]} />
+            <meshStandardMaterial color={FRAME} roughness={0.8} />
+          </mesh>
+          {header}
+          {jambs}
+          {/* glazing */}
+          <mesh position={[0, (sill + top) / 2, 0]}>
+            <boxGeometry args={[w - jamb * 2, top - sill, t * 0.25]} />
+            <meshStandardMaterial color={GLASS} transparent opacity={0.45} roughness={0.15} metalness={0.1} />
+          </mesh>
+          {/* centre glazing bar */}
+          <mesh position={[0, (sill + top) / 2, 0]}>
+            <boxGeometry args={[jamb * 0.6, top - sill, t * 0.3]} />
+            <meshStandardMaterial color={FRAME} roughness={0.7} />
+          </mesh>
+        </group>
+      );
+    case "patio-door": {
+      const panel = (w - jamb * 2) / 2;
+      return (
+        <group>
+          {header}
+          {jambs}
+          {/* two sliding glazed panels, one set slightly proud */}
+          <mesh position={[-panel / 2, top / 2, t * 0.12]}>
+            <boxGeometry args={[panel, top, t * 0.18]} />
+            <meshStandardMaterial color={GLASS} transparent opacity={0.4} roughness={0.15} metalness={0.1} />
+          </mesh>
+          <mesh position={[panel / 2, top / 2, -t * 0.12]}>
+            <boxGeometry args={[panel, top, t * 0.18]} />
+            <meshStandardMaterial color={GLASS} transparent opacity={0.4} roughness={0.15} metalness={0.1} />
+          </mesh>
+          {/* mullion + track */}
+          <mesh position={[0, top / 2, 0]}>
+            <boxGeometry args={[jamb * 0.8, top, t * 0.4]} />
+            <meshStandardMaterial color={FRAME} roughness={0.7} />
+          </mesh>
+          <mesh position={[0, 0.02 * metre, 0]}>
+            <boxGeometry args={[w, 0.04 * metre, t * 0.6]} />
+            <meshStandardMaterial color={LEAF_OUT} roughness={0.6} />
+          </mesh>
+        </group>
+      );
+    }
+    case "external-door":
+      return (
+        <group>
+          {header}
+          {jambs}
+          <mesh position={[0, top / 2, 0]} castShadow>
+            <boxGeometry args={[w - jamb * 2, top, t * 0.45]} />
+            <meshStandardMaterial color={LEAF_OUT} roughness={0.6} />
+          </mesh>
+        </group>
+      );
+    case "internal-door": {
+      const leafW = w - jamb * 2;
+      return (
+        <group>
+          {header}
+          {jambs}
+          {/* leaf hinged at the left jamb, ajar for the dollhouse look */}
+          <group position={[-w / 2 + jamb, 0, 0]} rotation={[0, 0.5, 0]}>
+            <mesh position={[leafW / 2, top / 2, 0]} castShadow>
+              <boxGeometry args={[leafW, top, Math.min(t * 0.22, 0.05 * metre)]} />
+              <meshStandardMaterial color={LEAF_IN} roughness={0.7} />
+            </mesh>
+          </group>
+        </group>
+      );
+    }
+    default:
+      // open-passage: header only
+      return header;
+  }
 }
