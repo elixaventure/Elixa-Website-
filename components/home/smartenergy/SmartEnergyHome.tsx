@@ -5,6 +5,8 @@ import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePl
 import { makePlanPreview } from "@/lib/planPreview";
 import { analysePlan, type PlanAnalysis } from "@/lib/planAnalysis";
 import { extractLayout, type PlanLayout } from "@/lib/planLayout";
+import { planApiConfigured, recognisePlan } from "@/lib/planApi";
+import { adaptRecognition } from "@/lib/planAdapter";
 import type { PlanDebug } from "@/lib/planLayoutDebug";
 import { applyScale } from "@/lib/houseModel";
 import { PlanDebugPanel } from "./PlanDebugPanel";
@@ -355,6 +357,22 @@ export function SmartEnergyHome() {
                     setPreviewUrl(blob);
                     // extract the wall layout so it can be extruded into 3D
                     extractLayout(blob, { debug: debugOn.current }).then(acceptLayout);
+                    // hosted recognition (when configured) runs in parallel and
+                    // upgrades the layout when its structured result lands; any
+                    // failure leaves the in-browser extraction in place
+                    if (planApiConfigured()) {
+                      recognisePlan(blob).then(async (raw) => {
+                        if (!raw) return;
+                        try {
+                          const bmp = await createImageBitmap(blob);
+                          const api = adaptRecognition(raw, bmp.width, bmp.height);
+                          bmp.close();
+                          if (api?.ok) acceptLayout(api);
+                        } catch (e) {
+                          console.warn("[elixa] plan api adapt failed", e);
+                        }
+                      });
+                    }
                   }
                 });
                 // read the plan's text and shape the house to match
