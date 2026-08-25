@@ -93,6 +93,7 @@ export function SmartHomeStage(props: {
   layout?: PlanLayout | null;
   layoutOn?: boolean;
   property?: PropertyModel | null;
+  showcaseUrl?: string | null;
   onLayoutToggle?: (on: boolean) => void;
   onPick: (id: TechId | "grid") => void;
 }) {
@@ -121,6 +122,7 @@ export function SmartHomeStage(props: {
   const [exploded, setExploded] = useState(false);
   const [furniture, setFurniture] = useState(true);
   const [resetSignal, setResetSignal] = useState(0);
+  const [showcaseOn, setShowcaseOn] = useState(false);
   const propertyState: PropertyViewState = {
     view: layoutView,
     floor: floorSel,
@@ -151,7 +153,7 @@ export function SmartHomeStage(props: {
       onPointerLeave={() => setHoveredNode(null)}
     >
       {mode === "3d" && can3d ? (
-        <Scene {...props} view={effectiveView} reduced={reduced} layoutView={layoutView} propertyState={propertyState} onHoverChange={setHoveredNode} />
+        <Scene {...props} view={effectiveView} reduced={reduced} layoutView={layoutView} propertyState={propertyState} showcaseOn={showcaseOn} onHoverChange={setHoveredNode} />
       ) : (
         <HouseCrossSection {...props} />
       )}
@@ -217,6 +219,18 @@ export function SmartHomeStage(props: {
         )}
         {mode === "3d" && can3d && props.layoutOn && hasLayout && (
           <div className="pointer-events-auto flex flex-wrap justify-center gap-1 rounded-full bg-white/85 p-1 backdrop-blur">
+            {props.showcaseUrl && (
+              <button
+                onClick={() => setShowcaseOn((v) => !v)}
+                aria-pressed={showcaseOn}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",
+                  showcaseOn ? "bg-elixa-gradient text-white" : "text-navy/55 hover:text-navy"
+                )}
+              >
+                ✨ Showcase
+              </button>
+            )}
             {(
               [
                 ["dollhouse", "🏠 Dollhouse"],

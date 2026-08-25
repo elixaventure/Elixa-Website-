@@ -68,6 +68,9 @@ export function SmartEnergyHome() {
   activeFloorRef.current = activeFloorId;
   // canonical/golden property preview via ?demoProperty=<id>
   const [demoProp, setDemoProp] = useState<PropertyModel | null>(null);
+  // a pre-built showcase GLB (public/models/showcase-apartment.glb) lights up
+  // an extra "Showcase" view when the file exists in the deploy
+  const [showcaseUrl, setShowcaseUrl] = useState<string | null>(null);
   // TEMPORARY: extraction diagnostics, opt-in via ?planDebug=1
   const [planDebug, setPlanDebug] = useState<PlanDebug | null>(null);
   const debugOn = useRef(false);
@@ -129,6 +132,15 @@ export function SmartEnergyHome() {
       // migrate a legacy single-layout store into the ground floor record
       setFloorsData((fs) => (fs.some((f) => f.layout) ? fs : fs.map((f) => (f.id === "ground" ? { ...f, layout: l } : f))));
     });
+    {
+      const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
+      const url = `${base}/models/showcase-apartment.glb`;
+      fetch(url, { method: "HEAD" })
+        .then((r) => {
+          if (r.ok && !(r.headers.get("content-type") || "").includes("text/html")) setShowcaseUrl(url);
+        })
+        .catch(() => {});
+    }
     const demo = new URLSearchParams(window.location.search).get("demoProperty");
     if (demo === "1" || demo === "property-001") {
       setDemoProp(goldenProperty001 as unknown as PropertyModel);
@@ -244,6 +256,7 @@ export function SmartEnergyHome() {
           planRooms={planRead?.rooms}
           layout={planLayout}
           property={property}
+          showcaseUrl={showcaseUrl}
           layoutOn={layoutOn}
           onLayoutToggle={setLayoutOn}
           onPick={(id) => setPicked(id)}
