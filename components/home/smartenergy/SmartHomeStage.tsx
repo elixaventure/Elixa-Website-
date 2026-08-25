@@ -123,6 +123,9 @@ export function SmartHomeStage(props: {
   const [furniture, setFurniture] = useState(true);
   const [resetSignal, setResetSignal] = useState(0);
   const [showcaseOn, setShowcaseOn] = useState(false);
+  useEffect(() => {
+    if (props.showcaseUrl) setShowcaseOn(true);
+  }, [props.showcaseUrl]);
   const propertyState: PropertyViewState = {
     view: layoutView,
     floor: floorSel,
@@ -130,7 +133,7 @@ export function SmartHomeStage(props: {
     furniture,
     resetSignal,
   };
-  const hasLayout = Boolean(props.layout?.ok || props.property);
+  const hasLayout = Boolean(props.layout?.ok || props.property || props.showcaseUrl);
 
   useEffect(() => {
     const webgl = hasWebGL();

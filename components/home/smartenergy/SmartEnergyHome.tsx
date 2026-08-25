@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePlanAnalysis, loadPlanAnalysis, savePlanLayout, loadPlanLayout, savePlanArea, loadPlanArea, saveFloors, loadFloors } from "@/lib/planStore";
+import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePlanAnalysis, loadPlanAnalysis, savePlanLayout, loadPlanLayout, savePlanArea, loadPlanArea, saveFloors, loadFloors, saveShowcaseModel, loadShowcaseModel } from "@/lib/planStore";
 import { makePlanPreview } from "@/lib/planPreview";
 import { analysePlan, type PlanAnalysis } from "@/lib/planAnalysis";
 import { extractLayout, type PlanLayout } from "@/lib/planLayout";
@@ -132,7 +132,13 @@ export function SmartEnergyHome() {
       // migrate a legacy single-layout store into the ground floor record
       setFloorsData((fs) => (fs.some((f) => f.layout) ? fs : fs.map((f) => (f.id === "ground" ? { ...f, layout: l } : f))));
     });
-    {
+    // a model the customer uploaded locally wins over a deployed showcase file
+    loadShowcaseModel().then((blob) => {
+      if (blob) {
+        setShowcaseUrl(URL.createObjectURL(blob));
+        setLayoutOn(true);
+        return;
+      }
       const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
       const url = `${base}/models/showcase-apartment.glb`;
       fetch(url, { method: "HEAD" })
@@ -140,7 +146,7 @@ export function SmartEnergyHome() {
           if (r.ok && !(r.headers.get("content-type") || "").includes("text/html")) setShowcaseUrl(url);
         })
         .catch(() => {});
-    }
+    });
     const demo = new URLSearchParams(window.location.search).get("demoProperty");
     if (demo === "1" || demo === "property-001") {
       setDemoProp(goldenProperty001 as unknown as PropertyModel);
@@ -507,6 +513,44 @@ export function SmartEnergyHome() {
               </button>
             )}
           </div>
+
+          <label className="mb-3 flex cursor-pointer items-center gap-2 rounded-2xl border border-dashed border-navy/20 bg-white/60 px-3.5 py-2.5 text-xs text-navy/70 transition hover:border-navy/40">
+            <span className="text-base">🧊</span>
+            <span className="flex-1 truncate">
+              {showcaseUrl ? "3D model loaded — shown as the ✨ Showcase view" : "Have a 3D model of your home? Upload it (.glb)"}
+            </span>
+            {showcaseUrl && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  saveShowcaseModel(null);
+                  setShowcaseUrl(null);
+                }}
+                className="flex-none font-semibold text-navy/40 hover:text-navy"
+                aria-label="Remove 3D model"
+              >
+                ✕
+              </button>
+            )}
+            <input
+              type="file"
+              accept=".glb,model/gltf-binary"
+              className="sr-only"
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                if (!f) return;
+                if (f.size > 200 * 1024 * 1024) {
+                  alert("That model is over 200 MB — please export a smaller GLB.");
+                  return;
+                }
+                saveShowcaseModel(f);
+                setShowcaseUrl(URL.createObjectURL(f));
+                setLayoutOn(true);
+                track("cta_click", { location: "smart-energy-home", label: "model-upload" });
+              }}
+            />
+          </label>
 
           {planRead && (planRead.bedrooms || planRead.rooms.length > 0) ? (
             <div className="mb-4 rounded-2xl border border-elixa-green/30 bg-elixa-gradient-soft px-3.5 py-2.5">

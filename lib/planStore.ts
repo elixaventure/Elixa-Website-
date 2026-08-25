@@ -169,6 +169,33 @@ export async function loadPlanPreview(): Promise<Blob | null> {
   return blob instanceof Blob ? blob : null;
 }
 
+/** customer-supplied showcase 3D model (.glb blob, can be tens of MB) */
+export async function saveShowcaseModel(blob: Blob | null): Promise<void> {
+  const db = await openDb();
+  if (!db) return;
+  await new Promise<void>((resolve) => {
+    const tx = db.transaction(STORE, "readwrite");
+    if (blob) tx.objectStore(STORE).put(blob, "showcase-glb");
+    else tx.objectStore(STORE).delete("showcase-glb");
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+  db.close();
+}
+
+export async function loadShowcaseModel(): Promise<Blob | null> {
+  const db = await openDb();
+  if (!db) return null;
+  const blob = await new Promise<Blob | null>((resolve) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).get("showcase-glb");
+    req.onsuccess = () => resolve(req.result instanceof Blob ? req.result : null);
+    req.onerror = () => resolve(null);
+  });
+  db.close();
+  return blob;
+}
+
 /** multi-floor records: per-floor metadata + extracted layout (JSON) */
 export async function saveFloors(floors: unknown): Promise<void> {
   const db = await openDb();
