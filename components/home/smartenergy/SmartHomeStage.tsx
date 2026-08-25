@@ -8,6 +8,8 @@ import type { TechId, EnergyModel } from "./state";
 import { layoutFor, DEFAULT_HOME, type HomeConfig, type SystemView } from "./three/graph";
 import type { PlanLayout } from "@/lib/planLayout";
 import type { LayoutView } from "./three/ExactLayout";
+import type { PropertyModel } from "@/lib/property/types";
+import type { PropertyViewState } from "./three/PropertyScene";
 
 const Scene = dynamic(() => import("./three/Scene").then((m) => m.Scene), {
   ssr: false,
@@ -90,6 +92,7 @@ export function SmartHomeStage(props: {
   planRooms?: string[];
   layout?: PlanLayout | null;
   layoutOn?: boolean;
+  property?: PropertyModel | null;
   onLayoutToggle?: (on: boolean) => void;
   onPick: (id: TechId | "grid") => void;
 }) {
@@ -114,6 +117,18 @@ export function SmartHomeStage(props: {
 
   const [trace, setTrace] = useState<TraceId | null>(null);
   const [layoutView, setLayoutView] = useState<LayoutView>("dollhouse");
+  const [floorSel, setFloorSel] = useState<string>("all");
+  const [exploded, setExploded] = useState(false);
+  const [furniture, setFurniture] = useState(true);
+  const [resetSignal, setResetSignal] = useState(0);
+  const propertyState: PropertyViewState = {
+    view: layoutView,
+    floor: floorSel,
+    exploded,
+    furniture,
+    resetSignal,
+  };
+  const hasLayout = Boolean(props.layout?.ok || props.property);
 
   useEffect(() => {
     const webgl = hasWebGL();
@@ -136,7 +151,7 @@ export function SmartHomeStage(props: {
       onPointerLeave={() => setHoveredNode(null)}
     >
       {mode === "3d" && can3d ? (
-        <Scene {...props} view={effectiveView} reduced={reduced} layoutView={layoutView} onHoverChange={setHoveredNode} />
+        <Scene {...props} view={effectiveView} reduced={reduced} layoutView={layoutView} propertyState={propertyState} onHoverChange={setHoveredNode} />
       ) : (
         <HouseCrossSection {...props} />
       )}
@@ -184,7 +199,7 @@ export function SmartHomeStage(props: {
 
       {/* view controls (bottom-centre, above the parent's legend) */}
       <div className="pointer-events-none absolute inset-x-0 bottom-3 flex flex-col items-center gap-2">
-        {mode === "3d" && can3d && props.layout?.ok && (
+        {mode === "3d" && can3d && hasLayout && (
           <div className="pointer-events-auto flex rounded-full bg-white/85 p-1 backdrop-blur">
             {([false, true] as const).map((on) => (
               <button
@@ -200,7 +215,7 @@ export function SmartHomeStage(props: {
             ))}
           </div>
         )}
-        {mode === "3d" && can3d && props.layoutOn && props.layout?.ok && (
+        {mode === "3d" && can3d && props.layoutOn && hasLayout && (
           <div className="pointer-events-auto flex flex-wrap justify-center gap-1 rounded-full bg-white/85 p-1 backdrop-blur">
             {(
               [
@@ -222,6 +237,51 @@ export function SmartHomeStage(props: {
                 {label}
               </button>
             ))}
+          </div>
+        )}
+        {mode === "3d" && can3d && props.layoutOn && props.property && (
+          <div className="pointer-events-auto flex flex-wrap justify-center gap-1 rounded-full bg-white/85 p-1 backdrop-blur">
+            {[{ id: "all", name: "All floors" }, ...props.property.floors].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFloorSel(f.id)}
+                aria-pressed={floorSel === f.id}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",
+                  floorSel === f.id ? "bg-navy text-white" : "text-navy/55 hover:text-navy"
+                )}
+              >
+                {f.name}
+              </button>
+            ))}
+            {props.property.floors.length > 1 && (
+              <button
+                onClick={() => setExploded((e) => !e)}
+                aria-pressed={exploded}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",
+                  exploded ? "bg-navy text-white" : "text-navy/55 hover:text-navy"
+                )}
+              >
+                ⤢ Exploded
+              </button>
+            )}
+            <button
+              onClick={() => setFurniture((f) => !f)}
+              aria-pressed={furniture}
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",
+                furniture ? "bg-navy text-white" : "text-navy/55 hover:text-navy"
+              )}
+            >
+              Furniture
+            </button>
+            <button
+              onClick={() => setResetSignal((n) => n + 1)}
+              className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-navy/55 transition hover:text-navy"
+            >
+              ↺ Reset view
+            </button>
           </div>
         )}
         {mode === "3d" && can3d && !props.layoutOn && (

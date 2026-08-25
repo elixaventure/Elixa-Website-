@@ -169,6 +169,36 @@ export async function loadPlanPreview(): Promise<Blob | null> {
   return blob instanceof Blob ? blob : null;
 }
 
+/** multi-floor records: per-floor metadata + extracted layout (JSON) */
+export async function saveFloors(floors: unknown): Promise<void> {
+  const db = await openDb();
+  if (!db) return;
+  await new Promise<void>((resolve) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).put(JSON.stringify(floors), "floors");
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+  db.close();
+}
+
+export async function loadFloors<T>(): Promise<T | null> {
+  const db = await openDb();
+  if (!db) return null;
+  const raw = await new Promise<string | null>((resolve) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).get("floors");
+    req.onsuccess = () => resolve(typeof req.result === "string" ? req.result : null);
+    req.onerror = () => resolve(null);
+  });
+  db.close();
+  try {
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function clearPlan(): Promise<void> {
   const db = await openDb();
   if (!db) return;
@@ -178,6 +208,7 @@ export async function clearPlan(): Promise<void> {
     tx.objectStore(STORE).delete(PREVIEW_KEY);
     tx.objectStore(STORE).delete("analysis");
     tx.objectStore(STORE).delete("layout");
+    tx.objectStore(STORE).delete("floors");
     tx.oncomplete = () => resolve();
     tx.onerror = () => resolve();
   });

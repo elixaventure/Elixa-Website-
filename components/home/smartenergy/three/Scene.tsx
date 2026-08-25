@@ -8,6 +8,8 @@ import { Equipment } from "./Equipment";
 import { Flows } from "./Flows";
 import { PlanMat } from "./PlanMat";
 import { ExactLayout, type LayoutView } from "./ExactLayout";
+import { PropertyScene, type PropertyViewState } from "./PropertyScene";
+import type { PropertyModel } from "@/lib/property/types";
 import type { PlanLayout } from "@/lib/planLayout";
 import { FLOWS, layoutFor, DEFAULT_HOME, type HomeConfig, type SystemView, type FlowCtx } from "./graph";
 import type { TechId, EnergyModel } from "../state";
@@ -26,6 +28,8 @@ export function Scene({
   layout,
   layoutOn,
   layoutView,
+  property,
+  propertyState,
   onPick,
   onHoverChange,
 }: {
@@ -45,6 +49,9 @@ export function Scene({
   layout?: PlanLayout | null;
   layoutOn?: boolean;
   layoutView?: LayoutView;
+  /** normalized property model — preferred over the raw layout when present */
+  property?: PropertyModel | null;
+  propertyState?: PropertyViewState;
   onPick: (id: TechId | "grid") => void;
   /** notifies the parent (screen-space tooltip) — kept OUT of the canvas to
       avoid the DOM label stealing the pointer and flickering the hover. */
@@ -104,7 +111,9 @@ export function Scene({
         <Lightformer intensity={0.7} position={[-6, 3, 4]} scale={[6, 6, 1]} color={isDay ? "#cfe3ff" : "#4a5f8f"} />
       </Environment>
 
-      {layoutOn && layout?.ok ? (
+      {layoutOn && property && propertyState ? (
+        <PropertyScene property={property} isDay={isDay} state={propertyState} />
+      ) : layoutOn && layout?.ok ? (
         <ExactLayout layout={layout} planUrl={planUrl} isDay={isDay} view={layoutView} />
       ) : (
         <>

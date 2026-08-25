@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePlanAnalysis, loadPlanAnalysis, savePlanLayout, loadPlanLayout, savePlanArea, loadPlanArea } from "@/lib/planStore";
+import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePlanAnalysis, loadPlanAnalysis, savePlanLayout, loadPlanLayout, savePlanArea, loadPlanArea, saveFloors, loadFloors } from "@/lib/planStore";
 import { makePlanPreview } from "@/lib/planPreview";
 import { analysePlan, type PlanAnalysis } from "@/lib/planAnalysis";
 import { extractLayout, type PlanLayout } from "@/lib/planLayout";
 import { planApiConfigured, recognisePlan } from "@/lib/planApi";
 import { adaptRecognition } from "@/lib/planAdapter";
+import { floorFromLayout } from "@/lib/property/fromLayout";
+import type { PropertyModel } from "@/lib/property/types";
+import { DEFAULT_CEILING_HEIGHT } from "@/lib/property/constants";
+import goldenProperty001 from "@/golden-tests/property-001/expected-property.json";
 import type { PlanDebug } from "@/lib/planLayoutDebug";
 import { applyScale } from "@/lib/houseModel";
 import { PlanDebugPanel } from "./PlanDebugPanel";
@@ -31,6 +35,18 @@ import {
   type TechId,
 } from "./state";
 
+interface FloorRec {
+  id: string;
+  name: string;
+  level: number;
+  ceilingHeight: number;
+  layout: PlanLayout | null;
+}
+
+const DEFAULT_GROUND: FloorRec = { id: "ground", name: "Ground Floor", level: 0, ceilingHeight: DEFAULT_CEILING_HEIGHT, layout: null };
+
+const FLOOR_NAMES = ["Ground Floor", "First Floor", "Second Floor", "Third Floor"];
+
 export function SmartEnergyHome() {
   const [selected, setSelected] = useState<Set<TechId>>(new Set(["solar"]));
   const [isDay, setIsDay] = useState(true);
@@ -45,6 +61,13 @@ export function SmartEnergyHome() {
   const [planLayout, setPlanLayout] = useState<PlanLayout | null>(null);
   const [planAreaM2, setPlanAreaM2] = useState<number | null>(null);
   const [layoutOn, setLayoutOn] = useState(false);
+  // multi-floor: each customer floor plan is assigned to one of these
+  const [floorsData, setFloorsData] = useState<FloorRec[]>([DEFAULT_GROUND]);
+  const [activeFloorId, setActiveFloorId] = useState("ground");
+  const activeFloorRef = useRef("ground");
+  activeFloorRef.current = activeFloorId;
+  // canonical/golden property preview via ?demoProperty=<id>
+  const [demoProp, setDemoProp] = useState<PropertyModel | null>(null);
   // TEMPORARY: extraction diagnostics, opt-in via ?planDebug=1
   const [planDebug, setPlanDebug] = useState<PlanDebug | null>(null);
   const debugOn = useRef(false);
@@ -76,6 +99,11 @@ export function SmartEnergyHome() {
     const { debug, ...clean } = l;
     savePlanLayout(clean);
     setPlanLayout(clean);
+    setFloorsData((fs) => {
+      const next = fs.map((f) => (f.id === activeFloorRef.current ? { ...f, layout: clean } : f));
+      saveFloors(next);
+      return next;
+    });
     if (debug) setPlanDebug(debug);
   };
 
@@ -92,7 +120,20 @@ export function SmartEnergyHome() {
       if (debugOn.current) extractLayout(b, { debug: true }).then(acceptLayout);
     });
     loadPlanAnalysis<PlanAnalysis>().then((a) => applyAnalysis(a));
-    loadPlanLayout<PlanLayout>().then((l) => l && setPlanLayout(l));
+    loadFloors<FloorRec[]>().then((fs) => {
+      if (fs?.length) setFloorsData(fs);
+    });
+    loadPlanLayout<PlanLayout>().then((l) => {
+      if (!l) return;
+      setPlanLayout(l);
+      // migrate a legacy single-layout store into the ground floor record
+      setFloorsData((fs) => (fs.some((f) => f.layout) ? fs : fs.map((f) => (f.id === "ground" ? { ...f, layout: l } : f))));
+    });
+    const demo = new URLSearchParams(window.location.search).get("demoProperty");
+    if (demo === "1" || demo === "property-001") {
+      setDemoProp(goldenProperty001 as unknown as PropertyModel);
+      setLayoutOn(true);
+    }
     loadPlanArea().then((n) => n && setPlanAreaM2(n));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -112,7 +153,30 @@ export function SmartEnergyHome() {
     scaledOut.current = { layout: scaled, areaM2: planAreaM2 };
     savePlanLayout(scaled);
     setPlanLayout(scaled);
+    setFloorsData((fs) => {
+      const next = fs.map((f) => (f.layout === planLayout ? { ...f, layout: scaled } : f));
+      saveFloors(next);
+      return next;
+    });
   }, [planLayout, planAreaM2]);
+
+  const property = useMemo<PropertyModel | null>(() => {
+    if (demoProp) return demoProp;
+    const floors = floorsData
+      .filter((f) => f.layout?.ok)
+      .map((f) =>
+        floorFromLayout(f.layout!, {
+          id: f.id,
+          name: f.name,
+          level: f.level,
+          ceilingHeight: f.ceilingHeight,
+          planTextureUrl: f.level === 0 ? planUrl ?? undefined : undefined,
+        }),
+      )
+      .filter((f): f is NonNullable<typeof f> => f !== null);
+    if (!floors.length) return null;
+    return { propertyId: "customer-property", floors, source: "extracted" };
+  }, [demoProp, floorsData, planUrl]);
 
   const active = useMemo(() => Array.from(selected), [selected]);
   const model = useMemo(() => computeEnergy(selected, isDay, home), [selected, isDay, home]);
@@ -179,6 +243,7 @@ export function SmartEnergyHome() {
           planUrl={planUrl}
           planRooms={planRead?.rooms}
           layout={planLayout}
+          property={property}
           layoutOn={layoutOn}
           onLayoutToggle={setLayoutOn}
           onPick={(id) => setPicked(id)}
@@ -329,6 +394,8 @@ export function SmartEnergyHome() {
                   setPlanAreaM2(null);
                   savePlanArea(null);
                   setLayoutOn(false);
+                  setFloorsData([DEFAULT_GROUND]);
+                  setActiveFloorId("ground");
                 }}
                 className="flex-none font-semibold text-navy/40 hover:text-navy"
                 aria-label="Remove floor plan"
@@ -385,6 +452,49 @@ export function SmartEnergyHome() {
               }}
             />
           </label>
+          <div className="mb-3 flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-navy/45">Upload applies to</span>
+            {floorsData.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setActiveFloorId(f.id)}
+                aria-pressed={activeFloorId === f.id}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",
+                  activeFloorId === f.id ? "bg-navy text-white" : "bg-white/70 text-navy/55 hover:text-navy"
+                )}
+              >
+                {f.name}
+                {f.layout?.ok ? " ✓" : ""}
+              </button>
+            ))}
+            {floorsData.length < 4 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFloorsData((fs) => {
+                    const level = Math.max(...fs.map((f) => f.level)) + 1;
+                    const rec: FloorRec = {
+                      id: `floor-${level}`,
+                      name: FLOOR_NAMES[level] ?? `Floor ${level}`,
+                      level,
+                      ceilingHeight: DEFAULT_CEILING_HEIGHT,
+                      layout: null,
+                    };
+                    const next = [...fs, rec];
+                    saveFloors(next);
+                    setActiveFloorId(rec.id);
+                    return next;
+                  });
+                }}
+                className="rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold text-navy/55 transition hover:text-navy"
+              >
+                + Add floor
+              </button>
+            )}
+          </div>
+
           {planRead && (planRead.bedrooms || planRead.rooms.length > 0) ? (
             <div className="mb-4 rounded-2xl border border-elixa-green/30 bg-elixa-gradient-soft px-3.5 py-2.5">
               <p className="text-xs font-bold text-navy">✓ Read from your plan — the 3D home has been set to match:</p>

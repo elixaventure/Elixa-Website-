@@ -2,12 +2,13 @@
   "name": "elixa-renewables-group",
   "version": "1.0.0",
   "private": true,
-  "description": "Elixa Renewables Group Ltd — premium renewable energy, heating & cooling website.",
+  "description": "Elixa Renewables Group Ltd \u2014 premium renewable energy, heating & cooling website.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "golden": "node scripts/validate-golden.mjs"
   },
   "dependencies": {
     "@react-three/drei": "9.114.3",
