@@ -147,6 +147,9 @@ export function SmartHomeStage(props: {
     resetSignal,
   };
   const hasLayout = Boolean(props.layout?.ok || props.property || props.showcaseUrl);
+  // with a showcase model loaded, the GLB is THE building view: the engine's
+  // grey dollhouse stays behind the scenes (wall snapping, future design)
+  const showcaseOnly = Boolean(props.showcaseUrl);
 
   useEffect(() => {
     const webgl = hasWebGL();
@@ -241,20 +244,8 @@ export function SmartHomeStage(props: {
             ))}
           </div>
         )}
-        {mode === "3d" && can3d && props.layoutOn && hasLayout && (
+        {mode === "3d" && can3d && props.layoutOn && hasLayout && !showcaseOnly && (
           <div className="pointer-events-auto flex flex-wrap justify-center gap-1 rounded-full bg-white/85 p-1 backdrop-blur">
-            {props.showcaseUrl && (
-              <button
-                onClick={() => setShowcaseOn((v) => !v)}
-                aria-pressed={showcaseOn}
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",
-                  showcaseOn ? "bg-elixa-gradient text-white" : "text-navy/55 hover:text-navy"
-                )}
-              >
-                ✨ Showcase
-              </button>
-            )}
             {(
               [
                 ["dollhouse", "🏠 Dollhouse"],
@@ -284,7 +275,7 @@ export function SmartHomeStage(props: {
         )}
         {mode === "3d" && can3d && props.layoutOn && props.property && (
           <div className="pointer-events-auto flex flex-wrap justify-center gap-1 rounded-full bg-white/85 p-1 backdrop-blur">
-            {[{ id: "all", name: "All floors" }, ...props.property.floors].map((f) => (
+            {!showcaseOnly && [{ id: "all", name: "All floors" }, ...props.property.floors].map((f) => (
               <button
                 key={f.id}
                 onClick={() => setFloorSel(f.id)}
@@ -297,7 +288,7 @@ export function SmartHomeStage(props: {
                 {f.name}
               </button>
             ))}
-            {props.property.floors.length > 1 && (
+            {!showcaseOnly && props.property.floors.length > 1 && (
               <button
                 onClick={() => setExploded((e) => !e)}
                 aria-pressed={exploded}
@@ -309,6 +300,7 @@ export function SmartHomeStage(props: {
                 ⤢ Exploded
               </button>
             )}
+            {!showcaseOnly && (
             <button
               onClick={() => setFurniture((f) => !f)}
               aria-pressed={furniture}
@@ -319,6 +311,7 @@ export function SmartHomeStage(props: {
             >
               Furniture
             </button>
+            )}
             <button
               onClick={() => setResetSignal((n) => n + 1)}
               className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-navy/55 transition hover:text-navy"
