@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import type { PropertyModel, FloorModel, Wall, Opening } from "@/lib/property/types";
+import type { PropertyModel, FloorModel, Wall, Opening, Fixture } from "@/lib/property/types";
 import { propertyBounds, floorElevation } from "@/lib/property/types";
 import {
   FLOOR_SLAB_THICKNESS,
@@ -24,6 +24,13 @@ import type { LayoutView } from "./ExactLayout";
  * around them, with sill/head infill and frame/glazing/leaf joinery.
  */
 
+export interface PlacementState {
+  /** placement mode for new equipment ("ashp" = air-source heat pump) */
+  placing: "ashp" | null;
+  onPlace: (f: Omit<Fixture, "id">) => void;
+  onRemove: (id: string) => void;
+}
+
 export interface PropertyViewState {
   view: LayoutView;
   /** floor id, or "all" */
@@ -35,6 +42,17 @@ export interface PropertyViewState {
 }
 
 const SCENE_FIT = 9; // world units the property's longest side maps to
+
+/** a floor's slab bounds (m) — walls padded slightly, same as the renderer */
+function slabBounds(floor: FloorModel) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const w of floor.walls) {
+    x0 = Math.min(x0, w.a.x, w.b.x); y0 = Math.min(y0, w.a.y, w.b.y);
+    x1 = Math.max(x1, w.a.x, w.b.x); y1 = Math.max(y1, w.a.y, w.b.y);
+  }
+  if (!isFinite(x0)) return { x0: 0, y0: 0, x1: 1, y1: 1 };
+  return { x0: x0 - 0.2, y0: y0 - 0.2, x1: x1 + 0.2, y1: y1 + 0.2 };
+}
 
 const COL = {
   wallDay: "#efe9df",
@@ -148,10 +166,12 @@ export function PropertyScene({
   property,
   isDay,
   state,
+  placement,
 }: {
   property: PropertyModel;
   isDay: boolean;
   state: PropertyViewState;
+  placement?: PlacementState;
 }) {
   const bounds = useMemo(() => propertyBounds(property), [property]);
   const spanX = bounds.x1 - bounds.x0;
@@ -223,6 +243,60 @@ export function PropertyScene({
     }
   });
 
+  // -------- equipment placement (heat pump on the ground floor) ----------
+  const ground = floors[0];
+  const groundSb = useMemo(() => slabBounds(ground), [ground]);
+  const gCX = (groundSb.x0 + groundSb.x1) / 2;
+  const gCY = (groundSb.y0 + groundSb.y1) / 2;
+  const [ghost, setGhost] = useState<{ x: number; y: number; rotation: number; valid: boolean } | null>(null);
+
+  /** snap a plan-space point to the outside face of the nearest external wall */
+  const snapToWall = (px: number, py: number) => {
+    let best: { x: number; y: number; rotation: number; d: number } | null = null;
+    for (const w of ground.walls) {
+      if (w.kind !== "external") continue;
+      const dx = w.b.x - w.a.x;
+      const dy = w.b.y - w.a.y;
+      const L2 = dx * dx + dy * dy;
+      if (L2 < 0.01) continue;
+      const t = Math.max(0.08, Math.min(0.92, ((px - w.a.x) * dx + (py - w.a.y) * dy) / L2));
+      const qx = w.a.x + dx * t;
+      const qy = w.a.y + dy * t;
+      const d = Math.hypot(px - qx, py - qy);
+      if (d > 1.6 || (best && d >= best.d)) continue;
+      // outward direction: prefer the wall's stored normal, else the pointer side
+      let nx = w.normal?.x ?? 0;
+      let ny = w.normal?.y ?? 0;
+      if (!nx && !ny) {
+        const L = Math.sqrt(L2);
+        nx = -dy / L;
+        ny = dx / L;
+        if ((px - qx) * nx + (py - qy) * ny < 0) {
+          nx = -nx;
+          ny = -ny;
+        }
+      }
+      const off = w.thickness / 2 + 0.28;
+      best = { x: qx + nx * off, y: qy + ny * off, rotation: Math.atan2(nx, ny), d };
+    }
+    return best;
+  };
+
+  const placeAt = (px: number, py: number) => {
+    const snapped = snapToWall(px, py);
+    if (snapped) return { x: snapped.x, y: snapped.y, rotation: snapped.rotation, valid: true };
+    const inside =
+      px > groundSb.x0 + 0.3 && px < groundSb.x1 - 0.3 && py > groundSb.y0 + 0.3 && py < groundSb.y1 - 0.3;
+    return { x: px, y: py, rotation: 0, valid: !inside };
+  };
+
+  const planePoint = (e: { point: THREE.Vector3 }, plane: THREE.Object3D | null) => {
+    if (!plane) return null;
+    const local = plane.parent!.worldToLocal(e.point.clone());
+    return { x: local.x + gCX, y: local.z + gCY };
+  };
+  const planeRef = useRef<THREE.Mesh>(null);
+
   const wallColor = isDay ? COL.wallDay : COL.wallNight;
   const xray = state.view === "xray";
   const wallMat = useMemo(
@@ -240,6 +314,38 @@ export function PropertyScene({
 
   return (
     <group scale={[fit, fit, fit]} position={[0, 0.06, 0]}>
+      {placement?.placing && (
+        <>
+          {/* invisible catcher for placement clicks, ground-floor plan space */}
+          <mesh
+            ref={planeRef}
+            rotation={[-Math.PI / 2, 0, 0]}
+            position={[0, 0.01, 0]}
+            onPointerMove={(e) => {
+              const p = planePoint(e, planeRef.current);
+              if (p) setGhost(placeAt(p.x, p.y));
+            }}
+            onPointerOut={() => setGhost(null)}
+            onClick={(e) => {
+              e.stopPropagation();
+              const p = planePoint(e, planeRef.current);
+              if (!p) return;
+              const g = placeAt(p.x, p.y);
+              if (!g.valid) return;
+              placement.onPlace({ floorId: ground.id, type: "ashp", at: { x: g.x, y: g.y }, rotation: g.rotation });
+              setGhost(null);
+            }}
+          >
+            <planeGeometry args={[spanX + 24, spanY + 24]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+          </mesh>
+          {ghost && (
+            <group position={[ghost.x - gCX, 0.06, ghost.y - gCY]} rotation={[0, ghost.rotation, 0]}>
+              <HeatPumpUnit ghost valid={ghost.valid} />
+            </group>
+          )}
+        </>
+      )}
       {floors.map((f) => (
         <FloorGroup
           key={f.id}
@@ -248,6 +354,7 @@ export function PropertyScene({
           xray={xray}
           furniture={state.furniture}
           wallMat={wallMat}
+          onRemoveFixture={placement?.onRemove}
           register={(key, g) => {
             if (g) groupRefs.current.set(key, g);
             else groupRefs.current.delete(key);
@@ -264,6 +371,7 @@ function FloorGroup({
   xray,
   furniture,
   wallMat,
+  onRemoveFixture,
   register,
 }: {
   floor: FloorModel;
@@ -271,20 +379,13 @@ function FloorGroup({
   xray: boolean;
   furniture: boolean;
   wallMat: THREE.Material;
+  onRemoveFixture?: (id: string) => void;
   register: (key: string, g: THREE.Group | null) => void;
 }) {
   const composed = useMemo(() => composeFloor(floor), [floor]);
 
   // slab bounds for this floor
-  const sb = useMemo(() => {
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    for (const w of floor.walls) {
-      x0 = Math.min(x0, w.a.x, w.b.x); y0 = Math.min(y0, w.a.y, w.b.y);
-      x1 = Math.max(x1, w.a.x, w.b.x); y1 = Math.max(y1, w.a.y, w.b.y);
-    }
-    if (!isFinite(x0)) return { x0: 0, y0: 0, x1: 1, y1: 1 };
-    return { x0: x0 - 0.2, y0: y0 - 0.2, x1: x1 + 0.2, y1: y1 + 0.2 };
-  }, [floor]);
+  const sb = useMemo(() => slabBounds(floor), [floor]);
   // floors from separately-uploaded plans have unrelated origins: centre each
   // floor on its own footprint so storeys stack aligned
   const centreX = (sb.x0 + sb.x1) / 2;
@@ -372,9 +473,35 @@ function FloorGroup({
         })}
       </group>
 
-      {/* future layers attach beside BuildingGeometry: HeatingEquipment,
-          Pipework, Annotations. Furniture exists now as an empty toggleable
-          layer so the scene graph shape is stable. */}
+      <group name="HeatingEquipment">
+        {floor.fixtures.map(
+          (f) =>
+            f.type === "ashp" && (
+              <group
+                key={f.id}
+                position={[X(f.at.x), 0.06, Z(f.at.y)]}
+                rotation={[0, f.rotation ?? 0, 0]}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemoveFixture?.(f.id);
+                }}
+                onPointerOver={(e) => {
+                  e.stopPropagation();
+                  document.body.style.cursor = "pointer";
+                }}
+                onPointerOut={() => {
+                  document.body.style.cursor = "";
+                }}
+              >
+                <HeatPumpUnit />
+              </group>
+            ),
+        )}
+      </group>
+
+      {/* future layers attach beside HeatingEquipment: Pipework, Annotations.
+          Furniture exists now as an empty toggleable layer so the scene graph
+          shape is stable. */}
       <group name="Furniture" visible={furniture} />
     </group>
   );
@@ -587,5 +714,47 @@ function RoomLabel({ text, position }: { text: string; position: [number, number
     <sprite position={position} scale={[2.6, 0.65, 1]}>
       <spriteMaterial map={tex} transparent depthWrite={false} />
     </sprite>
+  );
+}
+
+/* ------------------------------------------------------------- heat pump ---- */
+
+/**
+ * A compact air-source heat pump, metric (≈1.1 × 0.42 × 0.85 m), front = +z.
+ * Ghost mode renders it translucent (teal = valid spot, red = invalid).
+ */
+export function HeatPumpUnit({ ghost = false, valid = true }: { ghost?: boolean; valid?: boolean }) {
+  const body = ghost ? (valid ? "#2ab3a6" : "#c0564a") : "#e8eaec";
+  const opacity = ghost ? 0.55 : 1;
+  return (
+    <group>
+      <mesh position={[0, 0.425, 0]} castShadow={!ghost}>
+        <boxGeometry args={[1.1, 0.85, 0.42]} />
+        <meshStandardMaterial color={body} roughness={0.45} metalness={0.15} transparent={ghost} opacity={opacity} />
+      </mesh>
+      {/* fan shroud */}
+      <mesh position={[-0.22, 0.46, 0.215]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.3, 0.3, 0.04, 24]} />
+        <meshStandardMaterial color={ghost ? body : "#3a4654"} roughness={0.6} transparent={ghost} opacity={opacity} />
+      </mesh>
+      <mesh position={[-0.22, 0.46, 0.24]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.24, 0.24, 0.03, 5]} />
+        <meshStandardMaterial color={ghost ? body : "#8b97a5"} roughness={0.4} transparent={ghost} opacity={opacity} />
+      </mesh>
+      {/* side grille */}
+      <mesh position={[0.33, 0.5, 0.215]}>
+        <boxGeometry args={[0.34, 0.5, 0.015]} />
+        <meshStandardMaterial color={ghost ? body : "#c9ced4"} roughness={0.7} transparent={ghost} opacity={opacity} />
+      </mesh>
+      {/* feet */}
+      <mesh position={[-0.4, 0.03, 0]}>
+        <boxGeometry args={[0.12, 0.06, 0.4]} />
+        <meshStandardMaterial color={ghost ? body : "#5b6673"} transparent={ghost} opacity={opacity} />
+      </mesh>
+      <mesh position={[0.4, 0.03, 0]}>
+        <boxGeometry args={[0.12, 0.06, 0.4]} />
+        <meshStandardMaterial color={ghost ? body : "#5b6673"} transparent={ghost} opacity={opacity} />
+      </mesh>
+    </group>
   );
 }

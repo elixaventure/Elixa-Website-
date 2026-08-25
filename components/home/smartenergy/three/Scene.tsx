@@ -8,7 +8,7 @@ import { Equipment } from "./Equipment";
 import { Flows } from "./Flows";
 import { PlanMat } from "./PlanMat";
 import { ExactLayout, type LayoutView } from "./ExactLayout";
-import { PropertyScene, type PropertyViewState } from "./PropertyScene";
+import { PropertyScene, type PropertyViewState, type PlacementState } from "./PropertyScene";
 import { ShowcaseModel } from "./ShowcaseModel";
 import type { PropertyModel } from "@/lib/property/types";
 import type { PlanLayout } from "@/lib/planLayout";
@@ -33,6 +33,7 @@ export function Scene({
   propertyState,
   showcaseUrl,
   showcaseOn,
+  placement,
   onPick,
   onHoverChange,
 }: {
@@ -58,6 +59,7 @@ export function Scene({
   /** pre-built showcase GLB shown in place of the generated dollhouse */
   showcaseUrl?: string | null;
   showcaseOn?: boolean;
+  placement?: PlacementState;
   onPick: (id: TechId | "grid") => void;
   /** notifies the parent (screen-space tooltip) — kept OUT of the canvas to
       avoid the DOM label stealing the pointer and flickering the hover. */
@@ -120,7 +122,7 @@ export function Scene({
       {layoutOn && showcaseOn && showcaseUrl ? (
         <ShowcaseModel url={showcaseUrl} />
       ) : layoutOn && property && propertyState ? (
-        <PropertyScene property={property} isDay={isDay} state={propertyState} />
+        <PropertyScene property={property} isDay={isDay} state={propertyState} placement={placement} />
       ) : layoutOn && layout?.ok ? (
         <ExactLayout layout={layout} planUrl={planUrl} isDay={isDay} view={layoutView} />
       ) : (

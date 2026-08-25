@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePlanAnalysis, loadPlanAnalysis, savePlanLayout, loadPlanLayout, savePlanArea, loadPlanArea, saveFloors, loadFloors, saveShowcaseModel, loadShowcaseModel } from "@/lib/planStore";
+import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePlanAnalysis, loadPlanAnalysis, savePlanLayout, loadPlanLayout, savePlanArea, loadPlanArea, saveFloors, loadFloors, saveShowcaseModel, loadShowcaseModel, saveFixtures, loadFixtures } from "@/lib/planStore";
 import { makePlanPreview } from "@/lib/planPreview";
 import { analysePlan, type PlanAnalysis } from "@/lib/planAnalysis";
 import { extractLayout, type PlanLayout } from "@/lib/planLayout";
 import { planApiConfigured, recognisePlan } from "@/lib/planApi";
 import { adaptRecognition } from "@/lib/planAdapter";
 import { floorFromLayout } from "@/lib/property/fromLayout";
-import type { PropertyModel } from "@/lib/property/types";
+import type { PropertyModel, Fixture } from "@/lib/property/types";
 import { DEFAULT_CEILING_HEIGHT } from "@/lib/property/constants";
 import goldenProperty001 from "@/golden-tests/property-001/expected-property.json";
 import type { PlanDebug } from "@/lib/planLayoutDebug";
@@ -71,6 +71,8 @@ export function SmartEnergyHome() {
   // a pre-built showcase GLB (public/models/showcase-apartment.glb) lights up
   // an extra "Showcase" view when the file exists in the deploy
   const [showcaseUrl, setShowcaseUrl] = useState<string | null>(null);
+  // placed equipment (heat pump etc.), merged into whichever property shows
+  const [fixtures, setFixtures] = useState<Fixture[]>([]);
   // TEMPORARY: extraction diagnostics, opt-in via ?planDebug=1
   const [planDebug, setPlanDebug] = useState<PlanDebug | null>(null);
   const debugOn = useRef(false);
@@ -123,6 +125,7 @@ export function SmartEnergyHome() {
       if (debugOn.current) extractLayout(b, { debug: true }).then(acceptLayout);
     });
     loadPlanAnalysis<PlanAnalysis>().then((a) => applyAnalysis(a));
+    loadFixtures<Fixture[]>().then((f) => f && setFixtures(f));
     loadFloors<FloorRec[]>().then((fs) => {
       if (fs?.length) setFloorsData(fs);
     });
@@ -178,8 +181,16 @@ export function SmartEnergyHome() {
     });
   }, [planLayout, planAreaM2]);
 
+  const withFixtures = (p: PropertyModel): PropertyModel => ({
+    ...p,
+    floors: p.floors.map((f) => ({
+      ...f,
+      fixtures: [...f.fixtures, ...fixtures.filter((x) => x.floorId === f.id)],
+    })),
+  });
+
   const property = useMemo<PropertyModel | null>(() => {
-    if (demoProp) return demoProp;
+    if (demoProp) return withFixtures(demoProp);
     const floors = floorsData
       .filter((f) => f.layout?.ok)
       .map((f) =>
@@ -193,8 +204,9 @@ export function SmartEnergyHome() {
       )
       .filter((f): f is NonNullable<typeof f> => f !== null);
     if (!floors.length) return null;
-    return { propertyId: "customer-property", floors, source: "extracted" };
-  }, [demoProp, floorsData, planUrl]);
+    return withFixtures({ propertyId: "customer-property", floors, source: "extracted" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demoProp, floorsData, planUrl, fixtures]);
 
   const active = useMemo(() => Array.from(selected), [selected]);
   const model = useMemo(() => computeEnergy(selected, isDay, home), [selected, isDay, home]);
@@ -263,6 +275,21 @@ export function SmartEnergyHome() {
           layout={planLayout}
           property={property}
           showcaseUrl={showcaseUrl}
+          onPlaceFixture={(f) => {
+            setFixtures((cur) => {
+              const next = [...cur, { ...f, id: `fx-${Date.now().toString(36)}` }];
+              saveFixtures(next);
+              return next;
+            });
+            track("cta_click", { location: "smart-energy-home", label: "place-heatpump" });
+          }}
+          onRemoveFixture={(id) => {
+            setFixtures((cur) => {
+              const next = cur.filter((f) => f.id !== id);
+              saveFixtures(next);
+              return next;
+            });
+          }}
           layoutOn={layoutOn}
           onLayoutToggle={setLayoutOn}
           onPick={(id) => setPicked(id)}

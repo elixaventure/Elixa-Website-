@@ -9,7 +9,7 @@ import { layoutFor, DEFAULT_HOME, type HomeConfig, type SystemView } from "./thr
 import type { PlanLayout } from "@/lib/planLayout";
 import type { LayoutView } from "./three/ExactLayout";
 import type { PropertyModel } from "@/lib/property/types";
-import type { PropertyViewState } from "./three/PropertyScene";
+import type { PropertyViewState, PlacementState } from "./three/PropertyScene";
 
 const Scene = dynamic(() => import("./three/Scene").then((m) => m.Scene), {
   ssr: false,
@@ -94,6 +94,8 @@ export function SmartHomeStage(props: {
   layoutOn?: boolean;
   property?: PropertyModel | null;
   showcaseUrl?: string | null;
+  onPlaceFixture?: PlacementState["onPlace"];
+  onRemoveFixture?: PlacementState["onRemove"];
   onLayoutToggle?: (on: boolean) => void;
   onPick: (id: TechId | "grid") => void;
 }) {
@@ -123,6 +125,17 @@ export function SmartHomeStage(props: {
   const [furniture, setFurniture] = useState(true);
   const [resetSignal, setResetSignal] = useState(0);
   const [showcaseOn, setShowcaseOn] = useState(false);
+  const [placing, setPlacing] = useState<"ashp" | null>(null);
+  const placement: PlacementState | undefined = props.onPlaceFixture
+    ? {
+        placing,
+        onPlace: (f) => {
+          props.onPlaceFixture!(f);
+          setPlacing(null);
+        },
+        onRemove: props.onRemoveFixture ?? (() => {}),
+      }
+    : undefined;
   useEffect(() => {
     if (props.showcaseUrl) setShowcaseOn(true);
   }, [props.showcaseUrl]);
@@ -156,9 +169,17 @@ export function SmartHomeStage(props: {
       onPointerLeave={() => setHoveredNode(null)}
     >
       {mode === "3d" && can3d ? (
-        <Scene {...props} view={effectiveView} reduced={reduced} layoutView={layoutView} propertyState={propertyState} showcaseOn={showcaseOn} onHoverChange={setHoveredNode} />
+        <Scene {...props} view={effectiveView} reduced={reduced} layoutView={layoutView} propertyState={propertyState} showcaseOn={showcaseOn} placement={placement} onHoverChange={setHoveredNode} />
       ) : (
         <HouseCrossSection {...props} />
+      )}
+
+      {placing && (
+        <div className="pointer-events-none absolute inset-x-0 top-16 z-10 flex justify-center sm:top-20">
+          <p className="rounded-full bg-navy-900/90 px-4 py-2 text-xs font-semibold text-white backdrop-blur">
+            Click outside the house to place the heat pump — it snaps to your outside walls
+          </p>
+        </div>
       )}
 
       {/* trace journey card */}
@@ -298,6 +319,19 @@ export function SmartHomeStage(props: {
               className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-navy/55 transition hover:text-navy"
             >
               ↺ Reset view
+            </button>
+            <button
+              onClick={() => {
+                setPlacing((p) => (p ? null : "ashp"));
+                setShowcaseOn(false);
+              }}
+              aria-pressed={placing === "ashp"}
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",
+                placing === "ashp" ? "bg-elixa-gradient text-white" : "text-navy/55 hover:text-navy"
+              )}
+            >
+              {placing === "ashp" ? "✕ Cancel" : "♨ Add heat pump"}
             </button>
           </div>
         )}
