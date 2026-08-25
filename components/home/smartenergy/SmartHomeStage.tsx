@@ -277,6 +277,11 @@ export function SmartHomeStage(props: {
             ))}
           </div>
         )}
+        {mode === "3d" && can3d && props.layoutOn && props.showcaseUrl && !props.property && (
+          <p className="pointer-events-none rounded-full bg-white/85 px-3.5 py-1.5 text-[11px] font-semibold text-navy/55 backdrop-blur">
+            Upload your floor plan to unlock floors &amp; equipment placement
+          </p>
+        )}
         {mode === "3d" && can3d && props.layoutOn && props.property && (
           <div className="pointer-events-auto flex flex-wrap justify-center gap-1 rounded-full bg-white/85 p-1 backdrop-blur">
             {[{ id: "all", name: "All floors" }, ...props.property.floors].map((f) => (
