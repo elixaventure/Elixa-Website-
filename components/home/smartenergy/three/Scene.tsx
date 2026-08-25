@@ -8,7 +8,7 @@ import { Equipment } from "./Equipment";
 import { Flows } from "./Flows";
 import { PlanMat } from "./PlanMat";
 import { ExactLayout, type LayoutView } from "./ExactLayout";
-import { PropertyScene, type PropertyViewState, type PlacementState } from "./PropertyScene";
+import { PropertyScene, FixturesOverlay, type PropertyViewState, type PlacementState } from "./PropertyScene";
 import { ShowcaseModel } from "./ShowcaseModel";
 import type { PropertyModel } from "@/lib/property/types";
 import type { PlanLayout } from "@/lib/planLayout";
@@ -120,7 +120,10 @@ export function Scene({
       </Environment>
 
       {layoutOn && showcaseOn && showcaseUrl ? (
-        <ShowcaseModel url={showcaseUrl} />
+        <>
+          <ShowcaseModel url={showcaseUrl} />
+          {property && <FixturesOverlay property={property} placement={placement} />}
+        </>
       ) : layoutOn && property && propertyState ? (
         <PropertyScene property={property} isDay={isDay} state={propertyState} placement={placement} />
       ) : layoutOn && layout?.ok ? (

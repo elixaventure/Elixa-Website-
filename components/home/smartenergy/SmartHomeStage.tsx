@@ -326,10 +326,7 @@ export function SmartHomeStage(props: {
               ↺ Reset view
             </button>
             <button
-              onClick={() => {
-                setPlacing((p) => (p ? null : "ashp"));
-                setShowcaseOn(false);
-              }}
+              onClick={() => setPlacing((p) => (p ? null : "ashp"))}
               aria-pressed={placing === "ashp"}
               className={cn(
                 "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",

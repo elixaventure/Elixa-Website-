@@ -43,6 +43,37 @@ export interface PropertyViewState {
 
 const SCENE_FIT = 9; // world units the property's longest side maps to
 
+/** snap a plan-space point to the outside face of the nearest external wall */
+export function snapPointToWall(ground: FloorModel, px: number, py: number) {
+  let best: { x: number; y: number; rotation: number; d: number } | null = null;
+  for (const w of ground.walls) {
+    if (w.kind !== "external") continue;
+    const dx = w.b.x - w.a.x;
+    const dy = w.b.y - w.a.y;
+    const L2 = dx * dx + dy * dy;
+    if (L2 < 0.01) continue;
+    const t = Math.max(0.08, Math.min(0.92, ((px - w.a.x) * dx + (py - w.a.y) * dy) / L2));
+    const qx = w.a.x + dx * t;
+    const qy = w.a.y + dy * t;
+    const d = Math.hypot(px - qx, py - qy);
+    if (d > 1.6 || (best && d >= best.d)) continue;
+    let nx = w.normal?.x ?? 0;
+    let ny = w.normal?.y ?? 0;
+    if (!nx && !ny) {
+      const L = Math.sqrt(L2);
+      nx = -dy / L;
+      ny = dx / L;
+      if ((px - qx) * nx + (py - qy) * ny < 0) {
+        nx = -nx;
+        ny = -ny;
+      }
+    }
+    const off = w.thickness / 2 + 0.28;
+    best = { x: qx + nx * off, y: qy + ny * off, rotation: Math.atan2(nx, ny), d };
+  }
+  return best;
+}
+
 /** a floor's slab bounds (m) — walls padded slightly, same as the renderer */
 function slabBounds(floor: FloorModel) {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
@@ -250,40 +281,8 @@ export function PropertyScene({
   const gCY = (groundSb.y0 + groundSb.y1) / 2;
   const [ghost, setGhost] = useState<{ x: number; y: number; rotation: number; valid: boolean } | null>(null);
 
-  /** snap a plan-space point to the outside face of the nearest external wall */
-  const snapToWall = (px: number, py: number) => {
-    let best: { x: number; y: number; rotation: number; d: number } | null = null;
-    for (const w of ground.walls) {
-      if (w.kind !== "external") continue;
-      const dx = w.b.x - w.a.x;
-      const dy = w.b.y - w.a.y;
-      const L2 = dx * dx + dy * dy;
-      if (L2 < 0.01) continue;
-      const t = Math.max(0.08, Math.min(0.92, ((px - w.a.x) * dx + (py - w.a.y) * dy) / L2));
-      const qx = w.a.x + dx * t;
-      const qy = w.a.y + dy * t;
-      const d = Math.hypot(px - qx, py - qy);
-      if (d > 1.6 || (best && d >= best.d)) continue;
-      // outward direction: prefer the wall's stored normal, else the pointer side
-      let nx = w.normal?.x ?? 0;
-      let ny = w.normal?.y ?? 0;
-      if (!nx && !ny) {
-        const L = Math.sqrt(L2);
-        nx = -dy / L;
-        ny = dx / L;
-        if ((px - qx) * nx + (py - qy) * ny < 0) {
-          nx = -nx;
-          ny = -ny;
-        }
-      }
-      const off = w.thickness / 2 + 0.28;
-      best = { x: qx + nx * off, y: qy + ny * off, rotation: Math.atan2(nx, ny), d };
-    }
-    return best;
-  };
-
   const placeAt = (px: number, py: number) => {
-    const snapped = snapToWall(px, py);
+    const snapped = snapPointToWall(ground, px, py);
     if (snapped) return { x: snapped.x, y: snapped.y, rotation: snapped.rotation, valid: true };
     const inside =
       px > groundSb.x0 + 0.3 && px < groundSb.x1 - 0.3 && py > groundSb.y0 + 0.3 && py < groundSb.y1 - 0.3;
@@ -755,6 +754,103 @@ export function HeatPumpUnit({ ghost = false, valid = true }: { ghost?: boolean;
         <boxGeometry args={[0.12, 0.06, 0.4]} />
         <meshStandardMaterial color={ghost ? body : "#5b6673"} transparent={ghost} opacity={opacity} />
       </mesh>
+    </group>
+  );
+}
+
+/* ---------------------------------------------------- showcase overlay ------ */
+
+/**
+ * Equipment layer rendered over the showcase GLB. Uses the SAME fit and
+ * ground-floor centring as PropertyScene, so a property and a showcase model
+ * of the same home line up; the plan's walls provide invisible snapping.
+ */
+export function FixturesOverlay({
+  property,
+  placement,
+}: {
+  property: PropertyModel;
+  placement?: PlacementState;
+}) {
+  const bounds = useMemo(() => propertyBounds(property), [property]);
+  const fit = SCENE_FIT / Math.max(bounds.x1 - bounds.x0, bounds.y1 - bounds.y0, 1);
+  const floors = useMemo(() => [...property.floors].sort((a, b) => a.level - b.level), [property]);
+  const ground = floors[0];
+  const sb = useMemo(() => slabBounds(ground), [ground]);
+  const gCX = (sb.x0 + sb.x1) / 2;
+  const gCY = (sb.y0 + sb.y1) / 2;
+  const [ghost, setGhost] = useState<{ x: number; y: number; rotation: number; valid: boolean } | null>(null);
+  const planeRef = useRef<THREE.Mesh>(null);
+
+  const placeAt = (px: number, py: number) => {
+    const snapped = snapPointToWall(ground, px, py);
+    if (snapped) return { x: snapped.x, y: snapped.y, rotation: snapped.rotation, valid: true };
+    const inside = px > sb.x0 + 0.3 && px < sb.x1 - 0.3 && py > sb.y0 + 0.3 && py < sb.y1 - 0.3;
+    return { x: px, y: py, rotation: 0, valid: !inside };
+  };
+  const planePoint = (e: { point: THREE.Vector3 }) => {
+    const plane = planeRef.current;
+    if (!plane || !plane.parent) return null;
+    const local = plane.parent.worldToLocal(e.point.clone());
+    return { x: local.x + gCX, y: local.z + gCY };
+  };
+
+  return (
+    <group scale={[fit, fit, fit]} position={[0, 0.06, 0]}>
+      {placement?.placing && (
+        <>
+          <mesh
+            ref={planeRef}
+            rotation={[-Math.PI / 2, 0, 0]}
+            position={[0, 0.01, 0]}
+            onPointerMove={(e) => {
+              const p = planePoint(e);
+              if (p) setGhost(placeAt(p.x, p.y));
+            }}
+            onPointerOut={() => setGhost(null)}
+            onClick={(e) => {
+              e.stopPropagation();
+              const p = planePoint(e);
+              if (!p) return;
+              const g = placeAt(p.x, p.y);
+              if (!g.valid) return;
+              placement.onPlace({ floorId: ground.id, type: "ashp", at: { x: g.x, y: g.y }, rotation: g.rotation });
+              setGhost(null);
+            }}
+          >
+            <planeGeometry args={[bounds.x1 - bounds.x0 + 24, bounds.y1 - bounds.y0 + 24]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+          </mesh>
+          {ghost && (
+            <group position={[ghost.x - gCX, 0, ghost.y - gCY]} rotation={[0, ghost.rotation, 0]}>
+              <HeatPumpUnit ghost valid={ghost.valid} />
+            </group>
+          )}
+        </>
+      )}
+      {ground.fixtures.map(
+        (f) =>
+          f.type === "ashp" && (
+            <group
+              key={f.id}
+              position={[f.at.x - gCX, 0, f.at.y - gCY]}
+              rotation={[0, f.rotation ?? 0, 0]}
+              onClick={(e) => {
+                e.stopPropagation();
+                placement?.onRemove(f.id);
+              }}
+              onPointerOver={(e) => {
+                e.stopPropagation();
+                document.body.style.cursor = "pointer";
+              }}
+              onPointerOut={() => {
+                document.body.style.cursor = "";
+              }}
+            >
+              <HeatPumpUnit />
+            </group>
+          ),
+      )}
     </group>
   );
 }
