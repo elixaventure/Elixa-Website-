@@ -7,6 +7,7 @@ import { analysePlan, type PlanAnalysis } from "@/lib/planAnalysis";
 import { extractLayout, type PlanLayout } from "@/lib/planLayout";
 import { planApiConfigured, recognisePlan } from "@/lib/planApi";
 import { adaptRecognition } from "@/lib/planAdapter";
+import { SystemConfigurator } from "./SystemConfigurator";
 import { floorFromLayout } from "@/lib/property/fromLayout";
 import type { PropertyModel, Fixture } from "@/lib/property/types";
 import { DEFAULT_CEILING_HEIGHT } from "@/lib/property/constants";
@@ -672,7 +673,23 @@ export function SmartEnergyHome() {
             </div>
           </div>
 
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-navy/50">3 · Build your smarter home</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-navy/50">3 · Choose your heating system</p>
+          <SystemConfigurator
+            areaM2={planAreaM2}
+            bedrooms={home.bedrooms}
+            onSync={({ heatPump, emitterTech }) => {
+              setSelected((cur) => {
+                const next = new Set(cur);
+                if (heatPump) next.add("heatpump");
+                next.delete("thermaskirt");
+                next.delete("underfloor");
+                if (emitterTech) next.add(emitterTech);
+                return next;
+              });
+            }}
+          />
+
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-navy/50">4 · Build your smarter home</p>
           <div className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible">
             {TECHS.map((t) => {
               const on = selected.has(t.id);
