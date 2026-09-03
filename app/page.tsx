@@ -1,34 +1,34 @@
-import { Hero } from "@/components/home/Hero";
-import { Accreditations } from "@/components/home/Accreditations";
-import { ServicesGrid } from "@/components/home/ServicesGrid";
-import { SmartHomeSection } from "@/components/home/SmartHomeSection";
-import { EnergyFlow } from "@/components/home/EnergyFlow";
-import { WhyElixa } from "@/components/home/WhyElixa";
-import { Process } from "@/components/home/Process";
-import { CalculatorSection } from "@/components/home/CalculatorSection";
-import { GrantsTeaser } from "@/components/home/GrantsTeaser";
-import { Reviews } from "@/components/home/Reviews";
-import { CtaBanner } from "@/components/home/CtaBanner";
-import { JsonLd } from "@/components/seo/JsonLd";
-import { faqSchema } from "@/lib/seo";
-import { services } from "@/content/services";
+import type { Metadata } from "next";
+import { SmoothScroll } from "@/components/v2/SmoothScroll";
+import { NavV2 } from "@/components/v2/Nav";
+import { HeroV2 } from "@/components/v2/Hero";
+import { ReelV2 } from "@/components/v2/Reel";
+import { WhyElixa, Projects, Process, Grants, FinalCta } from "@/components/v2/Sections";
+import { FooterV2 } from "@/components/v2/FooterV2";
+
+export const metadata: Metadata = {
+  title: "Elixa Renewables — Low-Carbon Heating, Designed Around Your Home",
+  description:
+    "Heat pumps, solar, modern heating systems and intelligent home energy solutions — designed, installed and supported by Elixa Renewables across the UK.",
+};
 
 export default function HomePage() {
-  const topFaqs = services.flatMap((s) => s.faqs).slice(0, 6);
   return (
-    <>
-      <Hero />
-      <Accreditations />
-      <ServicesGrid />
-      <SmartHomeSection />
-      <EnergyFlow />
-      <WhyElixa />
-      <Process />
-      <CalculatorSection />
-      <GrantsTeaser />
-      <Reviews />
-      <CtaBanner />
-      {faqSchema(topFaqs) && <JsonLd data={faqSchema(topFaqs)!} />}
-    </>
+    <SmoothScroll>
+      {/* the document itself must be dark on this page — pinned sections and
+          overscroll would otherwise flash the default white body through */}
+      <style>{`html, body { background-color: #080B0F; }`}</style>
+      <div className="v2-grain bg-night font-arch text-night-text antialiased">
+        <NavV2 />
+        <HeroV2 />
+        <ReelV2 />
+        <WhyElixa />
+        <Projects />
+        <Process />
+        <Grants />
+        <FinalCta />
+        <FooterV2 />
+      </div>
+    </SmoothScroll>
   );
 }

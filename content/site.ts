@@ -11,9 +11,9 @@ export const site = {
     "Premium renewable energy, heating, cooling and low-carbon technology — expertly supplied and installed nationwide across the UK.",
   url: "https://www.elixarenewables.co.uk",
   // Update per deployment (used for canonical URLs & sitemap); no trailing slash.
-  phone: "07833 387653",
-  phoneHref: "tel:+447833387653",
-  phoneDisplay: "07833 387 653",
+  phone: "0333 0151 246",
+  phoneHref: "tel:+443330151246",
+  phoneDisplay: "0333 0151 246",
   email: "info@elixarenewables.co.uk",
   emailHref: "mailto:info@elixarenewables.co.uk",
   address: {
