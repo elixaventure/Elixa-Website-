@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SmoothScroll } from "@/components/v2/SmoothScroll";
 import { NavV2 } from "@/components/v2/Nav";
 import { HeroV2 } from "@/components/v2/Hero";
-import { ReelV2 } from "@/components/v2/Reel";
+import { ExploreHome } from "@/components/v2/ExploreHome";
 import { WhyElixa, Projects, Process, Grants, FinalCta } from "@/components/v2/Sections";
 import { FooterV2 } from "@/components/v2/FooterV2";
 
@@ -21,7 +21,7 @@ export default function HomePage() {
       <div className="v2-grain bg-night font-arch text-night-text antialiased">
         <NavV2 />
         <HeroV2 />
-        <ReelV2 />
+        <ExploreHome />
         <WhyElixa />
         <Projects />
         <Process />
