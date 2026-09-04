@@ -118,8 +118,8 @@ export function HeroV2() {
           <source src={`${BASE}/media/hero.mp4`} type="video/mp4" />
         </video>
         {/* cinematic shading: navy wash, readability gradient, vignette */}
-        <div className="absolute inset-0 bg-[#0B1016]/45" />
-        <div className="absolute inset-0 bg-gradient-to-t from-night via-night/25 to-night/55" />
+        <div className="absolute inset-0 bg-[#0B1016]/55" />
+        <div className="absolute inset-0 bg-gradient-to-t from-night via-night/30 to-night/55" />
         <div className="absolute inset-0 [background:radial-gradient(120%_90%_at_50%_40%,transparent_55%,rgba(4,6,9,0.65)_100%)]" />
       </div>
 
