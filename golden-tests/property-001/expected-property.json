@@ -1,0 +1,56 @@
+{
+  "propertyId": "property-001",
+  "name": "Two-bed apartment with twin balconies",
+  "source": "golden",
+  "floors": [
+    {
+      "id": "ground",
+      "name": "Ground Floor",
+      "level": 0,
+      "ceilingHeight": 2.4,
+      "walls": [
+        { "id": "ground-ext-top", "floorId": "ground", "a": { "x": 0, "y": 0.15 }, "b": { "x": 6.3, "y": 0.15 }, "thickness": 0.3, "kind": "external", "normal": { "x": 0, "y": -1 } },
+        { "id": "ground-ext-bottom", "floorId": "ground", "a": { "x": 0, "y": 16.25 }, "b": { "x": 6.3, "y": 16.25 }, "thickness": 0.3, "kind": "external", "normal": { "x": 0, "y": 1 } },
+        { "id": "ground-ext-left", "floorId": "ground", "a": { "x": 0.15, "y": 0 }, "b": { "x": 0.15, "y": 16.4 }, "thickness": 0.3, "kind": "external", "normal": { "x": -1, "y": 0 } },
+        { "id": "ground-ext-right", "floorId": "ground", "a": { "x": 6.15, "y": 0 }, "b": { "x": 6.15, "y": 16.4 }, "thickness": 0.3, "kind": "external", "normal": { "x": 1, "y": 0 } },
+        { "id": "ground-div-beds", "floorId": "ground", "a": { "x": 3.15, "y": 0.3 }, "b": { "x": 3.15, "y": 4.4 }, "thickness": 0.1, "kind": "internal" },
+        { "id": "ground-beds-bottom", "floorId": "ground", "a": { "x": 0.3, "y": 4.45 }, "b": { "x": 6, "y": 4.45 }, "thickness": 0.1, "kind": "internal" },
+        { "id": "ground-bath-east", "floorId": "ground", "a": { "x": 2.1, "y": 4.5 }, "b": { "x": 2.1, "y": 6.95 }, "thickness": 0.1, "kind": "internal" },
+        { "id": "ground-hall-east", "floorId": "ground", "a": { "x": 3.3, "y": 4.5 }, "b": { "x": 3.3, "y": 6.95 }, "thickness": 0.1, "kind": "internal" },
+        { "id": "ground-cupboard-east", "floorId": "ground", "a": { "x": 4.2, "y": 4.5 }, "b": { "x": 4.2, "y": 6.95 }, "thickness": 0.1, "kind": "internal" },
+        { "id": "ground-midband-bottom", "floorId": "ground", "a": { "x": 0.3, "y": 6.95 }, "b": { "x": 6, "y": 6.95 }, "thickness": 0.1, "kind": "internal" }
+      ],
+      "openings": [
+        { "id": "ground-win-bed2", "floorId": "ground", "wallId": "ground-ext-top", "kind": "window", "centre": { "x": 1.7, "y": 0.15 }, "along": "x", "width": 1.4, "wallThickness": 0.3, "sillHeight": 0.9, "headHeight": 2.1, "external": true, "normal": { "x": 0, "y": -1 }, "confidence": 1 },
+        { "id": "ground-patio-top", "floorId": "ground", "wallId": "ground-ext-top", "kind": "patio-door", "centre": { "x": 3.15, "y": 0.15 }, "along": "x", "width": 1.6, "wallThickness": 0.3, "headHeight": 2.1, "external": true, "normal": { "x": 0, "y": -1 }, "confidence": 1 },
+        { "id": "ground-win-master", "floorId": "ground", "wallId": "ground-ext-top", "kind": "window", "centre": { "x": 4.6, "y": 0.15 }, "along": "x", "width": 1.4, "wallThickness": 0.3, "sillHeight": 0.9, "headHeight": 2.1, "external": true, "normal": { "x": 0, "y": -1 }, "confidence": 1 },
+        { "id": "ground-win-living-w", "floorId": "ground", "wallId": "ground-ext-bottom", "kind": "window", "centre": { "x": 1.3, "y": 16.25 }, "along": "x", "width": 1.5, "wallThickness": 0.3, "sillHeight": 0.9, "headHeight": 2.1, "external": true, "normal": { "x": 0, "y": 1 }, "confidence": 1 },
+        { "id": "ground-patio-bottom", "floorId": "ground", "wallId": "ground-ext-bottom", "kind": "patio-door", "centre": { "x": 3.15, "y": 16.25 }, "along": "x", "width": 1.7, "wallThickness": 0.3, "headHeight": 2.1, "external": true, "normal": { "x": 0, "y": 1 }, "confidence": 1 },
+        { "id": "ground-win-living-e", "floorId": "ground", "wallId": "ground-ext-bottom", "kind": "window", "centre": { "x": 5, "y": 16.25 }, "along": "x", "width": 1.5, "wallThickness": 0.3, "sillHeight": 0.9, "headHeight": 2.1, "external": true, "normal": { "x": 0, "y": 1 }, "confidence": 1 },
+        { "id": "ground-door-entrance", "floorId": "ground", "wallId": "ground-ext-left", "kind": "external-door", "centre": { "x": 0.15, "y": 5.6 }, "along": "y", "width": 0.95, "wallThickness": 0.3, "external": true, "normal": { "x": -1, "y": 0 }, "confidence": 1 },
+        { "id": "ground-win-ensuite", "floorId": "ground", "wallId": "ground-ext-right", "kind": "window", "centre": { "x": 6.15, "y": 5.7 }, "along": "y", "width": 0.6, "wallThickness": 0.3, "sillHeight": 1.1, "headHeight": 2.1, "external": true, "normal": { "x": 1, "y": 0 }, "confidence": 1 },
+        { "id": "ground-door-bed2", "floorId": "ground", "wallId": "ground-beds-bottom", "kind": "internal-door", "centre": { "x": 1.6, "y": 4.45 }, "along": "x", "width": 0.84, "wallThickness": 0.1, "swing": "left", "external": false, "confidence": 1 },
+        { "id": "ground-door-master", "floorId": "ground", "wallId": "ground-beds-bottom", "kind": "internal-door", "centre": { "x": 4.8, "y": 4.45 }, "along": "x", "width": 0.84, "wallThickness": 0.1, "swing": "right", "external": false, "confidence": 1 },
+        { "id": "ground-door-bath", "floorId": "ground", "wallId": "ground-bath-east", "kind": "internal-door", "centre": { "x": 2.1, "y": 5.9 }, "along": "y", "width": 0.84, "wallThickness": 0.1, "swing": "left", "external": false, "confidence": 1 },
+        { "id": "ground-door-cupboard", "floorId": "ground", "wallId": "ground-hall-east", "kind": "internal-door", "centre": { "x": 3.3, "y": 5.9 }, "along": "y", "width": 0.8, "wallThickness": 0.1, "external": false, "confidence": 1 },
+        { "id": "ground-door-ensuite", "floorId": "ground", "wallId": "ground-cupboard-east", "kind": "internal-door", "centre": { "x": 4.2, "y": 5.9 }, "along": "y", "width": 0.84, "wallThickness": 0.1, "swing": "right", "external": false, "confidence": 1 },
+        { "id": "ground-passage-kitchen", "floorId": "ground", "wallId": "ground-midband-bottom", "kind": "passage", "centre": { "x": 2.7, "y": 6.95 }, "along": "x", "width": 1.2, "wallThickness": 0.1, "external": false, "confidence": 1 }
+      ],
+      "rooms": [
+        { "id": "ground-room-bed2", "floorId": "ground", "name": "Bedroom Two", "type": "bedroom", "polygon": [{ "x": 0.3, "y": 0.3 }, { "x": 3.1, "y": 0.3 }, { "x": 3.1, "y": 4.4 }, { "x": 0.3, "y": 4.4 }] },
+        { "id": "ground-room-master", "floorId": "ground", "name": "Master Bedroom", "type": "bedroom", "polygon": [{ "x": 3.2, "y": 0.3 }, { "x": 6, "y": 0.3 }, { "x": 6, "y": 4.4 }, { "x": 3.2, "y": 4.4 }] },
+        { "id": "ground-room-bath", "floorId": "ground", "name": "Bathroom", "type": "bathroom", "polygon": [{ "x": 0.3, "y": 4.5 }, { "x": 2.05, "y": 4.5 }, { "x": 2.05, "y": 6.9 }, { "x": 0.3, "y": 6.9 }] },
+        { "id": "ground-room-hall", "floorId": "ground", "name": "Hallway", "type": "hall", "polygon": [{ "x": 2.15, "y": 4.5 }, { "x": 3.25, "y": 4.5 }, { "x": 3.25, "y": 6.9 }, { "x": 2.15, "y": 6.9 }] },
+        { "id": "ground-room-cupboard", "floorId": "ground", "name": "Cupboard", "type": "storage", "polygon": [{ "x": 3.35, "y": 4.5 }, { "x": 4.15, "y": 4.5 }, { "x": 4.15, "y": 6.9 }, { "x": 3.35, "y": 6.9 }] },
+        { "id": "ground-room-ensuite", "floorId": "ground", "name": "Ensuite Shower Room", "type": "bathroom", "polygon": [{ "x": 4.25, "y": 4.5 }, { "x": 6, "y": 4.5 }, { "x": 6, "y": 6.9 }, { "x": 4.25, "y": 6.9 }] },
+        { "id": "ground-room-kitchen", "floorId": "ground", "name": "Kitchen", "type": "kitchen", "polygon": [{ "x": 0.3, "y": 7 }, { "x": 6, "y": 7 }, { "x": 6, "y": 10 }, { "x": 0.3, "y": 10 }] },
+        { "id": "ground-room-living", "floorId": "ground", "name": "Open Plan Living/Dining", "type": "living", "polygon": [{ "x": 0.3, "y": 10 }, { "x": 6, "y": 10 }, { "x": 6, "y": 16.1 }, { "x": 0.3, "y": 16.1 }] }
+      ],
+      "balconies": [
+        { "id": "ground-balcony-top", "floorId": "ground", "polygon": [{ "x": 2, "y": -1.4 }, { "x": 4.3, "y": -1.4 }, { "x": 4.3, "y": 0 }, { "x": 2, "y": 0 }], "railHeight": 1.05 },
+        { "id": "ground-balcony-bottom", "floorId": "ground", "polygon": [{ "x": 2, "y": 16.4 }, { "x": 4.3, "y": 16.4 }, { "x": 4.3, "y": 17.8 }, { "x": 2, "y": 17.8 }], "railHeight": 1.05 }
+      ],
+      "fixtures": []
+    }
+  ]
+}

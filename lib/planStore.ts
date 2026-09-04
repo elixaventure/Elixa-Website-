@@ -169,6 +169,123 @@ export async function loadPlanPreview(): Promise<Blob | null> {
   return blob instanceof Blob ? blob : null;
 }
 
+/** the customer's chosen heating system (source + emitter), JSON */
+export async function saveSystem(system: unknown): Promise<void> {
+  const db = await openDb();
+  if (!db) return;
+  await new Promise<void>((resolve) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).put(JSON.stringify(system), "system");
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+  db.close();
+}
+
+export async function loadSystem<T>(): Promise<T | null> {
+  const db = await openDb();
+  if (!db) return null;
+  const raw = await new Promise<string | null>((resolve) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).get("system");
+    req.onsuccess = () => resolve(typeof req.result === "string" ? req.result : null);
+    req.onerror = () => resolve(null);
+  });
+  db.close();
+  try {
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** placed equipment (heat pump etc.) as JSON — attaches to property floors */
+export async function saveFixtures(fixtures: unknown): Promise<void> {
+  const db = await openDb();
+  if (!db) return;
+  await new Promise<void>((resolve) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).put(JSON.stringify(fixtures), "fixtures");
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+  db.close();
+}
+
+export async function loadFixtures<T>(): Promise<T | null> {
+  const db = await openDb();
+  if (!db) return null;
+  const raw = await new Promise<string | null>((resolve) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).get("fixtures");
+    req.onsuccess = () => resolve(typeof req.result === "string" ? req.result : null);
+    req.onerror = () => resolve(null);
+  });
+  db.close();
+  try {
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** customer-supplied showcase 3D model (.glb blob, can be tens of MB) */
+export async function saveShowcaseModel(blob: Blob | null): Promise<void> {
+  const db = await openDb();
+  if (!db) return;
+  await new Promise<void>((resolve) => {
+    const tx = db.transaction(STORE, "readwrite");
+    if (blob) tx.objectStore(STORE).put(blob, "showcase-glb");
+    else tx.objectStore(STORE).delete("showcase-glb");
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+  db.close();
+}
+
+export async function loadShowcaseModel(): Promise<Blob | null> {
+  const db = await openDb();
+  if (!db) return null;
+  const blob = await new Promise<Blob | null>((resolve) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).get("showcase-glb");
+    req.onsuccess = () => resolve(req.result instanceof Blob ? req.result : null);
+    req.onerror = () => resolve(null);
+  });
+  db.close();
+  return blob;
+}
+
+/** multi-floor records: per-floor metadata + extracted layout (JSON) */
+export async function saveFloors(floors: unknown): Promise<void> {
+  const db = await openDb();
+  if (!db) return;
+  await new Promise<void>((resolve) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).put(JSON.stringify(floors), "floors");
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+  db.close();
+}
+
+export async function loadFloors<T>(): Promise<T | null> {
+  const db = await openDb();
+  if (!db) return null;
+  const raw = await new Promise<string | null>((resolve) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).get("floors");
+    req.onsuccess = () => resolve(typeof req.result === "string" ? req.result : null);
+    req.onerror = () => resolve(null);
+  });
+  db.close();
+  try {
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function clearPlan(): Promise<void> {
   const db = await openDb();
   if (!db) return;
@@ -178,6 +295,8 @@ export async function clearPlan(): Promise<void> {
     tx.objectStore(STORE).delete(PREVIEW_KEY);
     tx.objectStore(STORE).delete("analysis");
     tx.objectStore(STORE).delete("layout");
+    tx.objectStore(STORE).delete("floors");
+    tx.objectStore(STORE).delete("fixtures");
     tx.oncomplete = () => resolve();
     tx.onerror = () => resolve();
   });

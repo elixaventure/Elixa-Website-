@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
+import { ClassicChrome } from "@/components/layout/ClassicChrome";
 import { Footer } from "@/components/layout/Footer";
 import { MobileBar } from "@/components/layout/MobileBar";
 import { Analytics } from "@/components/layout/Analytics";
@@ -53,12 +54,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to content
         </a>
-        <Navbar />
+        <ClassicChrome>
+          <Navbar />
+        </ClassicChrome>
         <main id="main" className="pb-16 sm:pb-0">
           {children}
         </main>
-        <Footer />
-        <MobileBar />
+        <ClassicChrome>
+          <Footer />
+          <MobileBar />
+        </ClassicChrome>
       </body>
     </html>
   );

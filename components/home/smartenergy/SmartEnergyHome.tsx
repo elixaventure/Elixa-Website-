@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePlanAnalysis, loadPlanAnalysis, savePlanLayout, loadPlanLayout, savePlanArea, loadPlanArea } from "@/lib/planStore";
+import { savePlan, loadPlan, clearPlan, savePlanPreview, loadPlanPreview, savePlanAnalysis, loadPlanAnalysis, savePlanLayout, loadPlanLayout, savePlanArea, loadPlanArea, saveFloors, loadFloors, saveShowcaseModel, loadShowcaseModel, saveFixtures, loadFixtures } from "@/lib/planStore";
 import { makePlanPreview } from "@/lib/planPreview";
 import { analysePlan, type PlanAnalysis } from "@/lib/planAnalysis";
 import { extractLayout, type PlanLayout } from "@/lib/planLayout";
 import { planApiConfigured, recognisePlan } from "@/lib/planApi";
 import { adaptRecognition } from "@/lib/planAdapter";
+import { SystemConfigurator } from "./SystemConfigurator";
+import { floorFromLayout } from "@/lib/property/fromLayout";
+import type { PropertyModel, Fixture } from "@/lib/property/types";
+import { DEFAULT_CEILING_HEIGHT } from "@/lib/property/constants";
+import goldenProperty001 from "@/golden-tests/property-001/expected-property.json";
 import type { PlanDebug } from "@/lib/planLayoutDebug";
 import { applyScale } from "@/lib/houseModel";
 import { PlanDebugPanel } from "./PlanDebugPanel";
@@ -31,6 +36,18 @@ import {
   type TechId,
 } from "./state";
 
+interface FloorRec {
+  id: string;
+  name: string;
+  level: number;
+  ceilingHeight: number;
+  layout: PlanLayout | null;
+}
+
+const DEFAULT_GROUND: FloorRec = { id: "ground", name: "Ground Floor", level: 0, ceilingHeight: DEFAULT_CEILING_HEIGHT, layout: null };
+
+const FLOOR_NAMES = ["Ground Floor", "First Floor", "Second Floor", "Third Floor"];
+
 export function SmartEnergyHome() {
   const [selected, setSelected] = useState<Set<TechId>>(new Set(["solar"]));
   const [isDay, setIsDay] = useState(true);
@@ -45,6 +62,18 @@ export function SmartEnergyHome() {
   const [planLayout, setPlanLayout] = useState<PlanLayout | null>(null);
   const [planAreaM2, setPlanAreaM2] = useState<number | null>(null);
   const [layoutOn, setLayoutOn] = useState(false);
+  // multi-floor: each customer floor plan is assigned to one of these
+  const [floorsData, setFloorsData] = useState<FloorRec[]>([DEFAULT_GROUND]);
+  const [activeFloorId, setActiveFloorId] = useState("ground");
+  const activeFloorRef = useRef("ground");
+  activeFloorRef.current = activeFloorId;
+  // canonical/golden property preview via ?demoProperty=<id>
+  const [demoProp, setDemoProp] = useState<PropertyModel | null>(null);
+  // a pre-built showcase GLB (public/models/showcase-apartment.glb) lights up
+  // an extra "Showcase" view when the file exists in the deploy
+  const [showcaseUrl, setShowcaseUrl] = useState<string | null>(null);
+  // placed equipment (heat pump etc.), merged into whichever property shows
+  const [fixtures, setFixtures] = useState<Fixture[]>([]);
   // TEMPORARY: extraction diagnostics, opt-in via ?planDebug=1
   const [planDebug, setPlanDebug] = useState<PlanDebug | null>(null);
   const debugOn = useRef(false);
@@ -76,6 +105,11 @@ export function SmartEnergyHome() {
     const { debug, ...clean } = l;
     savePlanLayout(clean);
     setPlanLayout(clean);
+    setFloorsData((fs) => {
+      const next = fs.map((f) => (f.id === activeFloorRef.current ? { ...f, layout: clean } : f));
+      saveFloors(next);
+      return next;
+    });
     if (debug) setPlanDebug(debug);
   };
 
@@ -92,7 +126,36 @@ export function SmartEnergyHome() {
       if (debugOn.current) extractLayout(b, { debug: true }).then(acceptLayout);
     });
     loadPlanAnalysis<PlanAnalysis>().then((a) => applyAnalysis(a));
-    loadPlanLayout<PlanLayout>().then((l) => l && setPlanLayout(l));
+    loadFixtures<Fixture[]>().then((f) => f && setFixtures(f));
+    loadFloors<FloorRec[]>().then((fs) => {
+      if (fs?.length) setFloorsData(fs);
+    });
+    loadPlanLayout<PlanLayout>().then((l) => {
+      if (!l) return;
+      setPlanLayout(l);
+      // migrate a legacy single-layout store into the ground floor record
+      setFloorsData((fs) => (fs.some((f) => f.layout) ? fs : fs.map((f) => (f.id === "ground" ? { ...f, layout: l } : f))));
+    });
+    // a model the customer uploaded locally wins over a deployed showcase file
+    loadShowcaseModel().then((blob) => {
+      if (blob) {
+        setShowcaseUrl(URL.createObjectURL(blob));
+        setLayoutOn(true);
+        return;
+      }
+      const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
+      const url = `${base}/models/showcase-apartment.glb`;
+      fetch(url, { method: "HEAD" })
+        .then((r) => {
+          if (r.ok && !(r.headers.get("content-type") || "").includes("text/html")) setShowcaseUrl(url);
+        })
+        .catch(() => {});
+    });
+    const demo = new URLSearchParams(window.location.search).get("demoProperty");
+    if (demo === "1" || demo === "property-001") {
+      setDemoProp(goldenProperty001 as unknown as PropertyModel);
+      setLayoutOn(true);
+    }
     loadPlanArea().then((n) => n && setPlanAreaM2(n));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -112,7 +175,39 @@ export function SmartEnergyHome() {
     scaledOut.current = { layout: scaled, areaM2: planAreaM2 };
     savePlanLayout(scaled);
     setPlanLayout(scaled);
+    setFloorsData((fs) => {
+      const next = fs.map((f) => (f.layout === planLayout ? { ...f, layout: scaled } : f));
+      saveFloors(next);
+      return next;
+    });
   }, [planLayout, planAreaM2]);
+
+  const withFixtures = (p: PropertyModel): PropertyModel => ({
+    ...p,
+    floors: p.floors.map((f) => ({
+      ...f,
+      fixtures: [...f.fixtures, ...fixtures.filter((x) => x.floorId === f.id)],
+    })),
+  });
+
+  const property = useMemo<PropertyModel | null>(() => {
+    if (demoProp) return withFixtures(demoProp);
+    const floors = floorsData
+      .filter((f) => f.layout?.ok)
+      .map((f) =>
+        floorFromLayout(f.layout!, {
+          id: f.id,
+          name: f.name,
+          level: f.level,
+          ceilingHeight: f.ceilingHeight,
+          planTextureUrl: f.level === 0 ? planUrl ?? undefined : undefined,
+        }),
+      )
+      .filter((f): f is NonNullable<typeof f> => f !== null);
+    if (!floors.length) return null;
+    return withFixtures({ propertyId: "customer-property", floors, source: "extracted" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demoProp, floorsData, planUrl, fixtures]);
 
   const active = useMemo(() => Array.from(selected), [selected]);
   const model = useMemo(() => computeEnergy(selected, isDay, home), [selected, isDay, home]);
@@ -179,6 +274,23 @@ export function SmartEnergyHome() {
           planUrl={planUrl}
           planRooms={planRead?.rooms}
           layout={planLayout}
+          property={property}
+          showcaseUrl={showcaseUrl}
+          onPlaceFixture={(f) => {
+            setFixtures((cur) => {
+              const next = [...cur, { ...f, id: `fx-${Date.now().toString(36)}` }];
+              saveFixtures(next);
+              return next;
+            });
+            track("cta_click", { location: "smart-energy-home", label: "place-heatpump" });
+          }}
+          onRemoveFixture={(id) => {
+            setFixtures((cur) => {
+              const next = cur.filter((f) => f.id !== id);
+              saveFixtures(next);
+              return next;
+            });
+          }}
           layoutOn={layoutOn}
           onLayoutToggle={setLayoutOn}
           onPick={(id) => setPicked(id)}
@@ -329,6 +441,8 @@ export function SmartEnergyHome() {
                   setPlanAreaM2(null);
                   savePlanArea(null);
                   setLayoutOn(false);
+                  setFloorsData([DEFAULT_GROUND]);
+                  setActiveFloorId("ground");
                 }}
                 className="flex-none font-semibold text-navy/40 hover:text-navy"
                 aria-label="Remove floor plan"
@@ -385,6 +499,87 @@ export function SmartEnergyHome() {
               }}
             />
           </label>
+          <div className="mb-3 flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-navy/45">Upload applies to</span>
+            {floorsData.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setActiveFloorId(f.id)}
+                aria-pressed={activeFloorId === f.id}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",
+                  activeFloorId === f.id ? "bg-navy text-white" : "bg-white/70 text-navy/55 hover:text-navy"
+                )}
+              >
+                {f.name}
+                {f.layout?.ok ? " ✓" : ""}
+              </button>
+            ))}
+            {floorsData.length < 4 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFloorsData((fs) => {
+                    const level = Math.max(...fs.map((f) => f.level)) + 1;
+                    const rec: FloorRec = {
+                      id: `floor-${level}`,
+                      name: FLOOR_NAMES[level] ?? `Floor ${level}`,
+                      level,
+                      ceilingHeight: DEFAULT_CEILING_HEIGHT,
+                      layout: null,
+                    };
+                    const next = [...fs, rec];
+                    saveFloors(next);
+                    setActiveFloorId(rec.id);
+                    return next;
+                  });
+                }}
+                className="rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-semibold text-navy/55 transition hover:text-navy"
+              >
+                + Add floor
+              </button>
+            )}
+          </div>
+
+          <label className="mb-3 flex cursor-pointer items-center gap-2 rounded-2xl border border-dashed border-navy/20 bg-white/60 px-3.5 py-2.5 text-xs text-navy/70 transition hover:border-navy/40">
+            <span className="text-base">🧊</span>
+            <span className="flex-1 truncate">
+              {showcaseUrl ? "3D model loaded — shown as the ✨ Showcase view" : "Have a 3D model of your home? Upload it (.glb)"}
+            </span>
+            {showcaseUrl && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  saveShowcaseModel(null);
+                  setShowcaseUrl(null);
+                }}
+                className="flex-none font-semibold text-navy/40 hover:text-navy"
+                aria-label="Remove 3D model"
+              >
+                ✕
+              </button>
+            )}
+            <input
+              type="file"
+              accept=".glb,model/gltf-binary"
+              className="sr-only"
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                if (!f) return;
+                if (f.size > 200 * 1024 * 1024) {
+                  alert("That model is over 200 MB — please export a smaller GLB.");
+                  return;
+                }
+                saveShowcaseModel(f);
+                setShowcaseUrl(URL.createObjectURL(f));
+                setLayoutOn(true);
+                track("cta_click", { location: "smart-energy-home", label: "model-upload" });
+              }}
+            />
+          </label>
+
           {planRead && (planRead.bedrooms || planRead.rooms.length > 0) ? (
             <div className="mb-4 rounded-2xl border border-elixa-green/30 bg-elixa-gradient-soft px-3.5 py-2.5">
               <p className="text-xs font-bold text-navy">✓ Read from your plan — the 3D home has been set to match:</p>
@@ -478,7 +673,23 @@ export function SmartEnergyHome() {
             </div>
           </div>
 
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-navy/50">3 · Build your smarter home</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-navy/50">3 · Choose your heating system</p>
+          <SystemConfigurator
+            areaM2={planAreaM2}
+            bedrooms={home.bedrooms}
+            onSync={({ heatPump, emitterTech }) => {
+              setSelected((cur) => {
+                const next = new Set(cur);
+                if (heatPump) next.add("heatpump");
+                next.delete("thermaskirt");
+                next.delete("underfloor");
+                if (emitterTech) next.add(emitterTech);
+                return next;
+              });
+            }}
+          />
+
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-navy/50">4 · Build your smarter home</p>
           <div className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:overflow-visible">
             {TECHS.map((t) => {
               const on = selected.has(t.id);
