@@ -129,6 +129,71 @@ export function ArtEv() {
   );
 }
 
+/**
+ * ThermaSkirt profile range — five cross-sections side by side: Deco 114 mm
+ * with plain / torus / ovolo caps, the taller Deco 170 mm, and the Classic
+ * bull-nose. Waterway channels drawn as stacked circles, heights dimensioned.
+ */
+export function ArtSkirtProfiles() {
+  const base = 196;
+  const boards: { x: number; h: number; cap: "plain" | "torus" | "ovolo" | "bull"; label: string }[] = [
+    { x: 46, h: 114, cap: "plain", label: "114" },
+    { x: 150, h: 114, cap: "torus", label: "114" },
+    { x: 254, h: 114, cap: "ovolo", label: "114" },
+    { x: 358, h: 170, cap: "plain", label: "170" },
+    { x: 462, h: 150, cap: "bull", label: "TS" },
+  ];
+  const W = 56;
+  return (
+    <svg viewBox="0 0 570 240" fill="none" className="h-auto w-full">
+      {boards.map((b, i) => {
+        const top = base - b.h;
+        const cap =
+          b.cap === "torus"
+            ? `M${b.x} ${top + 16} Q${b.x} ${top} ${b.x + W / 2} ${top} Q${b.x + W} ${top} ${b.x + W} ${top + 16}`
+            : b.cap === "ovolo"
+              ? `M${b.x} ${top + 14} Q${b.x + 10} ${top + 12} ${b.x + 14} ${top + 4} L${b.x + 14} ${top} L${b.x + W} ${top}`
+              : b.cap === "bull"
+                ? `M${b.x} ${top + 18} Q${b.x} ${top} ${b.x + 18} ${top} L${b.x + W} ${top}`
+                : `M${b.x} ${top} L${b.x + W} ${top}`;
+        return (
+          <g key={i}>
+            <path
+              d={`${cap} L${b.x + W} ${base} L${b.x} ${base} Z`}
+              stroke="rgba(245,247,248,0.55)"
+              strokeWidth="1.3"
+            />
+            {[0, 1].map((c) => (
+              <circle
+                key={c}
+                cx={b.x + W / 2}
+                cy={base - 26 - c * 34}
+                r="11"
+                stroke={c === 0 ? "#3EC5B4" : "rgba(245,247,248,0.35)"}
+                strokeWidth="1.2"
+              />
+            ))}
+            <line x1={b.x - 10} y1={top} x2={b.x - 10} y2={base} stroke="rgba(245,247,248,0.16)" strokeWidth="1" />
+            <line x1={b.x - 14} y1={top} x2={b.x - 6} y2={top} stroke="rgba(245,247,248,0.16)" strokeWidth="1" />
+            <line x1={b.x - 14} y1={base} x2={b.x - 6} y2={base} stroke="rgba(245,247,248,0.16)" strokeWidth="1" />
+            <text
+              x={b.x + W / 2}
+              y={base + 24}
+              textAnchor="middle"
+              fill="rgba(245,247,248,0.45)"
+              fontSize="11"
+              fontFamily="IBM Plex Mono, monospace"
+            >
+              {b.label}
+            </text>
+          </g>
+        );
+      })}
+      <line x1="24" y1={base} x2="546" y2={base} stroke="rgba(245,247,248,0.16)" strokeWidth="1" />
+    </svg>
+  );
+}
+
 export function ArtBoiler() {
   return (
     <svg viewBox="0 0 320 400" fill="none" className="h-full w-full">
