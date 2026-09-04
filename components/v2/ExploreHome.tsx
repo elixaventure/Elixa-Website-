@@ -26,6 +26,10 @@ interface Spot {
   blurb: string;
   stats: { k: string; v: string }[];
   href: string;
+  /** optional deep-dive content (headed paragraphs) shown below the stats */
+  sections?: { h: string; body: string }[];
+  /** optional powder-coat finish swatches */
+  finishes?: { name: string; ral: string; hex: string; note?: string }[];
 }
 
 const SPOTS: Spot[] = [
@@ -133,11 +137,36 @@ const SPOTS: Spot[] = [
     scale: 2.1,
     title: "ThermaSkirt Heated Skirting",
     blurb:
-      "The skirting board becomes the radiator — a discreet perimeter emitter around every room that frees the walls and retrofits with far less disruption than underfloor.",
+      "The skirting board becomes the radiator — a discreet aluminium perimeter emitter around every room that frees the walls and retrofits with far less disruption than underfloor.",
     stats: [
       { k: "Flow temp", v: "40 °C — heat-pump ready" },
       { k: "Heat pump SCOP", v: "≈ 4.0" },
-      { k: "Walls", v: "No radiators — every wall freed" },
+      { k: "Output (Deco 114/170 mm)", v: "up to ≈126 / ≈188 W per metre" },
+      { k: "Lengths", v: "2 m · 3 m · 6 m, cut on site" },
+    ],
+    // Manufacturer figures: DiscreteHeat Co. Ltd (discreteheat.com) product &
+    // performance data. Outputs to EN 442 (75/65/20); heat-pump figures at
+    // 45/40 flow. Refined per room by the heat-loss survey before quoting.
+    sections: [
+      {
+        h: "Styles & sizes",
+        body: "Deco is the modern flat profile in two heights — 114 mm and 170 mm, both just 20 mm deep — with plain, torus or ovolo top-cap options. The Classic TS profile keeps the traditional bull-nose look, made for Victorian and Edwardian homes where period skirting has to stay period.",
+      },
+      {
+        h: "ThermaSkirt-e (electric)",
+        body: "The same boards with a self-regulating electric element inside instead of pipework — it caps itself at around 95 °C, runs from a standard fused spur, and each room gets its own digital thermostat. Ideal for extensions, lofts and homes without a wet system.",
+      },
+      {
+        h: "Fitted as a system",
+        body: "Boards click onto concealed brackets with internal and external corners, valves and fittings supplied — a whole room is typically converted in hours, with no walls opened and no floors lifted.",
+      },
+    ],
+    finishes: [
+      { name: "Cricket White", ral: "RAL 9010", hex: "#F1EDE1" },
+      { name: "Vintage Ivory", ral: "RAL 1013", hex: "#E6DCC4" },
+      { name: "Anthracite Grey", ral: "RAL 7016", hex: "#383E42" },
+      { name: "Carbon Black", ral: "RAL 9011", hex: "#26282B" },
+      { name: "Any RAL colour", ral: "to order", hex: "#3EC5B4", note: "made to order" },
     ],
     href: "/thermaskirt",
   },
@@ -287,6 +316,48 @@ export function ExploreHome() {
                     </div>
                   ))}
                 </dl>
+
+                {active.sections?.map((sec) => (
+                  <div key={sec.h} className="mt-6">
+                    <p className="font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+                      {sec.h}
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-night-muted">{sec.body}</p>
+                  </div>
+                ))}
+
+                {active.finishes && (
+                  <div className="mt-6">
+                    <p className="font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+                      Finishes
+                    </p>
+                    <ul className="mt-3 grid gap-2.5">
+                      {active.finishes.map((f) => (
+                        <li key={f.name} className="flex items-center gap-3">
+                          <span
+                            className="h-6 w-10 flex-none rounded-[3px] border border-night-line"
+                            style={
+                              f.note
+                                ? {
+                                    background:
+                                      "linear-gradient(90deg,#c0392b,#e67e22,#f1c40f,#27ae60,#2980b9,#8e44ad)",
+                                  }
+                                : { backgroundColor: f.hex }
+                            }
+                          />
+                          <span className="text-sm text-night-text">{f.name}</span>
+                          <span className="ml-auto font-techmono text-[10px] uppercase tracking-[0.14em] text-night-faint">
+                            {f.ral}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-3 text-xs leading-relaxed text-night-faint">
+                      Tough double epoxy powder coat. Swatch colours indicative — samples available
+                      with your survey.
+                    </p>
+                  </div>
+                )}
 
                 <div className="mt-7 grid gap-3">
                   <Link
