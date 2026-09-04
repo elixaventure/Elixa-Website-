@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { ArtSkirtProfiles } from "./art";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -316,6 +317,15 @@ export function ExploreHome() {
                     </div>
                   ))}
                 </dl>
+
+                {active.id === "thermaskirt" && (
+                  <div className="mt-6 border border-night-line bg-night-deep px-4 pb-2 pt-5">
+                    <p className="mb-2 px-1 font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+                      Profile range
+                    </p>
+                    <ArtSkirtProfiles />
+                  </div>
+                )}
 
                 {active.sections?.map((sec) => (
                   <div key={sec.h} className="mt-6">
