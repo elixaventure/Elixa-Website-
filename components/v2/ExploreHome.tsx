@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArtSkirtProfiles } from "./art";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -319,11 +318,42 @@ export function ExploreHome() {
                 </dl>
 
                 {active.id === "thermaskirt" && (
-                  <div className="mt-6 border border-night-line bg-night-deep px-4 pb-2 pt-5">
-                    <p className="mb-2 px-1 font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+                  <div className="mt-6">
+                    <img
+                      src={`${BASE}/media/thermaskirt/install-hallway.jpg`}
+                      alt="ThermaSkirt fitted along a panelled hallway with herringbone flooring — the skirting board is the heating"
+                      className="w-full border border-night-line"
+                      loading="lazy"
+                    />
+                    <p className="mt-2 text-xs leading-relaxed text-night-faint">
+                      Fitted ThermaSkirt — the skirting is the heating. Herringbone hallway,
+                      panelled walls, no radiators.
+                    </p>
+                    <p className="mt-6 font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
                       Profile range
                     </p>
-                    <ArtSkirtProfiles />
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {[
+                        { f: "deco-114-plain", l: "Deco 114" },
+                        { f: "ogee-114", l: "Ogee 114" },
+                        { f: "bullnose-114", l: "Bull-nose 114" },
+                        { f: "deco-170-plain", l: "Deco 170" },
+                        { f: "ogee-170", l: "Ogee 170" },
+                        { f: "bullnose-170", l: "Bull-nose 170" },
+                      ].map((p) => (
+                        <figure key={p.f} className="border border-night-line bg-white p-1.5">
+                          <img
+                            src={`${BASE}/media/thermaskirt/${p.f}.jpg`}
+                            alt={`ThermaSkirt ${p.l} profile cutaway`}
+                            className="aspect-square w-full object-contain"
+                            loading="lazy"
+                          />
+                          <figcaption className="pb-1 pt-1.5 text-center font-techmono text-[9px] uppercase tracking-[0.12em] text-night-deep">
+                            {p.l}
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
                   </div>
                 )}
 
