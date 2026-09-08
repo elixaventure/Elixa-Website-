@@ -112,7 +112,7 @@ export function HeroV2() {
           playsInline
           preload="metadata"
           poster={`${BASE}/media/hero-poster.jpg`}
-          className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-1000"
+          className="absolute inset-0 h-full w-full object-contain object-[50%_34%] opacity-0 transition-opacity duration-1000 md:object-cover md:object-center"
         >
           <source src={`${BASE}/media/hero.webm`} type="video/webm" />
           <source src={`${BASE}/media/hero.mp4`} type="video/mp4" />
