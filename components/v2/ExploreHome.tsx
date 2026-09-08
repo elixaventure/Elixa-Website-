@@ -30,6 +30,8 @@ interface Spot {
   sections?: { h: string; body: string }[];
   /** optional powder-coat finish swatches */
   finishes?: { name: string; ral: string; hex: string; note?: string }[];
+  /** common questions for this trade, rendered as expandable rows */
+  faqs?: { q: string; a: string }[];
 }
 
 const SPOTS: Spot[] = [
@@ -44,8 +46,37 @@ const SPOTS: Spot[] = [
       "Generation designed around your roof — string layout per aspect, not a one-size array bolted on. Export-ready, and the natural partner for a heat pump and battery.",
     stats: [
       { k: "Design", v: "Per-roof string layout" },
-      { k: "Pairs with", v: "Battery · heat pump · EV" },
+      { k: "Panels", v: "≈ 400–450 W per modern panel" },
+      { k: "Export", v: "Smart Export Guarantee ready" },
       { k: "VAT", v: "0% on qualifying installs to 2027" },
+    ],
+    sections: [
+      {
+        h: "What we do",
+        body: "Roof survey and shading assessment, then a string design per roof aspect so every panel earns its place. We handle the DNO notification, set up export metering, and pair the array with your battery, heat pump or EV charger so generation gets used, not just sold.",
+      },
+      {
+        h: "The technical bit",
+        body: "Modern panels are around 400–450 W each; a typical home array of 8–12 panels gives 3.5–5 kWp. Orientation and shading decide real output, which is why we design per aspect instead of quoting a one-size array. Surplus exports for payment under the Smart Export Guarantee — or charges a battery first.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Do I need planning permission?",
+        a: "Usually not — most roof arrays are permitted development. Listed buildings and some conservation areas are the exception, and we flag that at survey.",
+      },
+      {
+        q: "What happens at night or on grey days?",
+        a: "Generation falls and the grid (or your battery) covers the gap. Panels still generate in daylight without direct sun, just at a lower rate.",
+      },
+      {
+        q: "Can I add a battery later?",
+        a: "Yes — an AC-coupled battery retrofits cleanly to an existing array. If you're thinking about one, telling us now lets us size the inverter for it.",
+      },
+      {
+        q: "How much maintenance is there?",
+        a: "Very little — no moving parts. An occasional clean and a periodic electrical check keep it at full output.",
+      },
     ],
     href: "/solar-pv",
   },
@@ -62,6 +93,35 @@ const SPOTS: Spot[] = [
       { k: "Coupling", v: "AC or DC coupled" },
       { k: "Works with", v: "Smart time-of-use tariffs" },
       { k: "Sizing", v: "Matched to your evening load" },
+      { k: "Warranty", v: "Typically ~10 years from makers" },
+    ],
+    sections: [
+      {
+        h: "What we do",
+        body: "We size the battery from how your household actually uses electricity — evening load, tariff, and what your solar array produces — then choose AC or DC coupling to suit the system, install it in a safe, ventilated location and set up the tariff scheduling.",
+      },
+      {
+        h: "The technical bit",
+        body: "The battery charges when electricity is cheap or free — from your roof, or overnight on an off-peak tariff — and discharges at peak times, so less of your power is ever bought at the day rate. Oversizing wastes money and undersizing wastes sun, which is why sizing comes from your real usage, not a standard bundle.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Will it run the house in a power cut?",
+        a: "Only if the system is specified with backup capability — most standard setups shut down with the grid for safety. If backup matters to you, say so at survey and we design for it.",
+      },
+      {
+        q: "Is it worth it without solar panels?",
+        a: "It can be — charging cheap overnight on a time-of-use tariff and using it at peak still cuts bills. It's strongest paired with generation, though.",
+      },
+      {
+        q: "How long does a battery last?",
+        a: "Manufacturer warranties commonly run about a decade, and the batteries are built to keep the majority of their capacity through it.",
+      },
+      {
+        q: "Where does it go?",
+        a: "Garage, utility, understairs or an external enclosure — somewhere cool, ventilated and out of the way. It's a wall or floor unit about the size of a small suitcase.",
+      },
     ],
     href: "/battery-storage",
   },
@@ -77,7 +137,36 @@ const SPOTS: Spot[] = [
     stats: [
       { k: "Output", v: "3–4 kWh heat per kWh in" },
       { k: "SCOP", v: "≈ 4.0 with 40 °C emitters" },
+      { k: "Flow temp design", v: "35–55 °C by emitter" },
       { k: "Grant", v: "£7,500 Boiler Upgrade Scheme" },
+    ],
+    sections: [
+      {
+        h: "What we do",
+        body: "A room-by-room heat-loss survey first, then the whole system designed around the numbers: pump sizing, emitters, hot-water cylinder and controls. We install, commission against measured performance — not assumptions — and handle the Boiler Upgrade Scheme paperwork as part of the quote.",
+      },
+      {
+        h: "The technical bit",
+        body: "A heat pump's efficiency lives or dies by its flow temperature. Feeding 35 °C underfloor it returns around 4.2 units of heat per unit of electricity; pushed to 55 °C through undersized radiators that drops to ~3.1. That's why we design emitters and pump together — never a box swap.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Does it still work in a cold winter?",
+        a: "Yes — modern units are designed to keep heating well below freezing, and we size the system for your home's heat loss on a cold design day, not an average one.",
+      },
+      {
+        q: "Will I need new radiators?",
+        a: "Sometimes. Low-temperature emitters (ThermaSkirt, underfloor, larger radiators) let the pump run at its best. The survey tells you exactly which rooms, if any, need a change.",
+      },
+      {
+        q: "Is it noisy?",
+        a: "Modern units are quiet — placement matters more than the pump. We position it away from bedrooms and boundaries as part of the design.",
+      },
+      {
+        q: "Am I eligible for the £7,500 grant?",
+        a: "Most owner-occupied homes in England and Wales replacing a fossil-fuel system are. We check eligibility and apply for you — the price you see is after funding.",
+      },
     ],
     href: "/air-source-heat-pumps",
   },
@@ -91,9 +180,38 @@ const SPOTS: Spot[] = [
     blurb:
       "A 7.4 kW home charger that can prioritise your own solar generation — charge from the roof first, the grid second.",
     stats: [
-      { k: "Power", v: "7.4 kW" },
+      { k: "Power", v: "7.4 kW single-phase" },
+      { k: "Speed", v: "≈ 25–30 miles of range per hour" },
       { k: "Mode", v: "Solar-aware charging" },
       { k: "Control", v: "Scheduled off-peak charging" },
+    ],
+    sections: [
+      {
+        h: "What we do",
+        body: "We check your electricity supply has the headroom, run a dedicated protected circuit, fit the charger where the cable actually reaches your parking spot, and set up the app — including solar-priority and off-peak scheduling if you have panels or a smart tariff.",
+      },
+      {
+        h: "The technical bit",
+        body: "7.4 kW is the practical maximum on a standard UK single-phase supply — roughly 25–30 miles of range per hour, which fills almost any EV overnight. UK-regulation smart chargers schedule themselves for cheap windows, and solar-aware models divert your surplus generation into the car instead of exporting it.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Is 7.4 kW fast enough?",
+        a: "For home use, yes — plugged in overnight it covers even a near-empty large battery. Faster chargers need a three-phase supply most homes don't have.",
+      },
+      {
+        q: "Tethered or untethered?",
+        a: "Tethered (built-in cable) is more convenient day to day; untethered (socket only) is tidier and works with any cable. We fit either.",
+      },
+      {
+        q: "Can it charge from my solar panels?",
+        a: "Yes — a solar-aware charger watches your export and tops the car up with surplus generation first, grid second.",
+      },
+      {
+        q: "Does my fuse board need upgrading?",
+        a: "Sometimes older boards need a small upgrade for the dedicated circuit — we confirm that at the supply check before quoting, so there are no surprises.",
+      },
     ],
     href: "/ev-charging",
   },
@@ -109,7 +227,36 @@ const SPOTS: Spot[] = [
     stats: [
       { k: "Role", v: "Cooling + room heating" },
       { k: "Type", v: "Air-to-air heat pump" },
+      { k: "Efficiency", v: "Several kWh moved per kWh used" },
       { k: "Control", v: "Per-room, app controlled" },
+    ],
+    sections: [
+      {
+        h: "What we do",
+        body: "Room-by-room cooling loads first — glazing, aspect, occupancy — then discreet wall units sited where they work without dominating the room, the outdoor unit placed for neighbours and noise, and condensate routed properly. Commissioned and demonstrated before we leave.",
+      },
+      {
+        h: "The technical bit",
+        body: "Air conditioning is an air-to-air heat pump, so it moves heat rather than generating it — several kilowatt-hours of cooling or heating per kilowatt-hour of electricity. Reversed in winter it's one of the cheapest ways to heat a single room, which makes it a genuine dual-season system rather than a summer luxury.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Can it heat as well as cool?",
+        a: "Yes — the same unit reverses to heat, very efficiently. Lofts, garden rooms and home offices often use it as their main heating.",
+      },
+      {
+        q: "How noisy is it?",
+        a: "Indoor units are designed to be quiet enough for bedrooms on low fan speeds; the outdoor unit is sited away from windows and boundaries as part of the design.",
+      },
+      {
+        q: "Does it need planning permission?",
+        a: "The indoor side, no. The outdoor unit is usually fine under permitted development, with placement rules we design to — flats and listed buildings need a closer look.",
+      },
+      {
+        q: "How many rooms can one system do?",
+        a: "One outdoor unit can run several indoor units (a multi-split), each with its own control — so bedrooms and living space can be zoned separately.",
+      },
     ],
     href: "/air-conditioning",
   },
@@ -126,6 +273,35 @@ const SPOTS: Spot[] = [
       { k: "Flow temp", v: "35 °C — lowest of any emitter" },
       { k: "Heat pump SCOP", v: "≈ 4.2" },
       { k: "Zoning", v: "Room-by-room manifolds" },
+      { k: "Build-up", v: "Screed, or low-profile overlay" },
+    ],
+    sections: [
+      {
+        h: "What we do",
+        body: "We assess the floor build-up first — full screed for new floors and extensions, low-profile overlay boards for retrofit — then design the pipe layout and manifold zoning room by room, install, pressure-test and balance every loop before the floor goes down.",
+      },
+      {
+        h: "The technical bit",
+        body: "Because the whole floor is the emitter, water at just 35 °C heats the room — the lowest flow temperature of any system, and the reason a heat pump feeding underfloor reaches its best efficiency. Floor covering matters: tile and stone perform best, engineered wood works well, and thick carpet needs designing around.",
+      },
+    ],
+    faqs: [
+      {
+        q: "Can it be retrofitted without digging up floors?",
+        a: "Often, yes — low-profile overlay systems add only a small height on top of the existing floor. The survey tells you what your rooms can take.",
+      },
+      {
+        q: "Does it work under carpet or wood?",
+        a: "Engineered wood, yes. Carpet works within limits — underlay and carpet together need to stay reasonably thin or they blanket the heat.",
+      },
+      {
+        q: "Is it slow to warm up?",
+        a: "It's steadier rather than instant — designed to hold rooms at temperature efficiently instead of blasting on and off like radiators. Controls handle the schedules.",
+      },
+      {
+        q: "Do I need a heat pump for it?",
+        a: "No — it runs from a boiler too. But its low flow temperature is exactly where heat pumps excel, so the pairing is where the running-cost savings live.",
+      },
     ],
     href: "/underfloor-heating",
   },
@@ -167,6 +343,24 @@ const SPOTS: Spot[] = [
       { name: "Anthracite Grey", ral: "RAL 7016", hex: "#383E42" },
       { name: "Carbon Black", ral: "RAL 9011", hex: "#26282B" },
       { name: "Any RAL colour", ral: "to order", hex: "#3EC5B4", note: "made to order" },
+    ],
+    faqs: [
+      {
+        q: "How disruptive is the installation?",
+        a: "A room is typically converted in hours — the old skirting comes off, brackets go on, boards click into place. No walls opened, no floors lifted.",
+      },
+      {
+        q: "Does it fully replace my radiators?",
+        a: "In most rooms, yes — the perimeter run is sized against the room's heat loss at survey. Occasionally a large or glazed room keeps a supplementary emitter.",
+      },
+      {
+        q: "Is it safe with curtains and furniture?",
+        a: "Yes — it runs at low surface temperatures, warming the room gently from the edges rather than getting hot like a radiator.",
+      },
+      {
+        q: "What if I can't run pipework to a room?",
+        a: "That's what ThermaSkirt-e is for — the same boards with a self-regulating electric element, run from a fused spur with its own room thermostat.",
+      },
     ],
     href: "/thermaskirt",
   },
@@ -396,6 +590,30 @@ export function ExploreHome() {
                       Tough double epoxy powder coat. Swatch colours indicative — samples available
                       with your survey.
                     </p>
+                  </div>
+                )}
+
+                {active.faqs && (
+                  <div className="mt-6">
+                    <p className="font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+                      Common questions
+                    </p>
+                    <div className="mt-2 divide-y divide-night-line border-y border-night-line">
+                      {active.faqs.map((f) => (
+                        <details key={f.q} className="group py-3">
+                          <summary className="flex cursor-pointer list-none items-baseline justify-between gap-4 text-sm font-medium text-night-text [&::-webkit-details-marker]:hidden">
+                            {f.q}
+                            <span
+                              aria-hidden
+                              className="font-techmono text-xs text-night-faint transition-transform group-open:rotate-45"
+                            >
+                              +
+                            </span>
+                          </summary>
+                          <p className="mt-2 pr-6 text-sm leading-relaxed text-night-muted">{f.a}</p>
+                        </details>
+                      ))}
+                    </div>
                   </div>
                 )}
 
