@@ -474,11 +474,12 @@ export function ExploreHome() {
             {active && (
               <motion.aside
                 key={active.id}
+                data-lenis-prevent
                 initial={reduced ? { opacity: 0 } : desktop ? { opacity: 0, x: 48 } : { opacity: 0, y: 20 }}
                 animate={reduced ? { opacity: 1 } : { opacity: 1, x: 0, y: 0 }}
                 exit={reduced ? { opacity: 0 } : desktop ? { opacity: 0, x: 48 } : { opacity: 0, y: 20 }}
                 transition={{ type: "tween", duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className="relative z-20 border-t border-night-line bg-night p-6 md:absolute md:inset-y-0 md:right-0 md:w-[400px] md:overflow-y-auto md:border-l md:border-t-0 md:bg-night/95 md:p-8 md:backdrop-blur-md"
+                className="relative z-20 border-t border-night-line bg-night p-6 md:absolute md:inset-y-0 md:right-0 md:w-[400px] md:overflow-y-auto md:overscroll-contain md:border-l md:border-t-0 md:bg-night/95 md:p-8 md:backdrop-blur-md"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
