@@ -51,7 +51,7 @@ export default function HeatPumpsPage() {
           </div>
           <img
             src={`${BASE}/media/pages/heatpump-close.jpg`}
-            alt="Air source heat pump unit at dusk against a brick wall"
+            alt="Vaillant aroTHERM plus air source heat pump installed beside a cottage garden patio"
             className="aspect-[4/5] w-full border border-night-line object-cover"
           />
         </header>
