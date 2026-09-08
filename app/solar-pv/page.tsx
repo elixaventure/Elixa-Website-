@@ -5,6 +5,8 @@ import { NavV2 } from "@/components/v2/Nav";
 import { FooterV2 } from "@/components/v2/FooterV2";
 import { SOLAR_RANGE, SOLAR_RANGE_NOTE } from "@/content/solarRange";
 
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 export const metadata: Metadata = {
   title: "Solar PV — The Panel Range | Elixa Renewables",
   description:
@@ -19,7 +21,8 @@ export default function SolarPage() {
         <NavV2 />
 
         {/* header */}
-        <header className="mx-auto max-w-[1500px] px-5 pb-16 pt-36 md:px-10 md:pb-24 md:pt-44">
+        <header className="mx-auto grid max-w-[1500px] items-center gap-10 px-5 pb-16 pt-36 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] md:gap-16 md:px-10 md:pb-20 md:pt-44">
+          <div>
           <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
             Solar PV — the range
           </p>
@@ -45,6 +48,12 @@ export default function SolarPage() {
               Explore the Elixa home
             </Link>
           </div>
+          </div>
+          <img
+            src={`${BASE}/media/pages/solar-close.jpg`}
+            alt="Close-up of all-black solar panels on a roof at dusk"
+            className="aspect-[4/5] w-full border border-night-line object-cover"
+          />
         </header>
 
         {/* the range — editorial rows */}

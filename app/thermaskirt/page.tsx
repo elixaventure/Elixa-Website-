@@ -59,7 +59,8 @@ export default function ThermaskirtPage() {
         <NavV2 />
 
         {/* header */}
-        <header className="mx-auto max-w-[1500px] px-5 pb-14 pt-36 md:px-10 md:pb-20 md:pt-44">
+        <header className="mx-auto grid max-w-[1500px] items-center gap-10 px-5 pb-16 pt-36 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] md:gap-16 md:px-10 md:pb-20 md:pt-44">
+          <div>
           <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
             ThermaSkirt — heated skirting
           </p>
@@ -85,6 +86,12 @@ export default function ThermaskirtPage() {
               Pair with a heat pump
             </Link>
           </div>
+          </div>
+          <img
+            src={`${BASE}/media/pages/thermaskirt-close.jpg`}
+            alt="ThermaSkirt heated skirting fitted below panelled walls on a herringbone floor"
+            className="aspect-[4/5] w-full border border-night-line object-cover"
+          />
         </header>
 
         {/* feature install photo */}
