@@ -56,13 +56,13 @@ export default function UnderfloorHeatingPage() {
             <div className="mt-9 flex flex-wrap gap-4">
               <Link
                 href="/quote"
-                className="border border-night-accent px-7 py-3.5 font-techmono text-xs uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
+                className="border border-night-accent px-7 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
               >
                 Request a Survey
               </Link>
               <Link
                 href="/thermaskirt"
-                className="border border-night-text/25 px-7 py-3.5 font-techmono text-xs uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
+                className="border border-night-text/25 px-7 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
               >
                 Or heat from the skirting
               </Link>
@@ -145,7 +145,7 @@ export default function UnderfloorHeatingPage() {
               </p>
               <Link
                 href="/quote"
-                className="mt-2 inline-flex w-fit items-center gap-3 border border-night-accent px-7 py-3.5 font-techmono text-xs uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
+                className="mt-2 inline-flex w-fit items-center gap-3 border border-night-accent px-7 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
               >
                 Book the free survey <span aria-hidden>→</span>
               </Link>

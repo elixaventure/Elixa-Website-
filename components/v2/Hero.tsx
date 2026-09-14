@@ -137,14 +137,14 @@ export function HeroV2() {
         <div className="mt-10 flex flex-wrap items-center gap-4">
           <Link
             href="/#solutions"
-            className="group relative overflow-hidden border border-night-accent px-7 py-3.5 font-techmono text-xs uppercase tracking-[0.16em] text-night-accent transition-colors hover:text-night"
+            className="group relative overflow-hidden border border-night-accent px-7 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-accent transition-colors hover:text-night"
           >
             <span className="absolute inset-0 -z-0 origin-left scale-x-0 bg-night-accent transition-transform duration-300 ease-out group-hover:scale-x-100" />
             <span className="relative z-10">Explore Our Solutions</span>
           </Link>
           <Link
             href="/quote"
-            className="border border-night-text/25 px-7 py-3.5 font-techmono text-xs uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
+            className="border border-night-text/25 px-7 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
           >
             Request a Survey
           </Link>

@@ -103,7 +103,7 @@ export default function ProjectsPage() {
             </h2>
             <Link
               href="/quote"
-              className="inline-flex items-center gap-3 border border-night-accent px-8 py-4 font-techmono text-xs uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
+              className="inline-flex items-center gap-3 border border-night-accent px-8 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
             >
               Book the free survey <span aria-hidden>→</span>
             </Link>
