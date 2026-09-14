@@ -78,6 +78,42 @@ export default function ContactPage() {
           </div>
         </section>
 
+        {/* floor plans */}
+        <section className="border-b border-night-line">
+          <div className="mx-auto grid max-w-[1500px] gap-10 px-5 py-14 md:grid-cols-2 md:gap-16 md:px-10 md:py-20">
+            <div>
+              <p className="font-techmono text-[11px] uppercase tracking-[0.24em] text-night-accent">
+                Building or renovating?
+              </p>
+              <h2 className="v2-narrow mt-3 max-w-[16ch] text-night-text text-3xl font-semibold leading-[1.05] tracking-[-0.02em] md:text-5xl">
+                Send us your floor plans.
+              </h2>
+            </div>
+            <div className="grid gap-6 text-sm leading-relaxed text-night-muted md:text-base">
+              <p>
+                A floor plan turns a rough estimate into a sharp one — room sizes, layout and floor
+                construction are half the design work done before we visit. The survey form takes a
+                PDF or a photo of your plans (even a sketch on paper helps), or simply email them
+                to us.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Link
+                  href="/quote"
+                  className="inline-flex items-center gap-3 border border-night-accent px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
+                >
+                  Start the form — attach plans <span aria-hidden>→</span>
+                </Link>
+                <a
+                  href={`${site.emailHref}?subject=Floor%20plans%20for%20a%20quote`}
+                  className="inline-flex items-center gap-3 border border-night-text/25 px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
+                >
+                  Email them instead
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* survey CTA */}
         <section>
           <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-8 px-5 py-14 md:px-10 md:py-20">
