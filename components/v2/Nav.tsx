@@ -86,7 +86,7 @@ export function NavV2() {
                 {m.label}
               </Link>
             ))}
-            <Link href="/quote" onClick={() => setOpen(false)} className="mt-2 border border-night-accent px-4 py-3.5 text-center font-techmono text-[13px] uppercase tracking-[0.14em] text-night-accent">
+            <Link href="/quote" onClick={() => setOpen(false)} className="mt-2 border border-night-accent px-4 py-4 text-center font-techmono text-sm uppercase tracking-[0.14em] text-night-accent">
               Request a Survey
             </Link>
           </div>

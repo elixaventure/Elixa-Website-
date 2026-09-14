@@ -269,14 +269,14 @@ export function FinalCta() {
         <div className="mt-12 flex flex-wrap gap-4">
           <Link
             href="/quote"
-            className="group relative overflow-hidden border border-night-accent px-8 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-accent transition-colors hover:text-night"
+            className="group relative overflow-hidden border border-night-accent px-9 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:text-night"
           >
             <span className="absolute inset-0 origin-left scale-x-0 bg-night-accent transition-transform duration-300 ease-out group-hover:scale-x-100" />
             <span className="relative">Request a Survey</span>
           </Link>
           <a
             href={site.phoneHref}
-            className="border border-night-text/25 px-8 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
+            className="border border-night-text/25 px-9 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
           >
             Speak to Elixa
           </a>
