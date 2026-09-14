@@ -17,11 +17,11 @@ const SCHEMES = [
     name: "Boiler Upgrade Scheme",
     eyebrow: "Government grant",
     blurb:
-      "The headline one — a government grant toward an air source heat pump when it replaces a fossil-fuel system, in England and Wales.",
+      "The headline one — a government grant toward an air source heat pump when it replaces a fossil-fuel system, in England and Wales. Coming off oil or LPG? The grant steps up to £9,000.",
     detail:
-      "You don't apply for it: we do, as your MCS-certified route requires, and the grant comes straight off your quote. Eligibility is mostly about the property — a fossil-fuel system being replaced and a valid EPC — and we confirm it at the survey before anything is promised.",
+      "You don't apply for it: we do, as your MCS-certified route requires, and the grant comes straight off your quote. Homes off the mains gas grid replacing an oil or LPG system get the uplifted £9,000 rate (applications to 31 March 2027); everyone else gets £7,500. Eligibility is mostly about the property — a fossil-fuel system being replaced and a valid EPC — and we confirm it at the survey before anything is promised.",
     facts: [
-      ["Worth", "£7,500 toward a heat pump"],
+      ["Worth", "£7,500 — £9,000 off oil or LPG"],
       ["Where", "England and Wales"],
       ["Applies to", "Air source heat pump installs"],
       ["How it's claimed", "By us, on your behalf — off the quote"],
@@ -81,7 +81,7 @@ const FAQS = [
   },
   {
     q: "Can I combine the grant with the 0% VAT?",
-    a: "Yes — they stack. A qualifying heat pump install gets the £7,500 grant and is zero-rated for VAT on top.",
+    a: "Yes — they stack. A qualifying heat pump install gets the grant — £7,500, or £9,000 when replacing oil or LPG off the gas grid — and is zero-rated for VAT on top.",
   },
   {
     q: "Does the grant cover underfloor heating or ThermaSkirt?",

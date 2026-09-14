@@ -122,8 +122,9 @@ export default function HeatPumpsPage() {
               <p>
                 So we survey first: room-by-room heat loss, existing emitters, hot-water demand,
                 where the unit can physically and acoustically live. The design lands on a shortlist
-                from the range above, priced with the £7,500 Boiler Upgrade Scheme already applied
-                where your home qualifies.
+                from the range above, priced with the Boiler Upgrade Scheme already applied where
+                your home qualifies — £7,500, rising to £9,000 when you're replacing an oil or LPG
+                system off the gas grid.
               </p>
               <Link
                 href="/quote"

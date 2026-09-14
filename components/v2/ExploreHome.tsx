@@ -138,7 +138,7 @@ const SPOTS: Spot[] = [
       { k: "Output", v: "3–4 kWh heat per kWh in" },
       { k: "SCOP", v: "≈ 4.0 with 40 °C emitters" },
       { k: "Flow temp design", v: "35–55 °C by emitter" },
-      { k: "Grant", v: "£7,500 Boiler Upgrade Scheme" },
+      { k: "Grant", v: "£7,500 — £9,000 off oil/LPG" },
     ],
     sections: [
       {
@@ -164,8 +164,8 @@ const SPOTS: Spot[] = [
         a: "Modern units are quiet — placement matters more than the pump. We position it away from bedrooms and boundaries as part of the design.",
       },
       {
-        q: "Am I eligible for the £7,500 grant?",
-        a: "Most owner-occupied homes in England and Wales replacing a fossil-fuel system are. We check eligibility and apply for you — the price you see is after funding.",
+        q: "Am I eligible for the heat pump grant?",
+        a: "Most owner-occupied homes in England and Wales replacing a fossil-fuel system get £7,500 — and homes off the gas grid replacing oil or LPG get £9,000. We check eligibility and apply for you — the price you see is after funding.",
       },
     ],
     href: "/air-source-heat-pumps",

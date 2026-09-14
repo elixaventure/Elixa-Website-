@@ -50,7 +50,7 @@ export const HEAT_SOURCES: HeatSource[] = [
     blurb: "Draws free heat from the outside air — several units of heat for every unit of electricity.",
     benefits: [
       "Delivers 3–4 kWh of heat per kWh of electricity",
-      "£7,500 Boiler Upgrade Scheme grant available for eligible homes",
+      "Boiler Upgrade Scheme grant of £7,500 — £9,000 replacing oil or LPG — for eligible homes",
       "No flue, no on-site combustion, no fuel deliveries",
       "Lowest-carbon heating option, and gets cleaner as the grid does",
       "Pairs with solar PV and battery to run on your own power",
