@@ -20,6 +20,8 @@ interface Spot {
   /** pin position, % of image */
   x: number;
   y: number;
+  /** energy-emission colour shown while zoomed on this product */
+  emit?: string;
   /** zoom applied when active (scene scales around the pin) */
   scale: number;
   title: string;
@@ -37,9 +39,10 @@ interface Spot {
 const SPOTS: Spot[] = [
   {
     id: "solar",
+    emit: "#F5C044",
     label: "Solar PV",
-    x: 37.5,
-    y: 24.5,
+    x: 37.6,
+    y: 24.6,
     scale: 2.0,
     title: "Solar PV",
     blurb:
@@ -82,9 +85,10 @@ const SPOTS: Spot[] = [
   },
   {
     id: "battery",
+    emit: "#3EC5B4",
     label: "Battery storage",
-    x: 28,
-    y: 46,
+    x: 26.9,
+    y: 43.7,
     scale: 2.2,
     title: "Battery Storage",
     blurb:
@@ -127,9 +131,10 @@ const SPOTS: Spot[] = [
   },
   {
     id: "heatpump",
+    emit: "#FF8A4C",
     label: "Heat pump",
-    x: 20,
-    y: 58.5,
+    x: 19.3,
+    y: 53.2,
     scale: 2.2,
     title: "Air Source Heat Pump",
     blurb:
@@ -172,9 +177,10 @@ const SPOTS: Spot[] = [
   },
   {
     id: "ev",
+    emit: "#3EC5B4",
     label: "EV charging",
-    x: 16,
-    y: 72,
+    x: 16.8,
+    y: 70.6,
     scale: 2.2,
     title: "EV Charging",
     blurb:
@@ -217,9 +223,10 @@ const SPOTS: Spot[] = [
   },
   {
     id: "aircon",
+    emit: "#7CC7F0",
     label: "Air conditioning",
-    x: 73.5,
-    y: 34.5,
+    x: 74.0,
+    y: 32.5,
     scale: 2.0,
     title: "Air Conditioning",
     blurb:
@@ -262,9 +269,10 @@ const SPOTS: Spot[] = [
   },
   {
     id: "underfloor",
+    emit: "#FF8A4C",
     label: "Underfloor heating",
-    x: 70.5,
-    y: 58.5,
+    x: 71.8,
+    y: 58.4,
     scale: 2.1,
     title: "Underfloor Heating",
     blurb:
@@ -307,9 +315,10 @@ const SPOTS: Spot[] = [
   },
   {
     id: "thermaskirt",
+    emit: "#FF8A4C",
     label: "ThermaSkirt",
-    x: 76.5,
-    y: 74,
+    x: 65.9,
+    y: 69.6,
     scale: 2.1,
     title: "ThermaSkirt Heated Skirting",
     blurb:
@@ -467,6 +476,47 @@ export function ExploreHome() {
                 );
               })}
             </motion.div>
+
+            {/* energy emission — radiates from the active product while zoomed */}
+            <AnimatePresence>
+              {zoomed && active && (() => {
+                const s = active.scale;
+                const px = bgPos(active.x, 0.36, s) / 100;
+                const py = bgPos(active.y, 0.46, s) / 100;
+                const fx = px * (1 - s) + (active.x / 100) * s;
+                const fy = py * (1 - s) + (active.y / 100) * s;
+                const col = active.emit || "#3EC5B4";
+                return (
+                  <motion.div
+                    key={active.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ delay: 0.55, duration: 0.7 }}
+                    className="pointer-events-none absolute"
+                    style={{ left: `${fx * 100}%`, top: `${fy * 100}%`, transform: "translate(-50%, -50%)" }}
+                  >
+                    <span className="relative block h-44 w-44 md:h-60 md:w-60">
+                      <span
+                        className="absolute inset-0 rounded-full"
+                        style={{ background: `radial-gradient(circle, ${col}4d 0%, ${col}1f 38%, transparent 68%)` }}
+                      />
+                      {[0, 0.8, 1.6].map((d) => (
+                        <span
+                          key={d}
+                          className="absolute inset-0 rounded-full border-2"
+                          style={{
+                            borderColor: col,
+                            opacity: 0,
+                            animation: `v2-emit 2.4s cubic-bezier(0, 0, 0.2, 1) ${d}s infinite`,
+                          }}
+                        />
+                      ))}
+                    </span>
+                  </motion.div>
+                );
+              })()}
+            </AnimatePresence>
           </motion.div>
 
           {/* info panel — side sheet on desktop, bottom sheet on mobile */}
