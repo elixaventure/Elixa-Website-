@@ -477,41 +477,47 @@ export function ExploreHome() {
               })}
             </motion.div>
 
-            {/* energy emission — radiates from the active product while zoomed */}
+            {/* energy emission — radiates from the active product (around the
+                zoom focal point on desktop, around the pin itself on mobile) */}
             <AnimatePresence>
-              {zoomed && active && (() => {
-                const s = active.scale;
-                const px = bgPos(active.x, 0.36, s) / 100;
-                const py = bgPos(active.y, 0.46, s) / 100;
-                const fx = px * (1 - s) + (active.x / 100) * s;
-                const fy = py * (1 - s) + (active.y / 100) * s;
+              {active && (() => {
+                let fx = active.x / 100;
+                let fy = active.y / 100;
+                if (zoomed) {
+                  const s = active.scale;
+                  const px = bgPos(active.x, 0.36, s) / 100;
+                  const py = bgPos(active.y, 0.46, s) / 100;
+                  fx = px * (1 - s) + (active.x / 100) * s;
+                  fy = py * (1 - s) + (active.y / 100) * s;
+                }
                 const col = active.emit || "#3EC5B4";
                 return (
                   <motion.div
-                    key={active.id}
+                    key={active.id + (zoomed ? "-z" : "")}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ delay: 0.55, duration: 0.7 }}
+                    transition={{ delay: zoomed ? 0.55 : 0.1, duration: 0.7 }}
                     className="pointer-events-none absolute"
                     style={{ left: `${fx * 100}%`, top: `${fy * 100}%`, transform: "translate(-50%, -50%)" }}
                   >
-                    <span className="relative block h-44 w-44 md:h-60 md:w-60">
+                    <span className={`relative block ${zoomed ? "h-44 w-44 md:h-60 md:w-60" : "h-28 w-28 md:h-36 md:w-36"}`}>
                       <span
                         className="absolute inset-0 rounded-full"
                         style={{ background: `radial-gradient(circle, ${col}4d 0%, ${col}1f 38%, transparent 68%)` }}
                       />
-                      {[0, 0.8, 1.6].map((d) => (
-                        <span
-                          key={d}
-                          className="absolute inset-0 rounded-full border-2"
-                          style={{
-                            borderColor: col,
-                            opacity: 0,
-                            animation: `v2-emit 2.4s cubic-bezier(0, 0, 0.2, 1) ${d}s infinite`,
-                          }}
-                        />
-                      ))}
+                      {!reduced &&
+                        [0, 0.8, 1.6].map((d) => (
+                          <span
+                            key={d}
+                            className="absolute inset-0 rounded-full border-2"
+                            style={{
+                              borderColor: col,
+                              opacity: 0,
+                              animation: `v2-emit 2.4s cubic-bezier(0, 0, 0.2, 1) ${d}s infinite`,
+                            }}
+                          />
+                        ))}
                     </span>
                   </motion.div>
                 );
