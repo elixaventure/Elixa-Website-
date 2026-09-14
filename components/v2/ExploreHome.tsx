@@ -645,8 +645,8 @@ export function ExploreHome() {
           <button
             key={s.id}
             onClick={() => setActive(s)}
-            className={`font-techmono text-[10px] uppercase tracking-[0.16em] transition-colors ${
-              active?.id === s.id ? "text-night-accent" : "text-night-faint hover:text-night-muted"
+            className={`py-1 font-techmono text-[11px] uppercase tracking-[0.16em] transition-colors ${
+              active?.id === s.id ? "text-night-accent" : "text-night-muted hover:text-night-text"
             }`}
           >
             {s.label}
