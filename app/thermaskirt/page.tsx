@@ -75,13 +75,13 @@ export default function ThermaskirtPage() {
           <div className="mt-9 flex flex-wrap gap-4">
             <Link
               href="/quote"
-              className="border border-night-accent px-7 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
+              className="border border-night-accent px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
             >
               Request a Survey
             </Link>
             <Link
               href="/air-source-heat-pumps"
-              className="border border-night-text/25 px-7 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
+              className="border border-night-text/25 px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
             >
               Pair with a heat pump
             </Link>
@@ -396,7 +396,7 @@ export default function ThermaskirtPage() {
             </h2>
             <Link
               href="/quote"
-              className="inline-flex items-center gap-3 border border-night-accent px-8 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
+              className="inline-flex items-center gap-3 border border-night-accent px-9 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
             >
               Book the free survey <span aria-hidden>→</span>
             </Link>

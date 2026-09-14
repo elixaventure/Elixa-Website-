@@ -454,13 +454,13 @@ export function ExploreHome() {
                         <span className="absolute inset-0 animate-ping rounded-full bg-night-accent/25" />
                       )}
                       <span
-                        className={`relative flex h-7 w-7 items-center justify-center rounded-full border transition-colors duration-300 md:h-8 md:w-8 ${
+                        className={`relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors duration-300 md:h-10 md:w-10 ${
                           on
                             ? "border-night-accent bg-night-accent"
                             : "border-night-accent/80 bg-night/70 backdrop-blur-sm group-hover:bg-night-accent/30"
                         }`}
                       >
-                        <span className={`h-2 w-2 rounded-full ${on ? "bg-night" : "bg-night-accent"}`} />
+                        <span className={`h-3 w-3 rounded-full ${on ? "bg-night" : "bg-night-accent"}`} />
                       </span>
                     </span>
                   </button>
@@ -645,7 +645,7 @@ export function ExploreHome() {
           <button
             key={s.id}
             onClick={() => setActive(s)}
-            className={`py-1.5 font-techmono text-xs uppercase tracking-[0.16em] transition-colors ${
+            className={`py-2 font-techmono text-sm uppercase tracking-[0.16em] transition-colors ${
               active?.id === s.id ? "text-night-accent" : "text-night-muted hover:text-night-text"
             }`}
           >

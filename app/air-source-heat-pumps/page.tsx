@@ -37,13 +37,13 @@ export default function HeatPumpsPage() {
           <div className="mt-9 flex flex-wrap gap-4">
             <Link
               href="/quote"
-              className="border border-night-accent px-7 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
+              className="border border-night-accent px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
             >
               Request a Survey
             </Link>
             <Link
               href="/#solutions"
-              className="border border-night-text/25 px-7 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
+              className="border border-night-text/25 px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
             >
               Explore the Elixa home
             </Link>
@@ -127,7 +127,7 @@ export default function HeatPumpsPage() {
               </p>
               <Link
                 href="/quote"
-                className="mt-2 inline-flex w-fit items-center gap-3 border border-night-accent px-7 py-4 font-techmono text-[13px] uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
+                className="mt-2 inline-flex w-fit items-center gap-3 border border-night-accent px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
               >
                 Book the free survey <span aria-hidden>→</span>
               </Link>
