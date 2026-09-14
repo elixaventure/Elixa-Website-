@@ -47,7 +47,7 @@ export function NavV2() {
             <Link
               key={m.label}
               href={m.href}
-              className="font-techmono text-[11px] uppercase tracking-[0.14em] text-night-muted transition-colors hover:text-night-text"
+              className="py-2 font-techmono text-xs uppercase tracking-[0.14em] text-night-muted transition-colors hover:text-night-text"
             >
               {m.label}
             </Link>
@@ -57,7 +57,7 @@ export function NavV2() {
         <div className="flex items-center gap-4">
           <Link
             href="/quote"
-            className="hidden border border-night-text/25 px-4 py-2 font-techmono text-[11px] uppercase tracking-[0.14em] text-night-text transition-colors hover:border-night-accent hover:text-night-accent sm:block"
+            className="hidden border border-night-text/25 px-5 py-2.5 font-techmono text-xs uppercase tracking-[0.14em] text-night-text transition-colors hover:border-night-accent hover:text-night-accent sm:block"
           >
             Request a Survey
           </Link>
@@ -65,10 +65,10 @@ export function NavV2() {
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-label="Menu"
-            className="flex h-10 w-10 flex-col items-center justify-center gap-[5px] lg:hidden"
+            className="flex h-12 w-12 flex-col items-center justify-center gap-[6px] lg:hidden"
           >
-            <span className={cn("h-px w-6 bg-night-text transition-transform", open && "translate-y-[3px] rotate-45")} />
-            <span className={cn("h-px w-6 bg-night-text transition-transform", open && "-translate-y-[3px] -rotate-45")} />
+            <span className={cn("h-[2px] w-7 bg-night-text transition-transform", open && "translate-y-[4px] rotate-45")} />
+            <span className={cn("h-[2px] w-7 bg-night-text transition-transform", open && "-translate-y-[4px] -rotate-45")} />
           </button>
         </div>
       </div>
@@ -81,12 +81,12 @@ export function NavV2() {
                 key={m.label}
                 href={m.href}
                 onClick={() => setOpen(false)}
-                className="font-arch text-xl font-medium text-night-text"
+                className="py-1.5 font-arch text-2xl font-medium text-night-text"
               >
                 {m.label}
               </Link>
             ))}
-            <Link href="/quote" onClick={() => setOpen(false)} className="mt-2 border border-night-accent px-4 py-3 text-center font-techmono text-xs uppercase tracking-[0.14em] text-night-accent">
+            <Link href="/quote" onClick={() => setOpen(false)} className="mt-2 border border-night-accent px-4 py-3.5 text-center font-techmono text-[13px] uppercase tracking-[0.14em] text-night-accent">
               Request a Survey
             </Link>
           </div>
