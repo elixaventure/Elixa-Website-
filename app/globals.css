@@ -52,6 +52,13 @@
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    /* stop iOS flashing a grey box on every tap */
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* treat taps on controls as taps — no double-tap zoom, no selection loupe */
+  button,
+  a {
+    touch-action: manipulation;
   }
   body {
     @apply bg-white text-ink font-sans antialiased;
