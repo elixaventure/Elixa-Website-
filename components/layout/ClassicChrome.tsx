@@ -17,6 +17,7 @@ const V2_ROUTES = new Set([
   "/battery-storage",
   "/ev-charging",
   "/air-conditioning",
+  "/projects",
 ]);
 
 export function ClassicChrome({ children }: { children: ReactNode }) {
