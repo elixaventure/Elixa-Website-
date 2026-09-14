@@ -60,17 +60,37 @@
   a {
     touch-action: manipulation;
   }
-  /* energy-emission ripple on the interactive home */
-  @keyframes v2-emit {
+  /* directional energy flow on the interactive home: elements travel along
+     their container's local down axis; the container is rotated per product */
+  @keyframes v2-flow-out {
     0% {
-      transform: scale(0.22);
-      opacity: 0.55;
+      transform: translateY(0);
+      opacity: 0;
     }
-    70% {
-      opacity: 0.16;
+    18% {
+      opacity: 0.95;
+    }
+    75% {
+      opacity: 0.45;
     }
     100% {
-      transform: scale(1);
+      transform: translateY(var(--v2-flow-l, 120px));
+      opacity: 0;
+    }
+  }
+  @keyframes v2-flow-in {
+    0% {
+      transform: translateY(var(--v2-flow-l, 120px));
+      opacity: 0;
+    }
+    18% {
+      opacity: 0.95;
+    }
+    75% {
+      opacity: 0.55;
+    }
+    100% {
+      transform: translateY(0);
       opacity: 0;
     }
   }
