@@ -1,35 +1,53 @@
-import { Container } from "@/components/ui/Container";
+import type { Metadata } from "next";
+import { SmoothScroll } from "@/components/v2/SmoothScroll";
+import { NavV2 } from "@/components/v2/Nav";
+import { FooterV2 } from "@/components/v2/FooterV2";
 import { QuoteLauncher } from "@/components/quote/QuoteLauncher";
-import { pageMeta } from "@/lib/seo";
 import { site } from "@/content/site";
 
-export const metadata = pageMeta({
-  title: "Get a Free Quote",
+export const metadata: Metadata = {
+  title: "Request a Survey | Elixa Renewables",
   description:
-    "Get a free, no-obligation quote from Elixa Renewables Group for solar, battery storage, heat pumps, air conditioning, heating or EV charging.",
-  path: "/quote/",
-});
+    "Book a free, no-obligation survey with Elixa Renewables — solar, battery storage, heat pumps, air conditioning, heating or EV charging, designed from your home's real numbers.",
+};
 
 export default function QuotePage() {
   return (
-    <section className="bg-cloud pb-24 pt-[calc(var(--nav-h)+3rem)]">
-      <Container>
-        <div className="mx-auto mb-10 max-w-2xl text-center">
-          <span className="kicker">Get a free quote</span>
-          <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">
+    <SmoothScroll>
+      <style>{`html, body { background-color: #080B0F; }`}</style>
+      <div className="v2-grain bg-night font-arch text-night-text antialiased">
+        <NavV2 />
+
+        {/* header */}
+        <header className="mx-auto max-w-[1500px] px-5 pb-10 pt-36 md:px-10 md:pb-12 md:pt-44">
+          <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
+            Request a survey
+          </p>
+          <h1 className="v2-narrow mt-4 max-w-[18ch] text-night-text text-4xl font-semibold leading-[1.0] tracking-[-0.02em] md:text-7xl">
             Tell us about your project.
           </h1>
-          <p className="mt-4 text-navy/60">
-            A few quick questions and an Elixa specialist will come back with honest advice and a
-            no-obligation quote. Prefer to talk?{" "}
-            <a href={site.phoneHref} className="font-semibold text-elixa-cyan">
+          <p className="mt-6 max-w-[58ch] text-base leading-relaxed text-night-muted md:text-lg">
+            A few quick questions and a specialist comes back with honest advice and a
+            no-obligation quote — grants already applied where your home qualifies. Prefer to
+            talk?{" "}
+            <a href={site.phoneHref} className="font-medium text-night-accent underline decoration-night-accent/40 underline-offset-4 hover:decoration-night-accent">
               Call {site.phoneDisplay}
             </a>
             .
           </p>
-        </div>
-        <QuoteLauncher />
-      </Container>
-    </section>
+        </header>
+
+        {/* the wizard — light card on the dark ground */}
+        <section className="border-t border-night-line">
+          <div className="mx-auto max-w-[1500px] px-0 py-10 md:px-10 md:py-16">
+            <div className="border-y border-night-line bg-white px-4 py-8 text-navy md:border md:px-8 md:py-10" data-lenis-prevent>
+              <QuoteLauncher />
+            </div>
+          </div>
+        </section>
+
+        <FooterV2 />
+      </div>
+    </SmoothScroll>
   );
 }

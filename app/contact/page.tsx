@@ -1,85 +1,106 @@
-import { Container } from "@/components/ui/Container";
-import { PageHero } from "@/components/page/PageHero";
-import { ContactForm } from "@/components/contact/ContactForm";
-import { pageMeta, breadcrumbSchema } from "@/lib/seo";
-import { JsonLd } from "@/components/seo/JsonLd";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { SmoothScroll } from "@/components/v2/SmoothScroll";
+import { NavV2 } from "@/components/v2/Nav";
+import { FooterV2 } from "@/components/v2/FooterV2";
 import { site } from "@/content/site";
 
-export const metadata = pageMeta({
-  title: "Contact",
+export const metadata: Metadata = {
+  title: "Contact | Elixa Renewables",
   description:
-    "Contact Elixa Renewables Group — call 07833 387 653 or email info@elixarenewables.co.uk for solar, battery, heat pumps, air conditioning, heating and EV charging.",
-  path: "/contact/",
-});
-
-const crumbs = [
-  { name: "Home", path: "/" },
-  { name: "Contact", path: "/contact" },
-];
+    "Talk to Elixa Renewables — call, email or book a free survey for heat pumps, solar, batteries, heating and EV charging across the UK.",
+};
 
 export default function ContactPage() {
   return (
-    <>
-      <JsonLd data={breadcrumbSchema(crumbs)} />
-      <PageHero
-        kicker="Get in touch"
-        title="Speak to an energy specialist."
-        intro="Tell us about your home or business and we'll come back with honest advice and a free, no-obligation quote."
-        breadcrumbs={crumbs}
-      />
+    <SmoothScroll>
+      <style>{`html, body { background-color: #080B0F; }`}</style>
+      <div className="v2-grain bg-night font-arch text-night-text antialiased">
+        <NavV2 />
 
-      <section className="py-20 sm:py-24">
-        <Container className="grid gap-12 lg:grid-cols-[0.8fr_1fr] lg:items-start">
-          <div>
-            <h2 className="text-2xl font-bold">Contact details</h2>
-            <ul className="mt-6 space-y-5">
-              <ContactItem label="Phone" value={site.phoneDisplay} href={site.phoneHref} icon="☎" />
-              <ContactItem label="Email" value={site.email} href={site.emailHref} icon="✉" />
-              <ContactItem
-                label="Address"
-                value={`${site.address.line1}, ${site.address.line2}, ${site.address.city}, ${site.address.postcode}`}
-                icon="⌂"
-              />
-            </ul>
-            <div className="mt-8 rounded-3xl border border-navy/10 bg-mist p-6">
-              <p className="font-display font-bold text-navy">Prefer a quick quote?</p>
-              <p className="mt-1 text-sm text-navy/60">
-                Use our guided quote journey for a faster, tailored response.
+        {/* header */}
+        <header className="mx-auto max-w-[1500px] px-5 pb-14 pt-36 md:px-10 md:pb-16 md:pt-44">
+          <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
+            Contact
+          </p>
+          <h1 className="v2-narrow mt-4 max-w-[16ch] text-night-text text-4xl font-semibold leading-[1.0] tracking-[-0.02em] md:text-7xl">
+            Talk to a person.
+          </h1>
+          <p className="mt-6 max-w-[58ch] text-base leading-relaxed text-night-muted md:text-lg">
+            Question about a system, a grant, or whether your home suits a heat pump? Call or email
+            and you'll get a straight answer — or book the free survey and we'll come and see for
+            ourselves.
+          </p>
+        </header>
+
+        {/* the ways in */}
+        <section className="border-t border-night-line">
+          <div className="mx-auto grid max-w-[1500px] gap-px overflow-hidden border-b border-night-line bg-night-line md:grid-cols-3">
+            <a href={site.phoneHref} className="group bg-night p-8 transition-colors hover:bg-night-deep md:p-12">
+              <p className="font-techmono text-[11px] uppercase tracking-[0.24em] text-night-accent">
+                Call us
               </p>
-              <a href="/quote" className="btn-outline btn-md mt-4">
-                Start a quote →
-              </a>
+              <p className="v2-narrow mt-4 text-3xl font-semibold text-night-text transition-colors group-hover:text-night-accent md:text-4xl">
+                {site.phoneDisplay}
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-night-muted">
+                The quickest way — straight through to someone who can actually answer.
+              </p>
+            </a>
+            <a href={site.emailHref} className="group bg-night p-8 transition-colors hover:bg-night-deep md:p-12">
+              <p className="font-techmono text-[11px] uppercase tracking-[0.24em] text-night-accent">
+                Email us
+              </p>
+              <p className="v2-narrow mt-4 break-all text-2xl font-semibold text-night-text transition-colors group-hover:text-night-accent md:text-3xl">
+                {site.email}
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-night-muted">
+                Plans, photos and questions welcome — the more detail, the better the answer.
+              </p>
+            </a>
+            <div className="bg-night p-8 md:p-12">
+              <p className="font-techmono text-[11px] uppercase tracking-[0.24em] text-night-accent">
+                Find us
+              </p>
+              <p className="mt-4 text-base leading-relaxed text-night-text md:text-lg">
+                {site.legalName}
+                <br />
+                {site.address.line1}
+                <br />
+                {site.address.line2}
+                <br />
+                {site.address.city} {site.address.postcode}
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-night-muted">
+                Installing {site.areaServed.toLowerCase() === "united kingdom" ? "nationwide across the UK" : site.areaServed}.
+              </p>
             </div>
           </div>
+        </section>
 
-          <ContactForm />
-        </Container>
-      </section>
-    </>
-  );
-}
+        {/* survey CTA */}
+        <section>
+          <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-8 px-5 py-14 md:px-10 md:py-20">
+            <div>
+              <h2 className="v2-narrow max-w-[18ch] text-night-text text-3xl font-semibold leading-[1.05] tracking-[-0.02em] md:text-5xl">
+                Rather we just came and looked?
+              </h2>
+              <p className="mt-4 max-w-[52ch] text-sm leading-relaxed text-night-muted md:text-base">
+                The free survey is where every good answer starts — heat loss, roof, supply and
+                siting, measured rather than guessed.
+              </p>
+            </div>
+            <Link
+              href="/quote"
+              className="inline-flex items-center gap-3 border border-night-accent px-9 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
+            >
+              Book the free survey <span aria-hidden>→</span>
+            </Link>
+          </div>
+        </section>
 
-function ContactItem({
-  label,
-  value,
-  href,
-  icon,
-}: {
-  label: string;
-  value: string;
-  href?: string;
-  icon: string;
-}) {
-  const inner = (
-    <div className="flex items-start gap-4">
-      <span className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-elixa-gradient-soft text-lg text-navy">
-        {icon}
-      </span>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-navy/45">{label}</p>
-        <p className="mt-0.5 font-semibold text-navy">{value}</p>
+        <FooterV2 />
       </div>
-    </div>
+    </SmoothScroll>
   );
-  return <li>{href ? <a href={href} className="block hover:opacity-80">{inner}</a> : inner}</li>;
 }
