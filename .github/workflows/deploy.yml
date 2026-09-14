@@ -39,6 +39,11 @@ jobs:
           # the in-browser extractor is the only path; set the repo variable
           # to the deployed Worker URL to switch the API on.
           NEXT_PUBLIC_PLAN_API_URL: ${{ vars.NEXT_PUBLIC_PLAN_API_URL }}
+          # Lead/enquiry inbox (e.g. a Formspree form URL). Unset → the quote
+          # form falls back to opening the visitor's email client; set the
+          # repo variable to activate real submissions with the floor-plan
+          # attachment riding along.
+          NEXT_PUBLIC_FORM_ENDPOINT: ${{ vars.NEXT_PUBLIC_FORM_ENDPOINT }}
       - run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
