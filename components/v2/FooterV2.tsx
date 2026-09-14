@@ -33,7 +33,7 @@ export function FooterV2() {
     <footer className="border-t border-night-line bg-night">
       <div className="mx-auto grid max-w-[1500px] gap-12 px-5 py-16 md:px-10 md:py-20 lg:grid-cols-[1.3fr_1fr_1fr_1.1fr]">
         <div>
-          <Image src={`${BASE}/brand/elixa-logo-ondark.png`} alt={site.legalName} width={160} height={44} className="h-10 w-auto" />
+          <Image src={`${BASE}/brand/elixa-logo-ondark-2.png`} alt={site.legalName} width={160} height={77} className="h-10 w-auto" />
           <p className="mt-5 max-w-[34ch] text-sm leading-relaxed text-night-muted">
             Low-carbon heating and home energy systems — designed, installed and supported across the UK.
           </p>
