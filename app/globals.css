@@ -60,40 +60,6 @@
   a {
     touch-action: manipulation;
   }
-  /* directional energy flow on the interactive home: elements travel along
-     their container's local down axis; the container is rotated per product */
-  @keyframes v2-flow-out {
-    0% {
-      transform: translateY(0);
-      opacity: 0;
-    }
-    18% {
-      opacity: 0.95;
-    }
-    75% {
-      opacity: 0.45;
-    }
-    100% {
-      transform: translateY(var(--v2-flow-l, 120px));
-      opacity: 0;
-    }
-  }
-  @keyframes v2-flow-in {
-    0% {
-      transform: translateY(var(--v2-flow-l, 120px));
-      opacity: 0;
-    }
-    18% {
-      opacity: 0.95;
-    }
-    75% {
-      opacity: 0.55;
-    }
-    100% {
-      transform: translateY(0);
-      opacity: 0;
-    }
-  }
   body {
     @apply bg-white text-ink font-sans antialiased;
     text-rendering: optimizeLegibility;

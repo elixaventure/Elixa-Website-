@@ -20,11 +20,6 @@ interface Spot {
   /** pin position, % of image */
   x: number;
   y: number;
-  /** energy-emission colour shown while zoomed on this product */
-  emit?: string;
-  /** directional energy flow: travel angle (deg, 0 = straight down, clockwise),
-      streaks (air) or dashes (electricity), and push (out) or pull (in) */
-  flow?: { angle: number; kind: "streaks" | "dashes"; dir: "out" | "in" };
   /** zoom applied when active (scene scales around the pin) */
   scale: number;
   title: string;
@@ -42,8 +37,6 @@ interface Spot {
 const SPOTS: Spot[] = [
   {
     id: "solar",
-    flow: { angle: 180, kind: "dashes", dir: "in" },
-    emit: "#F5C044",
     label: "Solar PV",
     x: 37.6,
     y: 24.6,
@@ -89,8 +82,6 @@ const SPOTS: Spot[] = [
   },
   {
     id: "battery",
-    flow: { angle: 217, kind: "dashes", dir: "in" },
-    emit: "#3EC5B4",
     label: "Battery storage",
     x: 26.9,
     y: 43.7,
@@ -136,8 +127,6 @@ const SPOTS: Spot[] = [
   },
   {
     id: "heatpump",
-    flow: { angle: 30, kind: "streaks", dir: "out" },
-    emit: "#FF8A4C",
     label: "Heat pump",
     x: 19.3,
     y: 53.2,
@@ -183,8 +172,6 @@ const SPOTS: Spot[] = [
   },
   {
     id: "ev",
-    flow: { angle: 35, kind: "dashes", dir: "out" },
-    emit: "#3EC5B4",
     label: "EV charging",
     x: 16.8,
     y: 70.6,
@@ -230,8 +217,6 @@ const SPOTS: Spot[] = [
   },
   {
     id: "aircon",
-    flow: { angle: 25, kind: "streaks", dir: "out" },
-    emit: "#7CC7F0",
     label: "Air conditioning",
     x: 74.0,
     y: 32.5,
@@ -277,8 +262,6 @@ const SPOTS: Spot[] = [
   },
   {
     id: "underfloor",
-    flow: { angle: 180, kind: "streaks", dir: "out" },
-    emit: "#FF8A4C",
     label: "Underfloor heating",
     x: 71.8,
     y: 58.4,
@@ -324,8 +307,6 @@ const SPOTS: Spot[] = [
   },
   {
     id: "thermaskirt",
-    flow: { angle: 180, kind: "streaks", dir: "out" },
-    emit: "#FF8A4C",
     label: "ThermaSkirt",
     x: 65.9,
     y: 69.6,
@@ -487,94 +468,6 @@ export function ExploreHome() {
               })}
             </motion.div>
 
-            {/* energy emission — radiates from the active product (around the
-                zoom focal point on desktop, around the pin itself on mobile) */}
-            <AnimatePresence>
-              {active && (() => {
-                let fx = active.x / 100;
-                let fy = active.y / 100;
-                if (zoomed) {
-                  const s = active.scale;
-                  const px = bgPos(active.x, 0.36, s) / 100;
-                  const py = bgPos(active.y, 0.46, s) / 100;
-                  fx = px * (1 - s) + (active.x / 100) * s;
-                  fy = py * (1 - s) + (active.y / 100) * s;
-                }
-                const col = active.emit || "#3EC5B4";
-                const flow = active.flow;
-                const L = zoomed ? 150 : 96; // travel length in px
-                const anim = flow?.dir === "in" ? "v2-flow-in" : "v2-flow-out";
-                return (
-                  <motion.div
-                    key={active.id + (zoomed ? "-z" : "")}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ delay: zoomed ? 0.55 : 0.15, duration: 0.6 }}
-                    className="pointer-events-none absolute"
-                    style={{ left: `${fx * 100}%`, top: `${fy * 100}%` }}
-                  >
-                    {/* soft glow grounding the source */}
-                    <span
-                      className={`absolute rounded-full ${zoomed ? "h-28 w-28" : "h-20 w-20"}`}
-                      style={{
-                        transform: "translate(-50%, -50%)",
-                        background: `radial-gradient(circle, ${col}45 0%, ${col}1a 45%, transparent 70%)`,
-                      }}
-                    />
-                    {/* directional energy travel */}
-                    {flow && !reduced && (
-                      <span
-                        className="absolute left-0 top-0 block"
-                        style={{ transform: `rotate(${flow.angle}deg)` }}
-                      >
-                        {(flow.kind === "streaks" ? [-22, 0, 22] : [-10, 10]).map((spread, ci) => (
-                          <span
-                            key={spread}
-                            className="absolute left-0 top-0 block"
-                            style={{ transform: `rotate(${spread}deg)` }}
-                          >
-                            {(flow.kind === "streaks" ? [0, 0.55, 1.1] : [0, 0.4, 0.8, 1.2]).map((d) => (
-                              <span
-                                key={d}
-                                className="absolute"
-                                style={
-                                  flow.kind === "streaks"
-                                    ? {
-                                        left: -4,
-                                        top: zoomed ? 14 : 9,
-                                        width: 8,
-                                        height: L * 0.42,
-                                        borderRadius: 9999,
-                                        background: `linear-gradient(to bottom, #ffffffb3 0%, ${col}f2 28%, ${col}80 60%, transparent 100%)`,
-                                        boxShadow: `0 0 10px ${col}59`,
-                                        opacity: 0,
-                                        ["--v2-flow-l" as string]: `${L}px`,
-                                        animation: `${anim} 1.9s ease-out ${d + ci * 0.18}s infinite`,
-                                      }
-                                    : {
-                                        left: -2.5,
-                                        top: zoomed ? 12 : 8,
-                                        width: 5,
-                                        height: L * 0.14,
-                                        borderRadius: 9999,
-                                        background: col,
-                                        boxShadow: `0 0 8px ${col}b3`,
-                                        opacity: 0,
-                                        ["--v2-flow-l" as string]: `${L}px`,
-                                        animation: `${anim} 1.5s linear ${d + ci * 0.25}s infinite`,
-                                      }
-                                }
-                              />
-                            ))}
-                          </span>
-                        ))}
-                      </span>
-                    )}
-                  </motion.div>
-                );
-              })()}
-            </AnimatePresence>
           </motion.div>
 
           {/* info panel — side sheet on desktop, bottom sheet on mobile */}
