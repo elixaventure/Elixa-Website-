@@ -229,11 +229,11 @@ export function Grants() {
         <div>
           <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">Grants & funding</p>
           <motion.p {...rise} className="v2-narrow mt-5 font-arch text-[5.5rem] font-semibold leading-none tracking-[-0.03em] text-night-text md:text-[8rem]">
-            £7,500
+            £9,000
           </motion.p>
           <p className="mt-3 max-w-[40ch] text-lg text-night-muted">
-            Boiler Upgrade Scheme grant towards an air source heat pump for eligible homes in England
-            and Wales.
+            Boiler Upgrade Scheme grant towards an air source heat pump when replacing oil or LPG
+            off the gas grid — £7,500 for other eligible homes in England and Wales.
           </p>
         </div>
         <div className="grid gap-0 border-t border-night-line">
