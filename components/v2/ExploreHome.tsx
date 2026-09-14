@@ -437,6 +437,7 @@ export function ExploreHome() {
             >
               {SPOTS.map((s) => {
                 const on = active?.id === s.id;
+                const anySelected = Boolean(active);
                 return (
                   <button
                     key={s.id}
@@ -449,15 +450,18 @@ export function ExploreHome() {
                     className="group absolute z-10 -translate-x-1/2 -translate-y-1/2 touch-manipulation"
                     style={{ left: `${s.x}%`, top: `${s.y}%` }}
                   >
+                    {/* touch target keeps its full size; only the marker minimises */}
                     <span className="relative flex h-12 w-12 items-center justify-center md:h-14 md:w-14">
-                      {!on && !reduced && (
+                      {!on && !reduced && !anySelected && (
                         <span className="absolute inset-0 animate-ping rounded-full bg-night-accent/25" />
                       )}
                       <span
-                        className={`relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors duration-300 md:h-10 md:w-10 ${
+                        className={`relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300 md:h-10 md:w-10 ${
                           on
-                            ? "border-night-accent bg-night-accent"
-                            : "border-night-accent/80 bg-night/70 backdrop-blur-sm group-hover:bg-night-accent/30"
+                            ? "scale-[0.7] border-night-accent bg-night-accent"
+                            : anySelected
+                              ? "scale-[0.42] border-night-accent/60 bg-night/60 opacity-45"
+                              : "border-night-accent/80 bg-night/70 backdrop-blur-sm group-hover:bg-night-accent/30"
                         }`}
                       >
                         <span className={`h-3 w-3 rounded-full ${on ? "bg-night" : "bg-night-accent"}`} />
