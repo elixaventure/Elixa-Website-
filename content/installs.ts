@@ -19,6 +19,15 @@ export interface Install {
 
 export const INSTALLS: Install[] = [
   {
+    id: "thermaskirt-rooms",
+    title: "ThermaSkirt, room by room",
+    tag: "Heated skirting",
+    alt: "Styled lounge with ThermaSkirt heated skirting below panelled walls and herringbone flooring",
+    blurb:
+      "A whole portfolio of rooms warmed from their edges — herringbone lounges, carpeted bedrooms, tiled bathrooms and oak hallways, each one converted in hours with the walls handed back and not a radiator in sight.",
+    kit: ["ThermaSkirt Deco & Ogee profiles", "Fitted over wood, carpet and tile", "Per-room thermostat control"],
+  },
+  {
     id: "cotswold-solar-heatpump",
     title: "Stone cottage, fully electrified",
     tag: "Solar + heat pump",

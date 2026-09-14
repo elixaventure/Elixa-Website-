@@ -243,6 +243,44 @@ export default function ThermaskirtPage() {
           </div>
         </section>
 
+        {/* real installs gallery */}
+        <section className="border-t border-night-line">
+          <div className="mx-auto max-w-[1500px] px-5 py-14 md:px-10 md:py-20">
+            <h2 className="v2-narrow max-w-[18ch] text-night-text text-3xl font-semibold leading-[1.05] tracking-[-0.02em] md:text-5xl">
+              Fitted in real homes.
+            </h2>
+            <p className="mt-5 max-w-[58ch] text-sm leading-relaxed text-night-muted md:text-base">
+              Every photo below is an Elixa ThermaSkirt installation — herringbone, oak, carpet and
+              tile, modern flats and period houses, whole rooms warmed from their edges with not a
+              radiator in sight.
+            </p>
+            <div className="mt-8 columns-2 gap-3 md:columns-3 md:gap-4 [&>img]:mb-3 md:[&>img]:mb-4">
+              {[
+                ["h01", "ThermaSkirt below panelled walls in a styled lounge with herringbone flooring"],
+                ["h02", "Room thermostat reading 22.5 degrees beside ThermaSkirt on a carpeted floor"],
+                ["h03", "Mitred ThermaSkirt corner against marble-effect tiles"],
+                ["h04", "ThermaSkirt along a white wall over pale herringbone flooring"],
+                ["h05", "Finished lounge with ThermaSkirt around the walls and no radiators"],
+                ["h06", "Ogee-profile ThermaSkirt beneath a stone-effect tiled wall"],
+                ["h07", "ThermaSkirt running to an aluminium sliding door on pale herringbone"],
+                ["h08", "ThermaSkirt on a sage-green wall above a grey carpet"],
+                ["h09", "ThermaSkirt corner over golden herringbone flooring"],
+                ["h10", "Ogee ThermaSkirt along an oak-floored hallway"],
+                ["h11", "ThermaSkirt in a carpeted bedroom with a bay window"],
+                ["h12", "ThermaSkirt over grey herringbone flooring"],
+              ].map(([f, alt]) => (
+                <img
+                  key={f}
+                  src={`${BASE}/media/thermaskirt/homes/${f}.jpg`}
+                  alt={alt}
+                  loading="lazy"
+                  className="w-full border border-night-line"
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* profiles */}
         <section className="border-t border-night-line">
           <div className="mx-auto max-w-[1500px] px-5 py-14 md:px-10 md:py-20">
