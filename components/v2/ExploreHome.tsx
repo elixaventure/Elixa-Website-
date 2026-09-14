@@ -417,7 +417,7 @@ export function ExploreHome() {
       <div className="mx-auto max-w-[1500px] md:px-10">
         <div
           ref={frame}
-          className="relative overflow-hidden border-y border-night-line bg-night-deep md:border"
+          className="relative select-none overflow-hidden border-y border-night-line bg-night-deep [-webkit-touch-callout:none] md:border"
         >
           {/* the scene — zoom animates the background, never a scaled layer */}
           <motion.div
@@ -446,7 +446,7 @@ export function ExploreHome() {
                     }}
                     aria-label={`${s.label} — view details`}
                     aria-expanded={on}
-                    className="group absolute z-10 -translate-x-1/2 -translate-y-1/2"
+                    className="group absolute z-10 -translate-x-1/2 -translate-y-1/2 touch-manipulation"
                     style={{ left: `${s.x}%`, top: `${s.y}%` }}
                   >
                     <span className="relative flex h-9 w-9 items-center justify-center md:h-11 md:w-11">
