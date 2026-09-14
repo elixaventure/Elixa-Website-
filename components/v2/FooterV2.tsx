@@ -40,7 +40,7 @@ export function FooterV2() {
         </div>
         {COLS.map((c) => (
           <nav key={c.title} aria-label={c.title}>
-            <p className="font-techmono text-[10px] uppercase tracking-[0.2em] text-night-faint">{c.title}</p>
+            <p className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-faint">{c.title}</p>
             <ul className="mt-4 grid gap-2.5">
               {c.items.map((i) => (
                 <li key={i.label}>
@@ -53,7 +53,7 @@ export function FooterV2() {
           </nav>
         ))}
         <div>
-          <p className="font-techmono text-[10px] uppercase tracking-[0.2em] text-night-faint">Contact</p>
+          <p className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-faint">Contact</p>
           <ul className="mt-4 grid gap-2.5 text-sm text-night-muted">
             <li>
               <a href={site.phoneHref} className="font-arch text-lg font-medium text-night-text hover:text-night-accent">
@@ -82,10 +82,10 @@ export function FooterV2() {
       </div>
       <div className="border-t border-night-line">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3 px-5 py-5 md:px-10">
-          <p className="font-techmono text-[10px] uppercase tracking-[0.14em] text-night-faint">
+          <p className="font-techmono text-[11px] uppercase tracking-[0.14em] text-night-faint">
             © {new Date().getFullYear()} {site.legalName}
           </p>
-          <p className="font-techmono text-[10px] uppercase tracking-[0.14em] text-night-faint">{site.areaServed}</p>
+          <p className="font-techmono text-[11px] uppercase tracking-[0.14em] text-night-faint">{site.areaServed}</p>
         </div>
       </div>
     </footer>

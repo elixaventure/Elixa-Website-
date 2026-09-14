@@ -136,7 +136,7 @@ export function Projects() {
               className={`group relative overflow-hidden border border-night-line bg-night-surface ${s.span}`}
             >
               <div className="flex items-center justify-between px-6 pt-6">
-                <span className="font-techmono text-[10px] uppercase tracking-[0.16em] text-night-faint">{s.tag}</span>
+                <span className="font-techmono text-[11px] uppercase tracking-[0.16em] text-night-faint">{s.tag}</span>
                 <span className="h-px w-16 bg-night-line" />
               </div>
               <div className="mx-auto h-[300px] max-w-[420px] px-8 py-6 text-night-muted transition-transform duration-700 ease-out group-hover:scale-[1.03] md:h-[340px]">

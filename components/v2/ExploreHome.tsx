@@ -483,7 +483,7 @@ export function ExploreHome() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-techmono text-[10px] uppercase tracking-[0.24em] text-night-accent">
+                    <p className="font-techmono text-[11px] uppercase tracking-[0.24em] text-night-accent">
                       {active.label}
                     </p>
                     <h3 className="mt-2 font-arch text-2xl font-semibold tracking-[-0.01em] text-night-text md:text-3xl">
@@ -504,7 +504,7 @@ export function ExploreHome() {
                 <dl className="mt-6 divide-y divide-night-line border-y border-night-line">
                   {active.stats.map((st) => (
                     <div key={st.k} className="flex items-baseline justify-between gap-6 py-3">
-                      <dt className="font-techmono text-[10px] uppercase tracking-[0.18em] text-night-faint">
+                      <dt className="font-techmono text-[11px] uppercase tracking-[0.18em] text-night-faint">
                         {st.k}
                       </dt>
                       <dd className="text-right text-sm font-medium text-night-text">{st.v}</dd>
@@ -524,7 +524,7 @@ export function ExploreHome() {
                       Fitted ThermaSkirt — the skirting is the heating. Herringbone hallway,
                       panelled walls, no radiators.
                     </p>
-                    <p className="mt-6 font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+                    <p className="mt-6 font-techmono text-[11px] uppercase tracking-[0.2em] text-night-accent">
                       Profile range
                     </p>
                     <div className="mt-3 grid grid-cols-3 gap-2">
@@ -543,7 +543,7 @@ export function ExploreHome() {
                             className="aspect-square w-full object-contain"
                             loading="lazy"
                           />
-                          <figcaption className="pb-1 pt-1.5 text-center font-techmono text-[9px] uppercase tracking-[0.12em] text-night-deep">
+                          <figcaption className="pb-1 pt-1.5 text-center font-techmono text-[10px] uppercase tracking-[0.12em] text-night-deep">
                             {p.l}
                           </figcaption>
                         </figure>
@@ -554,7 +554,7 @@ export function ExploreHome() {
 
                 {active.sections?.map((sec) => (
                   <div key={sec.h} className="mt-6">
-                    <p className="font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+                    <p className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-accent">
                       {sec.h}
                     </p>
                     <p className="mt-2 text-sm leading-relaxed text-night-muted">{sec.body}</p>
@@ -563,7 +563,7 @@ export function ExploreHome() {
 
                 {active.finishes && (
                   <div className="mt-6">
-                    <p className="font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+                    <p className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-accent">
                       Finishes
                     </p>
                     <ul className="mt-3 grid gap-2.5">
@@ -581,7 +581,7 @@ export function ExploreHome() {
                             }
                           />
                           <span className="text-sm text-night-text">{f.name}</span>
-                          <span className="ml-auto font-techmono text-[10px] uppercase tracking-[0.14em] text-night-faint">
+                          <span className="ml-auto font-techmono text-[11px] uppercase tracking-[0.14em] text-night-faint">
                             {f.ral}
                           </span>
                         </li>
@@ -596,7 +596,7 @@ export function ExploreHome() {
 
                 {active.faqs && (
                   <div className="mt-6">
-                    <p className="font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+                    <p className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-accent">
                       Common questions
                     </p>
                     <div className="mt-2 divide-y divide-night-line border-y border-night-line">

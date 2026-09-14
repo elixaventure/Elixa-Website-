@@ -62,7 +62,7 @@ export default function ProjectsPage() {
                     <span className="font-techmono text-2xl text-night-faint">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="font-techmono text-[10px] uppercase tracking-[0.24em] text-night-faint">
+                    <span className="font-techmono text-[11px] uppercase tracking-[0.24em] text-night-faint">
                       Photograph to follow
                     </span>
                   </div>
@@ -72,7 +72,7 @@ export default function ProjectsPage() {
                     <span className="font-techmono text-[11px] text-night-faint">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <p className="font-techmono text-[10px] uppercase tracking-[0.24em] text-night-accent">
+                    <p className="font-techmono text-[11px] uppercase tracking-[0.24em] text-night-accent">
                       {p.tag}
                     </p>
                   </div>

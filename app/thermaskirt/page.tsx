@@ -133,7 +133,7 @@ export default function ThermaskirtPage() {
                 ["Electric version", "ThermaSkirt-e, per-room stat"],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-baseline justify-between gap-6 py-3.5">
-                  <dt className="font-techmono text-[10px] uppercase tracking-[0.18em] text-night-faint">
+                  <dt className="font-techmono text-[11px] uppercase tracking-[0.18em] text-night-faint">
                     {k}
                   </dt>
                   <dd className="text-right text-sm font-medium text-night-text md:text-base">{v}</dd>
@@ -160,14 +160,14 @@ export default function ThermaskirtPage() {
               <table className="w-full min-w-[640px] border-collapse text-sm md:text-base">
                 <thead>
                   <tr className="border-b border-night-line text-left">
-                    <th className="py-3.5 pr-4 font-techmono text-[10px] font-normal uppercase tracking-[0.18em] text-night-faint" />
-                    <th className="border-l-2 border-night-accent bg-night-accent/5 px-4 py-3.5 font-techmono text-[10px] font-normal uppercase tracking-[0.18em] text-night-accent">
+                    <th className="py-3.5 pr-4 font-techmono text-[11px] font-normal uppercase tracking-[0.18em] text-night-faint" />
+                    <th className="border-l-2 border-night-accent bg-night-accent/5 px-4 py-3.5 font-techmono text-[11px] font-normal uppercase tracking-[0.18em] text-night-accent">
                       ThermaSkirt
                     </th>
-                    <th className="px-4 py-3.5 font-techmono text-[10px] font-normal uppercase tracking-[0.18em] text-night-faint">
+                    <th className="px-4 py-3.5 font-techmono text-[11px] font-normal uppercase tracking-[0.18em] text-night-faint">
                       Underfloor retrofit
                     </th>
-                    <th className="px-4 py-3.5 font-techmono text-[10px] font-normal uppercase tracking-[0.18em] text-night-faint">
+                    <th className="px-4 py-3.5 font-techmono text-[11px] font-normal uppercase tracking-[0.18em] text-night-faint">
                       Radiators
                     </th>
                   </tr>
@@ -182,7 +182,7 @@ export default function ThermaskirtPage() {
                     ["Heat-pump flow temp", "40 °C", "35 °C", "45–65 °C by sizing"],
                   ].map(([k, ts, ufh, rad]) => (
                     <tr key={k}>
-                      <td className="py-3.5 pr-4 font-techmono text-[10px] uppercase tracking-[0.18em] text-night-faint">
+                      <td className="py-3.5 pr-4 font-techmono text-[11px] uppercase tracking-[0.18em] text-night-faint">
                         {k}
                       </td>
                       <td className="border-l-2 border-night-accent bg-night-accent/5 px-4 py-3.5 font-medium text-night-text">
@@ -301,7 +301,7 @@ export default function ThermaskirtPage() {
                     className="aspect-square w-full object-contain"
                     loading="lazy"
                   />
-                  <figcaption className="pb-1 pt-2 text-center font-techmono text-[9px] uppercase tracking-[0.12em] text-night-deep">
+                  <figcaption className="pb-1 pt-2 text-center font-techmono text-[10px] uppercase tracking-[0.12em] text-night-deep">
                     {p.l}
                   </figcaption>
                 </figure>
@@ -311,7 +311,7 @@ export default function ThermaskirtPage() {
             {/* finishes */}
             <div className="mt-12 grid gap-8 md:grid-cols-2 md:gap-16">
               <div>
-                <p className="font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+                <p className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-accent">
                   Finishes
                 </p>
                 <ul className="mt-4 grid gap-3">
@@ -322,7 +322,7 @@ export default function ThermaskirtPage() {
                         style={{ backgroundColor: f.hex }}
                       />
                       <span className="text-sm text-night-text md:text-base">{f.name}</span>
-                      <span className="ml-auto font-techmono text-[10px] uppercase tracking-[0.14em] text-night-faint">
+                      <span className="ml-auto font-techmono text-[11px] uppercase tracking-[0.14em] text-night-faint">
                         {f.ral}
                       </span>
                     </li>
@@ -336,7 +336,7 @@ export default function ThermaskirtPage() {
                       }}
                     />
                     <span className="text-sm text-night-text md:text-base">Any RAL colour</span>
-                    <span className="ml-auto font-techmono text-[10px] uppercase tracking-[0.14em] text-night-faint">
+                    <span className="ml-auto font-techmono text-[11px] uppercase tracking-[0.14em] text-night-faint">
                       to order
                     </span>
                   </li>
@@ -347,7 +347,7 @@ export default function ThermaskirtPage() {
                 </p>
               </div>
               <div>
-                <p className="font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+                <p className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-accent">
                   ThermaSkirt-e — the electric version
                 </p>
                 <p className="mt-4 max-w-[46ch] text-sm leading-relaxed text-night-muted md:text-base">
