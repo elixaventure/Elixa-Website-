@@ -66,7 +66,7 @@ export default function SolarPage() {
                     <span className="font-techmono text-[11px] text-night-faint">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <p className="font-techmono text-[10px] uppercase tracking-[0.24em] text-night-accent">
+                    <p className="font-techmono text-[11px] uppercase tracking-[0.24em] text-night-accent">
                       {m.brand}
                     </p>
                   </div>
@@ -88,7 +88,7 @@ export default function SolarPage() {
                     ["Performance guarantee", m.performanceWarranty],
                   ].map(([k, v]) => (
                     <div key={k} className="flex items-baseline justify-between gap-6 py-3.5">
-                      <dt className="font-techmono text-[10px] uppercase tracking-[0.18em] text-night-faint">
+                      <dt className="font-techmono text-[11px] uppercase tracking-[0.18em] text-night-faint">
                         {k}
                       </dt>
                       <dd className="text-right text-sm font-medium text-night-text md:text-base">

@@ -152,7 +152,7 @@ export function HeroV2() {
       </div>
 
       <div className="pointer-events-none absolute bottom-0 right-6 z-10 hidden flex-col items-center gap-3 pb-8 md:flex md:right-10">
-        <span className="font-techmono text-[10px] uppercase tracking-[0.3em] text-night-faint [writing-mode:vertical-rl]">Scroll</span>
+        <span className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-faint [writing-mode:vertical-rl]">Scroll</span>
         <span className="h-16 w-px bg-gradient-to-b from-night-faint to-transparent" />
       </div>
     </section>

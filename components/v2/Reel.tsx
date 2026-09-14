@@ -145,7 +145,7 @@ export function ReelV2() {
             >
               <div className="flex items-baseline justify-between gap-5 px-6 pt-6">
                 <span className="font-techmono text-[11px] text-night-faint">{p.n}</span>
-                <span className="text-right font-techmono text-[10px] uppercase leading-relaxed tracking-[0.14em] text-night-faint">
+                <span className="text-right font-techmono text-[11px] uppercase leading-relaxed tracking-[0.14em] text-night-faint">
                   {p.spec}
                 </span>
               </div>
