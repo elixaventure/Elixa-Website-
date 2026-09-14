@@ -3,7 +3,7 @@ import { cn } from "@/lib/cn";
 /**
  * Official Elixa Renewables Group full logo (flame + wordmark).
  * - light surfaces  → full colour logo (navy wordmark)
- * - dark surfaces   → colour flame + white wordmark (public/brand/elixa-logo-ondark.png)
+ * - dark surfaces   → colour flame + white wordmark (public/brand/elixa-logo-ondark-2.png)
  * Source files live in public/brand/. Base-path aware for sub-path hosting.
  */
 
@@ -16,7 +16,7 @@ export function Logo({
   className?: string;
   theme?: "light" | "dark";
 }) {
-  const src = theme === "dark" ? "elixa-logo-ondark.png" : "elixa-logo.png";
+  const src = theme === "dark" ? "elixa-logo-ondark-2.png" : "elixa-logo-2.png";
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
