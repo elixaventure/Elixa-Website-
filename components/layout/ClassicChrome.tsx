@@ -8,7 +8,16 @@ import type { ReactNode } from "react";
  * pages, which carry their own navigation and footer. As inner pages are
  * rebuilt to the new design, add their routes here.
  */
-const V2_ROUTES = new Set(["/", "/air-source-heat-pumps", "/solar-pv", "/thermaskirt"]);
+const V2_ROUTES = new Set([
+  "/",
+  "/air-source-heat-pumps",
+  "/solar-pv",
+  "/thermaskirt",
+  "/underfloor-heating",
+  "/battery-storage",
+  "/ev-charging",
+  "/air-conditioning",
+]);
 
 export function ClassicChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
