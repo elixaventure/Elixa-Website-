@@ -143,6 +143,106 @@ export default function ThermaskirtPage() {
           </div>
         </section>
 
+        {/* why the skirting wins — vs underfloor retrofit and radiators */}
+        <section className="border-t border-night-line">
+          <div className="mx-auto max-w-[1500px] px-5 py-14 md:px-10 md:py-20">
+            <h2 className="v2-narrow max-w-[22ch] text-night-text text-3xl font-semibold leading-[1.05] tracking-[-0.02em] md:text-5xl">
+              All the low-temperature logic. None of the digging.
+            </h2>
+            <p className="mt-5 max-w-[62ch] text-sm leading-relaxed text-night-muted md:text-base">
+              ThermaSkirt does the same job as underfloor heating — a large, cool-running emitter
+              feeding a heat pump at its best — but it retrofits by swapping the skirting boards,
+              not the floors. Here's the honest head-to-head.
+            </p>
+
+            {/* comparison table */}
+            <div className="mt-10 overflow-x-auto">
+              <table className="w-full min-w-[640px] border-collapse text-sm md:text-base">
+                <thead>
+                  <tr className="border-b border-night-line text-left">
+                    <th className="py-3.5 pr-4 font-techmono text-[10px] font-normal uppercase tracking-[0.18em] text-night-faint" />
+                    <th className="border-l-2 border-night-accent bg-night-accent/5 px-4 py-3.5 font-techmono text-[10px] font-normal uppercase tracking-[0.18em] text-night-accent">
+                      ThermaSkirt
+                    </th>
+                    <th className="px-4 py-3.5 font-techmono text-[10px] font-normal uppercase tracking-[0.18em] text-night-faint">
+                      Underfloor retrofit
+                    </th>
+                    <th className="px-4 py-3.5 font-techmono text-[10px] font-normal uppercase tracking-[0.18em] text-night-faint">
+                      Radiators
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-night-line">
+                  {[
+                    ["Floors lifted", "None — skirting swapped", "Coverings up, overlay laid", "None"],
+                    ["Height added", "None", "≈ 20 mm — doors trimmed", "None"],
+                    ["Room converted in", "Hours", "Days", "Hours"],
+                    ["Walls freed", "Yes — radiators gone", "Yes", "No — panels stay on walls"],
+                    ["Warm-up", "Minutes — low water content", "Fast to steady, by system", "Minutes"],
+                    ["Heat-pump flow temp", "40 °C", "35 °C", "45–65 °C by sizing"],
+                  ].map(([k, ts, ufh, rad]) => (
+                    <tr key={k}>
+                      <td className="py-3.5 pr-4 font-techmono text-[10px] uppercase tracking-[0.18em] text-night-faint">
+                        {k}
+                      </td>
+                      <td className="border-l-2 border-night-accent bg-night-accent/5 px-4 py-3.5 font-medium text-night-text">
+                        {ts}
+                      </td>
+                      <td className="px-4 py-3.5 text-night-muted">{ufh}</td>
+                      <td className="px-4 py-3.5 text-night-muted">{rad}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-4 max-w-[72ch] text-xs leading-relaxed text-night-faint">
+              Fair's fair: underfloor runs 5 °C cooler and is completely invisible — if your floors
+              are coming up anyway, it's a superb choice. ThermaSkirt is for the homes where they
+              aren't.{" "}
+              <Link href="/underfloor-heating" className="underline decoration-night-line underline-offset-4 hover:text-night-muted">
+                Compare the underfloor systems →
+              </Link>
+            </p>
+
+            {/* the advantages, bold */}
+            <div className="mt-12 grid gap-x-16 gap-y-8 md:grid-cols-3">
+              {[
+                {
+                  h: "Warm by teatime",
+                  b: "Old skirting off in the morning, boards clicked on by afternoon — a room converted in hours, furniture back the same day.",
+                },
+                {
+                  h: "Nothing lifted, nothing trimmed",
+                  b: "Floors, carpets and door heights stay exactly as they are. The only thing that changes is the skirting board.",
+                },
+                {
+                  h: "Walls handed back",
+                  b: "Radiators gone from every wall — furniture goes where you want it, not where the panels let it.",
+                },
+                {
+                  h: "Warmth from every edge",
+                  b: "Heat enters the room around its whole perimeter, evening out cold spots and keeping outside walls dry where condensation starts.",
+                },
+                {
+                  h: "Quick on its feet",
+                  b: "A sliver of water in an aluminium board warms in minutes — no slab to charge, no waiting for the floor to catch up.",
+                },
+                {
+                  h: "Built for heat pumps",
+                  b: "Designed around a 40 °C flow — squarely where a heat pump does its most efficient work, without oversizing a single radiator.",
+                },
+              ].map((a) => (
+                <div key={a.h}>
+                  <h3 className="border-l-2 border-night-accent pl-4 text-base font-semibold text-night-text md:text-lg">
+                    {a.h}
+                  </h3>
+                  <p className="mt-3 pl-4 text-sm leading-relaxed text-night-muted">{a.b}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* profiles */}
         <section className="border-t border-night-line">
           <div className="mx-auto max-w-[1500px] px-5 py-14 md:px-10 md:py-20">
