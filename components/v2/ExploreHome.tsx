@@ -458,7 +458,7 @@ export function ExploreHome() {
                       <span
                         className={`relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300 md:h-10 md:w-10 ${
                           on
-                            ? "scale-[0.7] border-night-accent bg-night-accent"
+                            ? "scale-[0.45] border-night-accent bg-night-accent"
                             : anySelected
                               ? "scale-[0.42] border-night-accent/60 bg-night/60 opacity-45"
                               : "border-night-accent/80 bg-night/70 backdrop-blur-sm group-hover:bg-night-accent/30"
