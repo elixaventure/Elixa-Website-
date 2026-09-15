@@ -42,7 +42,12 @@ const initial: Answers = {
 };
 
 const interestOptions = [
-  ...services.map((s) => ({ key: s.slug, label: s.name })),
+  // short label on the form so it's easy to scan; the full service name
+  // ("… & Climate Control") stays everywhere else on the site
+  ...services.map((s) => ({
+    key: s.slug,
+    label: s.slug === "air-conditioning" ? "Air Conditioning" : s.name,
+  })),
   { key: "multiple", label: "Multiple technologies" },
   { key: "advice", label: "Not sure / advice needed" },
 ];
