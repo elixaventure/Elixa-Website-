@@ -44,6 +44,11 @@ jobs:
           # repo variable to activate real submissions with the floor-plan
           # attachment riding along.
           NEXT_PUBLIC_FORM_ENDPOINT: ${{ vars.NEXT_PUBLIC_FORM_ENDPOINT }}
+          # Web3Forms access key — the simplest route: set this repo variable
+          # and enquiries (with attachments, on their Pro plan) are emailed
+          # straight to the inbox the key was created for. Takes effect on
+          # the next deploy; no code changes needed.
+          NEXT_PUBLIC_WEB3FORMS_KEY: ${{ vars.NEXT_PUBLIC_WEB3FORMS_KEY }}
       - run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
