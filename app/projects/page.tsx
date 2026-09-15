@@ -44,7 +44,7 @@ export default function ProjectsPage() {
         {/* installs — alternating editorial rows */}
         <section className="border-t border-night-line">
           {INSTALLS.map((p, i) => (
-            <article key={p.id} className="border-b border-night-line">
+            <article key={p.id} id={p.id} className="scroll-mt-24 border-b border-night-line">
               <div
                 className={`mx-auto grid max-w-[1500px] items-center gap-8 px-5 py-12 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-16 md:px-10 md:py-16 ${
                   i % 2 === 1 ? "md:[&>*:first-child]:order-2" : ""

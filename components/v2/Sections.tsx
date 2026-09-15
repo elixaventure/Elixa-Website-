@@ -5,8 +5,10 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ArtHeatPump, ArtSolar, ArtUnderfloor } from "./art";
 import { site } from "@/content/site";
+import { INSTALLS } from "@/content/installs";
+
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 const rise = {
   initial: { opacity: 0, y: 28 },
@@ -84,29 +86,12 @@ export function WhyElixa() {
 
 /* -------------------------------------------------------------- PROJECTS --- */
 
-const STUDIES = [
-  {
-    tag: "SYSTEM STUDY — RETROFIT",
-    t: "Three-bed semi, full electrification",
-    d: "Air source heat pump with ThermaSkirt perimeter heating throughout — 40 °C design flow, no radiators on the walls.",
-    Art: ArtHeatPump,
-    span: "lg:col-span-7",
-  },
-  {
-    tag: "SYSTEM STUDY — GENERATION",
-    t: "Victorian terrace, solar + battery",
-    d: "String design across two roof aspects with battery storage sized to the household's evening load.",
-    Art: ArtSolar,
-    span: "lg:col-span-5",
-  },
-  {
-    tag: "SYSTEM STUDY — NEW BUILD",
-    t: "Bungalow, underfloor throughout",
-    d: "Wet underfloor at 35 °C flow, zoned by manifold — the lowest-temperature system we design.",
-    Art: ArtUnderfloor,
-    span: "lg:col-span-12",
-  },
-];
+/* Three real installs from the Projects page, picked for the homepage grid. */
+const FEATURED = [
+  { id: "cotswold-solar-heatpump", span: "lg:col-span-7" },
+  { id: "thermaskirt-rooms", span: "lg:col-span-5" },
+  { id: "twin-grant-aerona3", span: "lg:col-span-12" },
+].map(({ id, span }) => ({ span, install: INSTALLS.find((p) => p.id === id)! }));
 
 export function Projects() {
   return (
@@ -119,33 +104,47 @@ export function Projects() {
               Built around real homes.
             </h2>
           </div>
-          <p className="max-w-[38ch] text-sm leading-relaxed text-night-faint">
-            Representative system designs shown as engineering studies — installation photography from
-            completed Elixa projects is added here as it is signed off.
+          <p className="max-w-[38ch] text-sm leading-relaxed text-night-muted">
+            Real installations photographed by our own engineers.{" "}
+            <Link href="/projects" className="whitespace-nowrap text-night-accent transition-colors hover:text-night-text">
+              See all projects →
+            </Link>
           </p>
         </div>
 
         <div className="mt-14 grid gap-5 lg:grid-cols-12">
-          {STUDIES.map((s, i) => (
+          {FEATURED.map(({ install: p, span }, i) => (
             <motion.article
-              key={s.t}
+              key={p.id}
               initial={{ opacity: 0, clipPath: "inset(0 0 24% 0)" , y: 30}}
               whileInView={{ opacity: 1, clipPath: "inset(0 0 0% 0)", y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.8, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }}
-              className={`group relative overflow-hidden border border-night-line bg-night-surface ${s.span}`}
+              className={`group relative overflow-hidden border border-night-line bg-night-surface ${span}`}
             >
-              <div className="flex items-center justify-between px-6 pt-6">
-                <span className="font-techmono text-[11px] uppercase tracking-[0.16em] text-night-faint">{s.tag}</span>
-                <span className="h-px w-16 bg-night-line" />
-              </div>
-              <div className="mx-auto h-[300px] max-w-[420px] px-8 py-6 text-night-muted transition-transform duration-700 ease-out group-hover:scale-[1.03] md:h-[340px]">
-                <s.Art />
-              </div>
-              <div className="border-t border-night-line px-6 py-6">
-                <h3 className="font-arch text-xl font-medium text-night-text md:text-2xl">{s.t}</h3>
-                <p className="mt-2 max-w-[64ch] text-sm leading-relaxed text-night-muted">{s.d}</p>
-              </div>
+              <Link href={`/projects#${p.id}`} className="block">
+                <div className="flex items-center justify-between px-6 pt-6 pb-5">
+                  <span className="font-techmono text-[11px] uppercase tracking-[0.16em] text-night-faint">
+                    Case study — {p.tag}
+                  </span>
+                  <span className="h-px w-16 bg-night-line" />
+                </div>
+                <div className="h-[300px] overflow-hidden md:h-[380px]">
+                  <img
+                    src={`${BASE}/media/projects/${p.id}.jpg`}
+                    alt={p.alt}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                  />
+                </div>
+                <div className="border-t border-night-line px-6 py-6">
+                  <h3 className="font-arch text-xl font-medium text-night-text md:text-2xl">{p.title}</h3>
+                  <p className="mt-2 max-w-[64ch] text-sm leading-relaxed text-night-muted">{p.blurb}</p>
+                  <p className="mt-4 font-techmono text-[11px] uppercase tracking-[0.16em] text-night-accent">
+                    View the project →
+                  </p>
+                </div>
+              </Link>
             </motion.article>
           ))}
         </div>
