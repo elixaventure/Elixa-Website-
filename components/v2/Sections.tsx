@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { site } from "@/content/site";
-import { INSTALLS } from "@/content/installs";
+import { CASE_STUDIES } from "@/content/caseStudies";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -86,12 +86,10 @@ export function WhyElixa() {
 
 /* -------------------------------------------------------------- PROJECTS --- */
 
-/* Three real installs from the Projects page, picked for the homepage grid. */
-const FEATURED = [
-  { id: "cotswold-solar-heatpump", span: "lg:col-span-7" },
-  { id: "thermaskirt-rooms", span: "lg:col-span-5" },
-  { id: "twin-grant-aerona3", span: "lg:col-span-12" },
-].map(({ id, span }) => ({ span, install: INSTALLS.find((p) => p.id === id)! }));
+/* The four installation case studies, then the technical guide as a strip. */
+const SPANS = ["lg:col-span-7", "lg:col-span-5", "lg:col-span-5", "lg:col-span-7"];
+const FEATURED = CASE_STUDIES.filter((c) => c.kind === "Installation case study").slice(0, 4);
+const GUIDE = CASE_STUDIES.find((c) => c.kind === "Technical guide");
 
 export function Projects() {
   return (
@@ -99,54 +97,85 @@ export function Projects() {
       <div className="mx-auto max-w-[1500px] px-5 py-24 md:px-10 md:py-36">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
-            <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">Projects</p>
+            <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">Case studies</p>
             <h2 className="v2-narrow mt-4 max-w-[16ch] font-arch text-4xl font-semibold leading-[1.02] tracking-[-0.02em] text-night-text md:text-6xl">
               Built around real homes.
             </h2>
           </div>
-          <p className="max-w-[38ch] text-sm leading-relaxed text-night-muted">
-            Real installations photographed by our own engineers.{" "}
+          <p className="max-w-[40ch] text-sm leading-relaxed text-night-muted">
+            Real projects, written up properly — the brief, the constraints and the decisions.{" "}
             <Link href="/projects" className="whitespace-nowrap text-night-accent transition-colors hover:text-night-text">
-              See all projects →
+              Install photos →
             </Link>
           </p>
         </div>
 
         <div className="mt-14 grid gap-5 lg:grid-cols-12">
-          {FEATURED.map(({ install: p, span }, i) => (
+          {FEATURED.map((cs, i) => (
             <motion.article
-              key={p.id}
+              key={cs.slug}
               initial={{ opacity: 0, clipPath: "inset(0 0 24% 0)" , y: 30}}
               whileInView={{ opacity: 1, clipPath: "inset(0 0 0% 0)", y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.8, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }}
-              className={`group relative overflow-hidden border border-night-line bg-night-surface ${span}`}
+              className={`group relative overflow-hidden border border-night-line bg-night-surface ${SPANS[i]}`}
             >
-              <Link href={`/projects#${p.id}`} className="block">
+              <Link href={`/case-studies/${cs.slug}`} className="block">
                 <div className="flex items-center justify-between px-6 pt-6 pb-5">
                   <span className="font-techmono text-[11px] uppercase tracking-[0.16em] text-night-faint">
-                    Case study — {p.tag}
+                    Case study — {cs.tag}
                   </span>
                   <span className="h-px w-16 bg-night-line" />
                 </div>
                 <div className="h-[300px] overflow-hidden md:h-[380px]">
                   <img
-                    src={`${BASE}/media/projects/${p.id}.jpg`}
-                    alt={p.alt}
+                    src={`${BASE}${cs.cover.src}`}
+                    alt={cs.cover.alt}
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
                   />
                 </div>
                 <div className="border-t border-night-line px-6 py-6">
-                  <h3 className="font-arch text-xl font-medium text-night-text md:text-2xl">{p.title}</h3>
-                  <p className="mt-2 max-w-[64ch] text-sm leading-relaxed text-night-muted">{p.blurb}</p>
+                  <h3 className="font-arch text-xl font-medium text-night-text md:text-2xl">{cs.title}</h3>
+                  <p className="mt-2 max-w-[64ch] text-sm leading-relaxed text-night-muted">{cs.standfirst}</p>
                   <p className="mt-4 font-techmono text-[11px] uppercase tracking-[0.16em] text-night-accent">
-                    View the project →
+                    Read the case study →
                   </p>
                 </div>
               </Link>
             </motion.article>
           ))}
+
+          {GUIDE && (
+            <motion.article
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+              className="group relative overflow-hidden border border-night-line bg-night-surface lg:col-span-12"
+            >
+              <Link href={`/case-studies/${GUIDE.slug}`} className="flex flex-col md:flex-row md:items-center">
+                <div className="h-[200px] shrink-0 overflow-hidden md:h-[220px] md:w-[340px]">
+                  <img
+                    src={`${BASE}${GUIDE.cover.src}`}
+                    alt={GUIDE.cover.alt}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                  />
+                </div>
+                <div className="px-6 py-6 md:px-10">
+                  <span className="font-techmono text-[11px] uppercase tracking-[0.16em] text-night-faint">
+                    Technical guide — {GUIDE.tag}
+                  </span>
+                  <h3 className="mt-3 font-arch text-xl font-medium text-night-text md:text-2xl">{GUIDE.title}</h3>
+                  <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-night-muted">{GUIDE.standfirst}</p>
+                  <p className="mt-4 font-techmono text-[11px] uppercase tracking-[0.16em] text-night-accent">
+                    Read the guide →
+                  </p>
+                </div>
+              </Link>
+            </motion.article>
+          )}
         </div>
       </div>
     </section>
