@@ -18,6 +18,7 @@ const V2_ROUTES = new Set([
   "/ev-charging",
   "/air-conditioning",
   "/projects",
+  "/case-studies",
   "/grants-funding",
   "/about",
   "/contact",
@@ -26,6 +27,7 @@ const V2_ROUTES = new Set([
 
 export function ClassicChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  if (V2_ROUTES.has(pathname?.replace(/\/$/, "") || "/") || pathname === "/") return null;
+  const path = pathname?.replace(/\/$/, "") || "/";
+  if (V2_ROUTES.has(path) || pathname === "/" || path.startsWith("/case-studies/")) return null;
   return <>{children}</>;
 }

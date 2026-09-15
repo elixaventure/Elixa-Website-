@@ -42,6 +42,7 @@ export const primaryNav: NavItem[] = [
   { label: "EV Charging", href: "/ev-charging" },
   { label: "Grants & Funding", href: "/grants-funding" },
   { label: "Projects", href: "/projects" },
+  { label: "Case Studies", href: "/case-studies" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
 ];
@@ -65,6 +66,7 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
       { label: "Smart Energy Home", href: "/smart-energy-home" },
       { label: "About Elixa", href: "/about" },
       { label: "Projects", href: "/projects" },
+      { label: "Case Studies", href: "/case-studies" },
       { label: "Grants & Funding", href: "/grants-funding" },
       { label: "Get a Quote", href: "/quote" },
       { label: "Contact", href: "/contact" },

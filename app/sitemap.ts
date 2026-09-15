@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { site } from "@/content/site";
 import { serviceSlugs } from "@/content/services";
+import { CASE_STUDIES } from "@/content/caseStudies";
 
 export const dynamic = "force-static";
 
@@ -10,6 +11,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/smart-energy-home",
     "/about",
     "/projects",
+    "/case-studies",
+    ...CASE_STUDIES.map((c) => `/case-studies/${c.slug}`),
     "/grants-funding",
     "/calculator",
     "/quote",
