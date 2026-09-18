@@ -8,7 +8,7 @@ import { BATTERY_RANGE, BATTERY_NOTE } from "@/content/batteryRange";
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const metadata: Metadata = {
-  title: "Battery Storage — The Range | Elixa Renewables",
+  title: "Battery Storage Installation",
   description:
     "The home batteries we design with — Tesla, GivEnergy, Sigenergy, Fox ESS and myenergi — with honest capacity, power and warranty figures, sized from how you actually use electricity.",
 };

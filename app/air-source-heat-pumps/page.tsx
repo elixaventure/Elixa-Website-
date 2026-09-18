@@ -8,7 +8,7 @@ import { HEAT_PUMP_RANGE, RANGE_NOTE } from "@/content/heatPumpRange";
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const metadata: Metadata = {
-  title: "Air Source Heat Pumps — The Range | Elixa Renewables",
+  title: "Air Source Heat Pump Installation",
   description:
     "The heat pumps we design with — Vaillant, Mitsubishi, Daikin, Samsung and Grant — with honest efficiency figures, and why the survey chooses the unit, not a league table.",
 };

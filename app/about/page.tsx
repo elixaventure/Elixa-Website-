@@ -8,7 +8,7 @@ import { site } from "@/content/site";
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const metadata: Metadata = {
-  title: "About | Elixa Renewables",
+  title: "About",
   description:
     "Elixa Renewables Group — whole-system low-carbon heating and home energy, designed from a survey rather than a brochure, installed and supported across the UK.",
 };

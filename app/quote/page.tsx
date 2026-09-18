@@ -25,7 +25,7 @@ const RISE = `linear-gradient(to bottom, ${STOPS.join(", ")})`;
 const FALL = `linear-gradient(to top, ${STOPS.join(", ")})`;
 
 export const metadata: Metadata = {
-  title: "Request a Survey | Elixa Renewables",
+  title: "Request a Free Survey",
   description:
     "Book a free, no-obligation survey with Elixa Renewables — solar, battery storage, heat pumps, air conditioning, heating or EV charging, designed from your home's real numbers.",
 };
