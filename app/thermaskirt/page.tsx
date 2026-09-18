@@ -9,7 +9,7 @@ const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 export const metadata: Metadata = {
   title: "ThermaSkirt Heated Skirting | Elixa Renewables",
   description:
-    "The skirting board becomes the radiator — profiles, sizes, finishes, outputs and the electric ThermaSkirt-e, fitted room by room with no walls opened and no floors lifted.",
+    "The skirting board becomes the radiator — profiles, sizes, finishes, outputs and the electric ThermaSkirt-e, fitted room by room with no walls opened and little or no floor lifting.",
 };
 
 const PROFILES = [
@@ -31,7 +31,7 @@ const FINISHES = [
 const FAQS = [
   {
     q: "How disruptive is the installation?",
-    a: "A room is typically converted in hours — the old skirting comes off, brackets go on, boards click into place. No walls opened, no floors lifted.",
+    a: "A room is typically converted in hours — the old skirting comes off, brackets go on, boards click into place. No walls are opened. Floors usually stay down too, though where the pipework has to cross a doorway or reach the next room we may lift a small section — kept to a minimum and put back.",
   },
   {
     q: "Does it fully replace my radiators?",
@@ -59,7 +59,7 @@ export default function ThermaskirtPage() {
         <NavV2 />
 
         {/* header */}
-        <header className="mx-auto grid max-w-[1500px] items-center gap-10 px-5 pb-16 pt-36 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] md:gap-16 md:px-10 md:pb-20 md:pt-44">
+        <header className="mx-auto grid max-w-[1500px] items-start gap-10 px-5 pb-16 pt-36 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] md:gap-16 md:px-10 md:pb-20 md:pt-44">
           <div>
           <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
             ThermaSkirt — heated skirting
@@ -69,7 +69,7 @@ export default function ThermaskirtPage() {
           </h1>
           <p className="mt-6 max-w-[58ch] text-base leading-relaxed text-night-muted md:text-lg">
             A discreet aluminium emitter that replaces the skirting boards and warms every room from
-            its edges — walls freed of radiators, floors left untouched, and a 40 °C flow
+            its edges — walls freed of radiators, floors largely left alone, and a 40 °C flow
             temperature that lets a heat pump run at its best.
           </p>
           <div className="mt-9 flex flex-wrap gap-4">
@@ -120,7 +120,7 @@ export default function ThermaskirtPage() {
               </p>
               <p className="mt-5 max-w-[46ch] border-l-2 border-night-accent pl-4 text-sm leading-relaxed text-night-text/90">
                 Boards click onto concealed brackets with corners, valves and fittings supplied — a
-                whole room converted in hours, with no walls opened and no floors lifted.
+                whole room converted in hours, with no walls opened and little or no floor lifting.
               </p>
             </div>
             <dl className="grid content-start divide-y divide-night-line self-center border-y border-night-line">
@@ -174,7 +174,7 @@ export default function ThermaskirtPage() {
                 </thead>
                 <tbody className="divide-y divide-night-line">
                   {[
-                    ["Floors lifted", "None — skirting swapped", "Coverings up, overlay laid", "None"],
+                    ["Floors lifted", "Little or none — small sections where pipe must cross", "Coverings up, overlay laid", "None"],
                     ["Height added", "None", "≈ 20 mm — doors trimmed", "None"],
                     ["Room converted in", "Hours", "Days", "Hours"],
                     ["Walls freed", "Yes — radiators gone", "Yes", "No — panels stay on walls"],
