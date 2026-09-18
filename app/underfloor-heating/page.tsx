@@ -40,7 +40,7 @@ export default function UnderfloorHeatingPage() {
         <NavV2 />
 
         {/* header */}
-        <header className="mx-auto grid max-w-[1500px] items-center gap-10 px-5 pb-16 pt-36 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] md:gap-16 md:px-10 md:pb-20 md:pt-44">
+        <header className="mx-auto grid max-w-[1500px] items-start gap-10 px-5 pb-16 pt-36 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] md:gap-16 md:px-10 md:pb-20 md:pt-44">
           <div>
             <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
               Underfloor heating — the systems
