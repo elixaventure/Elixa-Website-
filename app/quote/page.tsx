@@ -5,6 +5,25 @@ import { FooterV2 } from "@/components/v2/FooterV2";
 import { QuoteLauncher } from "@/components/quote/QuoteLauncher";
 import { site } from "@/content/site";
 
+/**
+ * The dark-to-light ramp either side of the form. Eased rather than linear —
+ * it holds the near-black a while, then lifts quickly — so the change reads
+ * as light arriving rather than as a grey band.
+ */
+const STOPS = [
+  "#080B0F 0%",
+  "#0D141B 14%",
+  "#1A232D 30%",
+  "#313D4A 46%",
+  "#55626F 62%",
+  "#7E8B97 76%",
+  "#ABB6C0 87%",
+  "#D4DBE2 95%",
+  "#EEF2F6 100%",
+];
+const RISE = `linear-gradient(to bottom, ${STOPS.join(", ")})`;
+const FALL = `linear-gradient(to top, ${STOPS.join(", ")})`;
+
 export const metadata: Metadata = {
   title: "Request a Survey | Elixa Renewables",
   description:
@@ -37,13 +56,17 @@ export default function QuotePage() {
           </p>
         </header>
 
-        {/* the wizard — light card on the dark ground */}
-        <section className="border-t border-night-line">
-          <div className="mx-auto max-w-[1500px] px-0 py-10 md:px-10 md:py-16">
-            <div className="border-y border-night-line bg-white px-4 py-8 text-navy md:border md:px-8 md:py-10" data-lenis-prevent>
+        {/* the wizard — the page eases from the dark ground into daylight,
+            the form's own card floats on the light, then it fades back down
+            into the footer. No hard edge anywhere. */}
+        <section>
+          <div aria-hidden className="h-36 w-full md:h-56" style={{ background: RISE }} />
+          <div className="bg-[#EEF2F6]">
+            <div className="mx-auto max-w-[1500px] px-5 pb-14 text-navy md:px-10 md:pb-20" data-lenis-prevent>
               <QuoteLauncher />
             </div>
           </div>
+          <div aria-hidden className="h-36 w-full md:h-56" style={{ background: FALL }} />
         </section>
 
         <FooterV2 />
