@@ -59,6 +59,10 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
     interests: preselect.filter((slug) => services.some((s) => s.slug === slug)),
   }));
   const [planFile, setPlanFile] = useState<File | null>(null);
+  // how the enquiry actually left the page: posted for us, or handed to
+  // the visitor's email app for them to send. The closing screen must not
+  // claim "on their way" when it is still sitting in their drafts.
+  const [route, setRoute] = useState<"posted" | "email">("posted");
 
   // pick up a floor plan the visitor already uploaded in the Smart Energy Home
   useEffect(() => {
@@ -131,6 +135,7 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
       }, planFile);
       if (ok) {
         clearPlan();
+        setRoute("posted");
         setStep(totalSteps - 1);
         return;
       }
@@ -151,6 +156,7 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
     ].filter(Boolean);
     const body = encodeURIComponent(`Name: ${a.name}\nPhone: ${a.phone}\nEmail: ${a.email}\n\n${lines.join("\n")}`);
     const subject = encodeURIComponent("Website quote request");
+    setRoute("email");
     window.location.href = `${site.emailHref}?subject=${subject}&body=${body}`;
     setStep(totalSteps - 1);
   };
@@ -321,18 +327,49 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
             {step === 5 && (
               <div className="py-6 text-center">
                 <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-elixa-gradient text-white">
-                  <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none">
-                    <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    {route === "posted" ? (
+                      <path d="M5 13l4 4L19 7" />
+                    ) : (
+                      <>
+                        <rect x="3" y="5" width="18" height="14" rx="2" />
+                        <path d="M3.5 6.5L12 13l8.5-6.5" />
+                      </>
+                    )}
                   </svg>
                 </span>
-                <h2 className="mt-6 text-2xl font-extrabold text-navy">Thank you — an Elixa specialist will be in touch.</h2>
-                <p className="mx-auto mt-3 max-w-md text-navy/60">
-                  Your details are on their way. If your email app didn&apos;t open, call us on{" "}
-                  <a href={site.phoneHref} className="font-semibold text-elixa-cyan">
-                    {site.phoneDisplay}
-                  </a>
-                  .
-                </p>
+                {route === "posted" ? (
+                  <>
+                    <h2 className="mt-6 text-2xl font-extrabold text-navy">
+                      Thank you — an Elixa specialist will be in touch.
+                    </h2>
+                    <p className="mx-auto mt-3 max-w-md text-navy/60">
+                      Your details are on their way. Prefer to talk it through now? Call us on{" "}
+                      <a href={site.phoneHref} className="font-semibold text-elixa-cyan">
+                        {site.phoneDisplay}
+                      </a>
+                      .
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="mt-6 text-2xl font-extrabold text-navy">
+                      Almost there — press send on the email.
+                    </h2>
+                    <p className="mx-auto mt-3 max-w-md text-navy/60">
+                      Your answers are written into an email on your device. Choose your email app
+                      and send it, and a specialist will be in touch. Nothing reaches us until you
+                      do{planFile ? " — and attach your floor plan while you are there" : ""}.
+                    </p>
+                    <p className="mx-auto mt-4 max-w-md text-navy/60">
+                      Rather not? Call us on{" "}
+                      <a href={site.phoneHref} className="font-semibold text-elixa-cyan">
+                        {site.phoneDisplay}
+                      </a>{" "}
+                      and we will take it over the phone.
+                    </p>
+                  </>
+                )}
               </div>
             )}
           </motion.div>
