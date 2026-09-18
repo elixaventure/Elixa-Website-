@@ -6,7 +6,7 @@ import { FooterV2 } from "@/components/v2/FooterV2";
 import { site } from "@/content/site";
 
 export const metadata: Metadata = {
-  title: "Contact | Elixa Renewables",
+  title: "Contact",
   description:
     "Talk to Elixa Renewables — call, email or book a free survey for heat pumps, solar, batteries, heating and EV charging across the UK.",
 };

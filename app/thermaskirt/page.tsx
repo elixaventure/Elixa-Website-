@@ -7,7 +7,7 @@ import { FooterV2 } from "@/components/v2/FooterV2";
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const metadata: Metadata = {
-  title: "ThermaSkirt Heated Skirting | Elixa Renewables",
+  title: "Heated Skirting Boards — ThermaSkirt Installation",
   description:
     "The skirting board becomes the radiator — profiles, sizes, finishes, outputs and the electric ThermaSkirt-e, fitted room by room with no walls opened and little or no floor lifting.",
 };

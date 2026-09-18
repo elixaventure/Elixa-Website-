@@ -8,7 +8,7 @@ import { UNDERFLOOR_SYSTEMS, UNDERFLOOR_NOTE } from "@/content/underfloorSystems
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const metadata: Metadata = {
-  title: "Underfloor Heating — The Systems | Elixa Renewables",
+  title: "Underfloor Heating Installation — Wet & Electric Systems",
   description:
     "Screeded, low-profile overlay, between-joist and electric underfloor heating — honest outputs, build-up heights and which method suits which floor, designed room by room.",
 };

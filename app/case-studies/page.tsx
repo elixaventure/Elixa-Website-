@@ -8,7 +8,7 @@ import { CASE_STUDIES } from "@/content/caseStudies";
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const metadata: Metadata = {
-  title: "Case Studies | Elixa Renewables",
+  title: "Case Studies",
   description:
     "Elixa Renewables installation case studies — cascade heat pumps, R290 siting, full system design and honest specification, with the original documents to download.",
 };

@@ -8,7 +8,7 @@ import { SOLAR_RANGE, SOLAR_RANGE_NOTE } from "@/content/solarRange";
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const metadata: Metadata = {
-  title: "Solar PV — The Panel Range | Elixa Renewables",
+  title: "Solar Panel Installation — Solar PV",
   description:
     "The solar panels we design with — Aiko, LONGi, REC, Trina and JA Solar — with honest output, efficiency and warranty figures, designed per roof aspect from the survey.",
 };

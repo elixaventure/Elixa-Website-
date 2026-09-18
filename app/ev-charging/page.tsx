@@ -8,7 +8,7 @@ import { EV_CHARGER_RANGE, EV_NOTE } from "@/content/evChargerRange";
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const metadata: Metadata = {
-  title: "EV Charging — The Range | Elixa Renewables",
+  title: "EV Charger Installation",
   description:
     "The home EV chargers we install — zappi, Ohme, Hypervolt and Andersen — solar-aware, tariff-smart 7.4 kW units, with the supply check and dedicated circuit done properly.",
 };

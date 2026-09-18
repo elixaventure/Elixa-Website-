@@ -6,7 +6,7 @@ import { FooterV2 } from "@/components/v2/FooterV2";
 import { grantsDisclaimer } from "@/content/site-content";
 
 export const metadata: Metadata = {
-  title: "Grants & Funding | Elixa Renewables",
+  title: "Heat Pump Grants & Funding",
   description:
     "The Boiler Upgrade Scheme, 0% VAT on energy-saving installs and the Smart Export Guarantee — what each is worth, who qualifies, and how we handle the paperwork for you.",
 };

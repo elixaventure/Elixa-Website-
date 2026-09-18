@@ -8,7 +8,7 @@ import { AIRCON_RANGE, AIRCON_NOTE } from "@/content/airconRange";
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const metadata: Metadata = {
-  title: "Air Conditioning — The Range | Elixa Renewables",
+  title: "Air Conditioning Installation",
   description:
     "The wall units we design with — Mitsubishi Electric, Daikin and Fujitsu — whisper-quiet air-to-air heat pumps that cool in summer and heat single rooms efficiently in winter.",
 };

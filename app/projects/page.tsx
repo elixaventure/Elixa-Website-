@@ -10,7 +10,7 @@ import { INSTALLS } from "@/content/installs";
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const metadata: Metadata = {
-  title: "Our Work — Real Installs | Elixa Renewables",
+  title: "Our Work — Real Installs",
   description:
     "Real Elixa installations, photographed by the team — solar, heat pumps, cylinders and underfloor heating, fitted properly and shown as found.",
 };
