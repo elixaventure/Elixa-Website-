@@ -33,9 +33,11 @@ jobs:
       - name: Build static export
         run: npm run build
         env:
-          # Served at the root of the custom domain (public/CNAME), so no base
-          # path. The old github.io/Elixa-Website-/ address redirects here.
-          NEXT_PUBLIC_BASE_PATH: ""
+          # Repo is served at https://<owner>.github.io/Elixa-Website-/.
+          # This flips to "" (and public/CNAME returns) only once the domain's
+          # DNS already points at GitHub — doing it earlier serves root-relative
+          # asset paths from a sub-path URL and the page loads unstyled.
+          NEXT_PUBLIC_BASE_PATH: /Elixa-Website-
           # Optional hosted plan-recognition relay (workers/plan-api). Unset →
           # the in-browser extractor is the only path; set the repo variable
           # to the deployed Worker URL to switch the API on.
