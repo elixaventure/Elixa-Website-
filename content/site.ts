@@ -24,6 +24,17 @@ export const site = {
     country: "United Kingdom",
   },
   areaServed: "United Kingdom",
+  /**
+   * Accreditations exactly as Elixa publish them on their own marketing —
+   * nothing here is inferred. Rendered as a quiet line in the footer rather
+   * than as third-party logos, whose brand colours fight the dark palette.
+   */
+  accreditations: [
+    "MCS Partner",
+    "Gas Safe Registered",
+    "SafeContractor Approved",
+    "ThermaSkirt Accredited Installer",
+  ],
   social: {
     facebook: "https://www.facebook.com/",
     instagram: "https://www.instagram.com/",

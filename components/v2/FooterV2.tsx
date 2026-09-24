@@ -80,6 +80,20 @@ export function FooterV2() {
           </ul>
         </div>
       </div>
+      {/* accreditations — a quiet line, not a badge wall */}
+      <div className="border-t border-night-line">
+        <ul className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-x-6 gap-y-2 px-5 py-5 md:px-10">
+          {site.accreditations.map((a) => (
+            <li
+              key={a}
+              className="font-techmono text-[11px] uppercase tracking-[0.14em] text-night-faint"
+            >
+              {a}
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <div className="border-t border-night-line">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3 px-5 py-5 md:px-10">
           <p className="font-techmono text-[11px] uppercase tracking-[0.14em] text-night-faint">
