@@ -130,16 +130,16 @@ export function ArtEv() {
 }
 
 /**
- * ThermaSkirt profile range — five cross-sections side by side: Deco 114 mm
+ * ThermaSkirt profile range — five cross-sections side by side: Deco 115 mm
  * with plain / torus / ovolo caps, the taller Deco 170 mm, and the Classic
  * bull-nose. Waterway channels drawn as stacked circles, heights dimensioned.
  */
 export function ArtSkirtProfiles() {
   const base = 196;
   const boards: { x: number; h: number; cap: "plain" | "torus" | "ovolo" | "bull"; label: string }[] = [
-    { x: 46, h: 114, cap: "plain", label: "114" },
-    { x: 150, h: 114, cap: "torus", label: "114" },
-    { x: 254, h: 114, cap: "ovolo", label: "114" },
+    { x: 46, h: 115, cap: "plain", label: "115" },
+    { x: 150, h: 115, cap: "torus", label: "115" },
+    { x: 254, h: 115, cap: "ovolo", label: "115" },
     { x: 358, h: 170, cap: "plain", label: "170" },
     { x: 462, h: 150, cap: "bull", label: "TS" },
   ];
