@@ -317,7 +317,7 @@ const SPOTS: Spot[] = [
     stats: [
       { k: "Flow temp", v: "40 °C — heat-pump ready" },
       { k: "Heat pump SCOP", v: "≈ 4.0" },
-      { k: "Output (Deco 114/170 mm)", v: "up to ≈126 / ≈188 W per metre" },
+      { k: "Output (Deco 115/170 mm)", v: "up to ≈126 / ≈188 W per metre" },
       { k: "Lengths", v: "2 m · 3 m · 6 m, cut on site" },
     ],
     // Manufacturer figures: DiscreteHeat Co. Ltd (discreteheat.com) product &
@@ -326,7 +326,7 @@ const SPOTS: Spot[] = [
     sections: [
       {
         h: "Styles & sizes",
-        body: "Deco is the modern flat profile in two heights — 114 mm and 170 mm, both just 20 mm deep — with plain, torus or ovolo top-cap options. The Classic TS profile keeps the traditional bull-nose look, made for Victorian and Edwardian homes where period skirting has to stay period.",
+        body: "Deco is the modern flat profile in two heights — 115 mm and 170 mm, both just 20 mm deep — with plain, torus or ovolo top-cap options. The Classic TS profile keeps the traditional bull-nose look, made for Victorian and Edwardian homes where period skirting has to stay period.",
       },
       {
         h: "ThermaSkirt-e (electric)",
@@ -534,9 +534,9 @@ export function ExploreHome() {
                     </p>
                     <div className="mt-3 grid grid-cols-3 gap-2">
                       {[
-                        { f: "deco-114-plain", l: "Deco 114" },
-                        { f: "ogee-114", l: "Ogee 114" },
-                        { f: "bullnose-114", l: "Bull-nose 114" },
+                        { f: "deco-115-plain", l: "Deco 115" },
+                        { f: "ogee-115", l: "Ogee 115" },
+                        { f: "bullnose-115", l: "Bull-nose 115" },
                         { f: "deco-170-plain", l: "Deco 170" },
                         { f: "ogee-170", l: "Ogee 170" },
                         { f: "bullnose-170", l: "Bull-nose 170" },

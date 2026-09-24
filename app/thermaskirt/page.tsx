@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 };
 
 const PROFILES = [
-  { f: "deco-114-plain", l: "Deco 114" },
-  { f: "ogee-114", l: "Ogee 114" },
-  { f: "bullnose-114", l: "Bull-nose 114" },
+  { f: "deco-115-plain", l: "Deco 115" },
+  { f: "ogee-115", l: "Ogee 115" },
+  { f: "bullnose-115", l: "Bull-nose 115" },
   { f: "deco-170-plain", l: "Deco 170" },
   { f: "ogee-170", l: "Ogee 170" },
   { f: "bullnose-170", l: "Bull-nose 170" },
@@ -127,7 +127,7 @@ export default function ThermaskirtPage() {
               {[
                 ["Flow temperature", "40 °C — heat-pump ready"],
                 ["Heat pump SCOP", "≈ 4.0"],
-                ["Output (Deco 114 / 170 mm)", "up to ≈126 / ≈188 W per metre"],
+                ["Output (Deco 115 / 170 mm)", "up to ≈126 / ≈188 W per metre"],
                 ["Depth off the wall", "just 20 mm"],
                 ["Lengths", "2 m · 3 m · 6 m, cut on site"],
                 ["Electric version", "ThermaSkirt-e, per-room stat"],
@@ -288,7 +288,7 @@ export default function ThermaskirtPage() {
               Styles for modern and period homes.
             </h2>
             <p className="mt-5 max-w-[58ch] text-sm leading-relaxed text-night-muted md:text-base">
-              Deco is the modern flat profile in 114 mm and 170 mm heights with plain, torus or
+              Deco is the modern flat profile in 115 mm and 170 mm heights with plain, torus or
               ovolo top-caps; the ogee and bull-nose profiles keep the traditional look for
               Victorian and Edwardian homes where period skirting has to stay period.
             </p>
