@@ -1,0 +1,18 @@
+# Apache config for the exported site (Hostinger). Next writes every page as
+# its own folder + index.html, which Apache serves without help — this file
+# only covers the two things it can't infer.
+
+# Serve the site's own 404 page instead of Apache's default.
+ErrorDocument 404 /404.html
+
+# Next fingerprints everything under /_next/static/, so those filenames change
+# whenever their contents do and can safely be cached hard. Nothing else is
+# cached here on purpose: photos and PDFs get replaced under the same name.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|woff2)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+</IfModule>

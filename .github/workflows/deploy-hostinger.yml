@@ -1,0 +1,63 @@
+name: Deploy website to Hostinger
+
+# Publishes the static export to Hostinger over FTP, so the site is served
+# from https://www.elixarenewables.co.uk with no sub-path in the address.
+#
+# Dormant until switched on. To go live:
+#   1. Repo → Settings → Secrets and variables → Actions → Secrets:
+#        FTP_SERVER    e.g. ftp.elixarenewables.co.uk  (hPanel → Files → FTP Accounts)
+#        FTP_USERNAME  the FTP user from that same screen
+#        FTP_PASSWORD  its password
+#   2. Same screen → Variables → HOSTINGER_DEPLOY = true
+#
+# Optional variables, only if the defaults don't match the account:
+#   FTP_SERVER_DIR  defaults to public_html/ — an add-on domain may live at
+#                   domains/elixarenewables.co.uk/public_html/
+#   FTP_PROTOCOL    defaults to ftps (encrypted). Set to ftp only if the plan
+#                   refuses FTPS — that sends the password in clear text.
+#
+# The GitHub Pages workflow keeps running alongside this one, so the old
+# address stays alive as a fallback until Hostinger is proven.
+
+on:
+  push:
+    branches:
+      - main
+      - claude/elixar-renewables-3d-w410pb
+  workflow_dispatch:
+
+concurrency:
+  group: hostinger
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # Stays switched off until the variable is set, so pushes don't fail
+    # while the secrets are still missing.
+    if: vars.HOSTINGER_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build static export
+        run: npm run build
+        env:
+          # No base path: the site sits at the root of its own domain here,
+          # unlike the GitHub Pages build which serves from /Elixa-Website-/.
+          NEXT_PUBLIC_BASE_PATH: ""
+          NEXT_PUBLIC_PLAN_API_URL: ${{ vars.NEXT_PUBLIC_PLAN_API_URL }}
+          NEXT_PUBLIC_FORM_ENDPOINT: ${{ vars.NEXT_PUBLIC_FORM_ENDPOINT }}
+          NEXT_PUBLIC_WEB3FORMS_KEY: ${{ vars.NEXT_PUBLIC_WEB3FORMS_KEY }}
+      - name: Upload to Hostinger
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ${{ vars.FTP_PROTOCOL || 'ftps' }}
+          local-dir: ./out/
+          server-dir: ${{ vars.FTP_SERVER_DIR || 'public_html/' }}
