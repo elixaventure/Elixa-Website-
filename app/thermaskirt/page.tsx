@@ -14,11 +14,11 @@ export const metadata: Metadata = {
 
 const PROFILES = [
   { f: "deco-115-plain", l: "Deco 115" },
-  { f: "ogee-115", l: "Ogee 115" },
-  { f: "bullnose-115", l: "Bull-nose 115" },
+  { f: "torus-115", l: "Torus 115" },
+  { f: "ov-115", l: "OV 115" },
   { f: "deco-170-plain", l: "Deco 170" },
-  { f: "ogee-170", l: "Ogee 170" },
-  { f: "bullnose-170", l: "Bull-nose 170" },
+  { f: "torus-170", l: "Torus 170" },
+  { f: "ov-170", l: "OV 170" },
 ];
 
 const FINISHES = [
@@ -261,11 +261,11 @@ export default function ThermaskirtPage() {
                 ["h03", "Mitred ThermaSkirt corner against marble-effect tiles"],
                 ["h04", "ThermaSkirt along a white wall over pale herringbone flooring"],
                 ["h05", "Finished lounge with ThermaSkirt around the walls and no radiators"],
-                ["h06", "Ogee-profile ThermaSkirt beneath a stone-effect tiled wall"],
+                ["h06", "Torus-capped ThermaSkirt beneath a stone-effect tiled wall"],
                 ["h07", "ThermaSkirt running to an aluminium sliding door on pale herringbone"],
                 ["h08", "ThermaSkirt on a sage-green wall above a grey carpet"],
                 ["h09", "ThermaSkirt corner over golden herringbone flooring"],
-                ["h10", "Ogee ThermaSkirt along an oak-floored hallway"],
+                ["h10", "Torus-capped ThermaSkirt along an oak-floored hallway"],
                 ["h11", "ThermaSkirt in a carpeted bedroom with a bay window"],
                 ["h12", "ThermaSkirt over grey herringbone flooring"],
               ].map(([f, alt]) => (
@@ -288,9 +288,10 @@ export default function ThermaskirtPage() {
               Styles for modern and period homes.
             </h2>
             <p className="mt-5 max-w-[58ch] text-sm leading-relaxed text-night-muted md:text-base">
-              Deco is the modern flat profile in 115 mm and 170 mm heights with plain, torus or
-              ovolo top-caps; the ogee and bull-nose profiles keep the traditional look for
-              Victorian and Edwardian homes where period skirting has to stay period.
+              Deco comes in 115 mm and 170 mm heights, both just 20 mm deep, with three
+              top-cap choices — plain, torus or OV. Plain suits a modern room; torus and OV
+              keep the traditional line for Victorian and Edwardian homes where period
+              skirting has to stay period.
             </p>
             <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
               {PROFILES.map((p) => (

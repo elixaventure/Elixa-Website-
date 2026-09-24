@@ -25,7 +25,7 @@ export const INSTALLS: Install[] = [
     alt: "Styled lounge with ThermaSkirt heated skirting below panelled walls and herringbone flooring",
     blurb:
       "A whole portfolio of rooms warmed from their edges — herringbone lounges, carpeted bedrooms, tiled bathrooms and oak hallways, each one converted in hours with the walls handed back and not a radiator in sight.",
-    kit: ["ThermaSkirt Deco & Ogee profiles", "Fitted over wood, carpet and tile", "Per-room thermostat control"],
+    kit: ["ThermaSkirt Deco, torus and OV cappings", "Fitted over wood, carpet and tile", "Per-room thermostat control"],
   },
   {
     id: "cotswold-solar-heatpump",

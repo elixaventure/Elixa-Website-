@@ -326,7 +326,7 @@ const SPOTS: Spot[] = [
     sections: [
       {
         h: "Styles & sizes",
-        body: "Deco is the modern flat profile in two heights — 115 mm and 170 mm, both just 20 mm deep — with plain, torus or ovolo top-cap options. The Classic TS profile keeps the traditional bull-nose look, made for Victorian and Edwardian homes where period skirting has to stay period.",
+        body: "Deco comes in two heights — 115 mm and 170 mm, both just 20 mm deep — with three top-cap choices: plain, torus or OV. Plain suits a modern room; torus and OV keep the traditional line for Victorian and Edwardian homes where period skirting has to stay period.",
       },
       {
         h: "ThermaSkirt-e (electric)",
@@ -535,11 +535,11 @@ export function ExploreHome() {
                     <div className="mt-3 grid grid-cols-3 gap-2">
                       {[
                         { f: "deco-115-plain", l: "Deco 115" },
-                        { f: "ogee-115", l: "Ogee 115" },
-                        { f: "bullnose-115", l: "Bull-nose 115" },
+                        { f: "torus-115", l: "Torus 115" },
+                        { f: "ov-115", l: "OV 115" },
                         { f: "deco-170-plain", l: "Deco 170" },
-                        { f: "ogee-170", l: "Ogee 170" },
-                        { f: "bullnose-170", l: "Bull-nose 170" },
+                        { f: "torus-170", l: "Torus 170" },
+                        { f: "ov-170", l: "OV 170" },
                       ].map((p) => (
                         <figure key={p.f} className="border border-night-line bg-white p-1.5">
                           <img

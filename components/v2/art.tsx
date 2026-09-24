@@ -131,15 +131,15 @@ export function ArtEv() {
 
 /**
  * ThermaSkirt profile range — five cross-sections side by side: Deco 115 mm
- * with plain / torus / ovolo caps, the taller Deco 170 mm, and the Classic
- * bull-nose. Waterway channels drawn as stacked circles, heights dimensioned.
+ * with plain / torus / OV caps, the taller Deco 170 mm, and a rounded cap
+ * for period work. Waterway channels drawn as stacked circles, dimensioned.
  */
 export function ArtSkirtProfiles() {
   const base = 196;
-  const boards: { x: number; h: number; cap: "plain" | "torus" | "ovolo" | "bull"; label: string }[] = [
+  const boards: { x: number; h: number; cap: "plain" | "torus" | "ov" | "bull"; label: string }[] = [
     { x: 46, h: 115, cap: "plain", label: "115" },
     { x: 150, h: 115, cap: "torus", label: "115" },
-    { x: 254, h: 115, cap: "ovolo", label: "115" },
+    { x: 254, h: 115, cap: "ov", label: "115" },
     { x: 358, h: 170, cap: "plain", label: "170" },
     { x: 462, h: 150, cap: "bull", label: "TS" },
   ];
@@ -151,7 +151,7 @@ export function ArtSkirtProfiles() {
         const cap =
           b.cap === "torus"
             ? `M${b.x} ${top + 16} Q${b.x} ${top} ${b.x + W / 2} ${top} Q${b.x + W} ${top} ${b.x + W} ${top + 16}`
-            : b.cap === "ovolo"
+            : b.cap === "ov"
               ? `M${b.x} ${top + 14} Q${b.x + 10} ${top + 12} ${b.x + 14} ${top + 4} L${b.x + 14} ${top} L${b.x + W} ${top}`
               : b.cap === "bull"
                 ? `M${b.x} ${top + 18} Q${b.x} ${top} ${b.x + 18} ${top} L${b.x + W} ${top}`
