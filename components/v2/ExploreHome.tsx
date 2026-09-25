@@ -387,17 +387,22 @@ export function ExploreHome() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Desktop zoom drives background-size/position rather than a scaled layer —
-  // paints reliably everywhere and can never pull an image edge into view.
-  // Position maps the pin to the focal point (left of the side panel):
+  // Zoom drives background-size/position rather than a scaled layer — paints
+  // reliably everywhere and can never pull an image edge into view.
+  // Position maps the pin to the focal point:
   // pos% = (focal − pin·scale) / (1 − scale), clamped to the image bounds.
-  const zoomed = Boolean(active && !reduced && desktop);
+  // On desktop the focal point sits left of the 400px side sheet; on a phone
+  // the panel drops below the picture, so the unit centres in the frame —
+  // which is the whole point of zooming on a small screen.
+  const zoomed = Boolean(active && !reduced);
+  const focalX = desktop ? 0.36 : 0.5;
+  const focalY = desktop ? 0.46 : 0.5;
   const bgPos = (pin: number, focal: number, s: number) =>
     Math.min(100, Math.max(0, ((focal - (pin / 100) * s) / (1 - s)) * 100));
   const zoom = zoomed
     ? {
         backgroundSize: `${active!.scale * 100}%`,
-        backgroundPosition: `${bgPos(active!.x, 0.36, active!.scale)}% ${bgPos(active!.y, 0.46, active!.scale)}%`,
+        backgroundPosition: `${bgPos(active!.x, focalX, active!.scale)}% ${bgPos(active!.y, focalY, active!.scale)}%`,
       }
     : { backgroundSize: "100%", backgroundPosition: "50% 50%" };
 
@@ -450,21 +455,24 @@ export function ExploreHome() {
                     className="group absolute z-10 -translate-x-1/2 -translate-y-1/2 touch-manipulation"
                     style={{ left: `${s.x}%`, top: `${s.y}%` }}
                   >
-                    {/* touch target keeps its full size; only the marker minimises */}
+                    {/* The touch target stays a full 48px; the visible marker is
+                        a small open ring so the kit it points at shows through
+                        it, with a hairline dark edge so it reads against both
+                        the lit windows and the night sky. */}
                     <span className="relative flex h-12 w-12 items-center justify-center md:h-14 md:w-14">
                       {!on && !reduced && !anySelected && (
-                        <span className="absolute inset-0 animate-ping rounded-full bg-night-accent/25" />
+                        <span className="absolute h-7 w-7 animate-ping rounded-full bg-night-accent/30 md:h-8 md:w-8" />
                       )}
                       <span
-                        className={`relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300 md:h-10 md:w-10 ${
+                        className={`relative flex items-center justify-center rounded-full border-2 shadow-[0_0_0_1px_rgba(8,11,15,0.7)] transition-all duration-300 ${
                           on
-                            ? "scale-[0.45] border-night-accent bg-night-accent"
+                            ? "h-4 w-4 border-night-accent bg-night-accent"
                             : anySelected
-                              ? "scale-[0.42] border-night-accent/60 bg-night/60 opacity-45"
-                              : "border-night-accent/80 bg-night/70 backdrop-blur-sm group-hover:bg-night-accent/30"
+                              ? "h-3.5 w-3.5 border-night-accent/50 opacity-40"
+                              : "h-5 w-5 border-night-accent group-hover:bg-night-accent/25 md:h-6 md:w-6"
                         }`}
                       >
-                        <span className={`h-3 w-3 rounded-full ${on ? "bg-night" : "bg-night-accent"}`} />
+                        {!on && <span className="h-1.5 w-1.5 rounded-full bg-night-accent" />}
                       </span>
                     </span>
                   </button>
@@ -484,14 +492,14 @@ export function ExploreHome() {
                 animate={reduced ? { opacity: 1 } : { opacity: 1, x: 0, y: 0 }}
                 exit={reduced ? { opacity: 0 } : desktop ? { opacity: 0, x: 48 } : { opacity: 0, y: 20 }}
                 transition={{ type: "tween", duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className="relative z-20 border-t border-night-line bg-night p-6 md:absolute md:inset-y-0 md:right-0 md:w-[400px] md:overflow-y-auto md:overscroll-contain md:border-l md:border-t-0 md:bg-night/95 md:p-8 md:backdrop-blur-md"
+                className="relative z-20 border-t border-night-line bg-night px-5 py-7 md:absolute md:inset-y-0 md:right-0 md:w-[400px] md:overflow-y-auto md:overscroll-contain md:border-l md:border-t-0 md:bg-night/95 md:p-8 md:backdrop-blur-md"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="font-techmono text-[11px] uppercase tracking-[0.24em] text-night-accent">
                       {active.label}
                     </p>
-                    <h3 className="mt-2 font-arch text-2xl font-semibold tracking-[-0.01em] text-night-text md:text-3xl">
+                    <h3 className="mt-2 font-arch text-3xl font-semibold tracking-[-0.01em] text-night-text md:text-3xl">
                       {active.title}
                     </h3>
                   </div>
@@ -504,15 +512,22 @@ export function ExploreHome() {
                   </button>
                 </div>
 
-                <p className="mt-4 text-sm leading-relaxed text-night-muted">{active.blurb}</p>
+                <p className="mt-4 text-base leading-relaxed text-night-muted md:text-sm">{active.blurb}</p>
 
+                {/* Stat rows stack on a phone — at the larger mobile type size
+                    a two-column row pushes long values off the edge. */}
                 <dl className="mt-6 divide-y divide-night-line border-y border-night-line">
                   {active.stats.map((st) => (
-                    <div key={st.k} className="flex items-baseline justify-between gap-6 py-3">
-                      <dt className="font-techmono text-[11px] uppercase tracking-[0.18em] text-night-faint">
+                    <div
+                      key={st.k}
+                      className="flex flex-col gap-1 py-3 md:flex-row md:items-baseline md:justify-between md:gap-6"
+                    >
+                      <dt className="font-techmono text-[12px] uppercase tracking-[0.18em] text-night-faint md:text-[11px]">
                         {st.k}
                       </dt>
-                      <dd className="text-right text-sm font-medium text-night-text">{st.v}</dd>
+                      <dd className="text-base font-medium text-night-text md:text-right md:text-sm">
+                        {st.v}
+                      </dd>
                     </div>
                   ))}
                 </dl>
@@ -525,11 +540,11 @@ export function ExploreHome() {
                       className="w-full border border-night-line"
                       loading="lazy"
                     />
-                    <p className="mt-2 text-xs leading-relaxed text-night-faint">
+                    <p className="mt-2 text-sm leading-relaxed text-night-faint md:text-xs">
                       Fitted ThermaSkirt — the skirting is the heating. Herringbone hallway,
                       panelled walls, no radiators.
                     </p>
-                    <p className="mt-6 font-techmono text-[11px] uppercase tracking-[0.2em] text-night-accent">
+                    <p className="mt-6 font-techmono text-[12px] uppercase tracking-[0.2em] text-night-accent md:text-[11px]">
                       Profile range
                     </p>
                     <div className="mt-3 grid grid-cols-3 gap-2">
@@ -559,16 +574,16 @@ export function ExploreHome() {
 
                 {active.sections?.map((sec) => (
                   <div key={sec.h} className="mt-6">
-                    <p className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-accent">
+                    <p className="font-techmono text-[12px] uppercase tracking-[0.2em] text-night-accent md:text-[11px]">
                       {sec.h}
                     </p>
-                    <p className="mt-2 text-sm leading-relaxed text-night-muted">{sec.body}</p>
+                    <p className="mt-2 text-base leading-relaxed text-night-muted md:text-sm">{sec.body}</p>
                   </div>
                 ))}
 
                 {active.finishes && (
                   <div className="mt-6">
-                    <p className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-accent">
+                    <p className="font-techmono text-[12px] uppercase tracking-[0.2em] text-night-accent md:text-[11px]">
                       Finishes
                     </p>
                     <ul className="mt-3 grid gap-2.5">
@@ -585,7 +600,7 @@ export function ExploreHome() {
                                 : { backgroundColor: f.hex }
                             }
                           />
-                          <span className="text-sm text-night-text">{f.name}</span>
+                          <span className="text-base text-night-text md:text-sm">{f.name}</span>
                           <span className="ml-auto font-techmono text-[11px] uppercase tracking-[0.14em] text-night-faint">
                             {f.ral}
                           </span>
@@ -601,13 +616,13 @@ export function ExploreHome() {
 
                 {active.faqs && (
                   <div className="mt-6">
-                    <p className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-accent">
+                    <p className="font-techmono text-[12px] uppercase tracking-[0.2em] text-night-accent md:text-[11px]">
                       Common questions
                     </p>
                     <div className="mt-2 divide-y divide-night-line border-y border-night-line">
                       {active.faqs.map((f) => (
                         <details key={f.q} className="group py-3">
-                          <summary className="flex cursor-pointer list-none items-baseline justify-between gap-4 text-sm font-medium text-night-text [&::-webkit-details-marker]:hidden">
+                          <summary className="flex cursor-pointer list-none items-baseline justify-between gap-4 text-base font-medium text-night-text [&::-webkit-details-marker]:hidden md:text-sm">
                             {f.q}
                             <span
                               aria-hidden
@@ -616,7 +631,7 @@ export function ExploreHome() {
                               +
                             </span>
                           </summary>
-                          <p className="mt-2 pr-6 text-sm leading-relaxed text-night-muted">{f.a}</p>
+                          <p className="mt-2 pr-6 text-base leading-relaxed text-night-muted md:text-sm">{f.a}</p>
                         </details>
                       ))}
                     </div>
@@ -626,14 +641,14 @@ export function ExploreHome() {
                 <div className="mt-7 grid gap-3">
                   <Link
                     href={active.href}
-                    className="group inline-flex items-center justify-between border border-night-accent px-5 py-3 font-techmono text-[11px] uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
+                    className="group inline-flex items-center justify-between border border-night-accent px-5 py-4 font-techmono text-xs uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night md:py-3 md:text-[11px]"
                   >
                     Explore {active.label}
                     <span aria-hidden>→</span>
                   </Link>
                   <Link
                     href="/quote"
-                    className="inline-flex items-center justify-between border border-night-text/25 px-5 py-3 font-techmono text-[11px] uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
+                    className="inline-flex items-center justify-between border border-night-text/25 px-5 py-4 font-techmono text-xs uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60 md:py-3 md:text-[11px]"
                   >
                     Request a Survey
                     <span aria-hidden>→</span>
