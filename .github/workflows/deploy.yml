@@ -7,7 +7,14 @@ name: Deploy website to GitHub Pages
 on:
   push:
     branches:
-      - main
+      # Only this branch. The github-pages environment is configured to
+      # accept deployments from it alone, so a run started by a push to
+      # main can never reach the deploy step — but it DOES grab the
+      # shared "pages" concurrency group and cancel the run that can.
+      # Merging a PR would therefore kill the deploy the branch push had
+      # already started. Add main back here only if main is also added
+      # under Settings -> Environments -> github-pages -> Deployment
+      # branches.
       - claude/elixar-renewables-3d-w410pb
   workflow_dispatch:
 
