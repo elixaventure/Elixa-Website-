@@ -9,7 +9,7 @@ export const site = {
   tagline: "Powering a Smarter, Greener Future.",
   description:
     "Premium renewable energy, heating, cooling and low-carbon technology — expertly supplied and installed nationwide across the UK.",
-  url: "https://www.elixarenewables.co.uk",
+  url: "https://elixarenewables.co.uk",
   // Update per deployment (used for canonical URLs & sitemap); no trailing slash.
   phone: "07833 387653",
   phoneHref: "tel:+447833387653",
