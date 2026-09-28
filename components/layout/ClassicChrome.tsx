@@ -23,6 +23,7 @@ const V2_ROUTES = new Set([
   "/about",
   "/contact",
   "/quote",
+  "/quick-quote",
 ]);
 
 export function ClassicChrome({ children }: { children: ReactNode }) {
