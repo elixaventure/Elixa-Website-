@@ -39,22 +39,27 @@ jobs:
       - run: npm ci
       - name: Check the enquiry inbox is wired up
         env:
-          KEY: ${{ vars.NEXT_PUBLIC_WEB3FORMS_KEY }}
-          ENDPOINT: ${{ vars.NEXT_PUBLIC_FORM_ENDPOINT }}
+          KEY_VAR: ${{ vars.NEXT_PUBLIC_WEB3FORMS_KEY }}
+          KEY_SECRET: ${{ secrets.NEXT_PUBLIC_WEB3FORMS_KEY }}
+          ENDPOINT: ${{ vars.NEXT_PUBLIC_FORM_ENDPOINT || secrets.NEXT_PUBLIC_FORM_ENDPOINT }}
         run: |
           # Presence and length only — never the value. A static export bakes
-          # these in at build time, so a variable that is missing, misspelled
-          # or added as a Secret instead silently ships a quote form that
-          # falls back to opening the visitor's own email app.
-          if [ -n "$(echo "$KEY" | tr -d '[:space:]')" ]; then
-            echo "Web3Forms key: SET (${#KEY} characters)"
+          # these in at build time, so a key that never reaches the build
+          # silently ships a quote form that falls back to opening the
+          # visitor's own email app. Reported to the run summary as well as
+          # the log, so it is readable without opening the job.
+          say() { echo "$1"; echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          if [ -n "$(echo "$KEY_VAR" | tr -d '[:space:]')" ]; then
+            say "Web3Forms key: SET as a repository Variable (${#KEY_VAR} characters)"
+          elif [ -n "$(echo "$KEY_SECRET" | tr -d '[:space:]')" ]; then
+            say "Web3Forms key: SET as a repository Secret (${#KEY_SECRET} characters)"
           else
-            echo "Web3Forms key: NOT SET -- the quote form will fall back to mailto"
+            say "Web3Forms key: NOT SET -- enquiries will open the visitor's email app"
           fi
           if [ -n "$(echo "$ENDPOINT" | tr -d '[:space:]')" ]; then
-            echo "Custom form endpoint: SET"
+            say "Custom form endpoint: SET"
           else
-            echo "Custom form endpoint: not set"
+            say "Custom form endpoint: not set"
           fi
       - name: Build static export
         run: npm run build
@@ -72,12 +77,16 @@ jobs:
           # form falls back to opening the visitor's email client; set the
           # repo variable to activate real submissions with the floor-plan
           # attachment riding along.
-          NEXT_PUBLIC_FORM_ENDPOINT: ${{ vars.NEXT_PUBLIC_FORM_ENDPOINT }}
+          NEXT_PUBLIC_FORM_ENDPOINT: ${{ vars.NEXT_PUBLIC_FORM_ENDPOINT || secrets.NEXT_PUBLIC_FORM_ENDPOINT }}
           # Web3Forms access key — the simplest route: set this repo variable
           # and enquiries (with attachments, on their Pro plan) are emailed
           # straight to the inbox the key was created for. Takes effect on
           # the next deploy; no code changes needed.
-          NEXT_PUBLIC_WEB3FORMS_KEY: ${{ vars.NEXT_PUBLIC_WEB3FORMS_KEY }}
+          # Read from either tab. A Web3Forms access key is public by
+          # design -- it ships in the client bundle and only names the
+          # destination inbox -- so accepting it as a Secret costs nothing
+          # and saves a support round when it lands on the wrong tab.
+          NEXT_PUBLIC_WEB3FORMS_KEY: ${{ vars.NEXT_PUBLIC_WEB3FORMS_KEY || secrets.NEXT_PUBLIC_WEB3FORMS_KEY }}
       - run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
