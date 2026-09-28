@@ -198,6 +198,20 @@ export function HeroV2() {
           installed and supported by Elixa Renewables.
         </p>
         <div className="mt-10 flex flex-wrap items-center gap-4">
+          {/* Quick Quote leads: it is the one action that returns something
+              immediately, so it gets the solid fill. Heat pumps only — solar
+              and the rest still go through the full enquiry form. */}
+          <Link
+            href="/quick-quote"
+            className="group relative overflow-hidden border border-night-accent bg-night-accent px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night transition-colors"
+          >
+            <span className="relative z-10 flex items-center gap-3">
+              Quick Heat Pump Quote
+              <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
+                →
+              </span>
+            </span>
+          </Link>
           <Link
             href="/#solutions"
             className="group relative overflow-hidden border border-night-accent px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:text-night"

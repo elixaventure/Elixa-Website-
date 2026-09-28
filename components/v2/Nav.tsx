@@ -55,11 +55,15 @@ export function NavV2() {
         </nav>
 
         <div className="flex items-center gap-4">
+          {/* Present on every page, at the very top, on phones too — a short
+              label below sm so it still fits beside the logo and the burger.
+              The full enquiry form stays reachable from the menu and footer. */}
           <Link
-            href="/quote"
-            className="hidden border border-night-text/25 px-5 py-2.5 font-techmono text-xs uppercase tracking-[0.14em] text-night-text transition-colors hover:border-night-accent hover:text-night-accent sm:block"
+            href="/quick-quote"
+            className="border border-night-accent bg-night-accent px-4 py-2.5 font-techmono text-xs uppercase tracking-[0.14em] text-night transition-opacity hover:opacity-90 sm:px-5"
           >
-            Request a Survey
+            <span className="sm:hidden">Quote</span>
+            <span className="hidden sm:inline">Quick Quote</span>
           </Link>
           <button
             onClick={() => setOpen((v) => !v)}
@@ -86,7 +90,18 @@ export function NavV2() {
                 {m.label}
               </Link>
             ))}
-            <Link href="/quote" onClick={() => setOpen(false)} className="mt-2 border border-night-accent px-4 py-4 text-center font-techmono text-sm uppercase tracking-[0.14em] text-night-accent">
+            <Link
+              href="/quick-quote"
+              onClick={() => setOpen(false)}
+              className="mt-2 border border-night-accent bg-night-accent px-4 py-4 text-center font-techmono text-sm uppercase tracking-[0.14em] text-night"
+            >
+              Quick Heat Pump Quote
+            </Link>
+            <Link
+              href="/quote"
+              onClick={() => setOpen(false)}
+              className="border border-night-accent px-4 py-4 text-center font-techmono text-sm uppercase tracking-[0.14em] text-night-accent"
+            >
               Request a Survey
             </Link>
           </div>

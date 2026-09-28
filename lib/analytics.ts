@@ -18,6 +18,7 @@ export type ConversionEvent =
   | "quote_start"
   | "quote_step"
   | "quote_submit"
+  | "quick_quote_submit"
   | "calculator_complete"
   | "phone_click"
   | "email_click"

@@ -13,6 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/projects",
     "/case-studies",
     ...CASE_STUDIES.map((c) => `/case-studies/${c.slug}`),
+    "/quick-quote",
     "/grants-funding",
     "/calculator",
     "/quote",

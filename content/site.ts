@@ -79,6 +79,7 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
       { label: "Projects", href: "/projects" },
       { label: "Case Studies", href: "/case-studies" },
       { label: "Grants & Funding", href: "/grants-funding" },
+      { label: "Quick Heat Pump Quote", href: "/quick-quote" },
       { label: "Get a Quote", href: "/quote" },
       { label: "Contact", href: "/contact" },
     ],
