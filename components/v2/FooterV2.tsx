@@ -20,9 +20,11 @@ const COLS: { title: string; items: { label: string; href: string }[] }[] = [
     title: "Company",
     items: [
       { label: "Projects", href: "/projects" },
+      { label: "Case Studies", href: "/case-studies" },
       { label: "Grants & Funding", href: "/grants-funding" },
       { label: "About", href: "/about" },
       { label: "Contact", href: "/contact" },
+      { label: "Quick Heat Pump Quote", href: "/quick-quote" },
       { label: "Request a Survey", href: "/quote" },
     ],
   },
