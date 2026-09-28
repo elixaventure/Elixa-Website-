@@ -14,6 +14,7 @@ const MENU = [
   { label: "Solar", href: "/solar-pv" },
   { label: "Heating", href: "/thermaskirt" },
   { label: "Projects", href: "/projects" },
+  { label: "Case Studies", href: "/case-studies" },
   { label: "Grants", href: "/grants-funding" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
