@@ -185,15 +185,28 @@ export default function UnderfloorHeatingPage() {
             URL, title and headings for exactly that reason. */}
         <section className="border-t border-night-line">
           <div className="mx-auto max-w-[1500px] px-5 py-16 md:px-10 md:py-24">
-            <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
-              {THERMALOOP.maker} — {THERMALOOP.name}
-            </p>
-            <h2 className="v2-narrow mt-4 max-w-[22ch] text-night-text text-3xl font-semibold leading-[1.05] tracking-[-0.02em] md:text-5xl">
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="border border-night-accent px-3 py-1.5 font-techmono text-[11px] uppercase tracking-[0.2em] text-night-accent">
+                {THERMALOOP.flag}
+              </span>
+              <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-faint">
+                {THERMALOOP.maker} — {THERMALOOP.name}
+              </p>
+            </div>
+            <h2 className="v2-narrow mt-5 max-w-[22ch] text-night-text text-3xl font-semibold leading-[1.05] tracking-[-0.02em] md:text-5xl">
               {THERMALOOP.standfirst}
             </h2>
             <p className="mt-6 max-w-[62ch] text-base leading-relaxed text-night-muted md:text-lg">
               {THERMALOOP.body}
             </p>
+            <ul className="mt-9 grid max-w-[62rem] gap-0 border-t border-night-line md:grid-cols-3">
+              {THERMALOOP.reasons.map((r) => (
+                <li key={r.k} className="border-b border-night-line px-0 py-6 md:border-b-0 md:border-r md:px-6 md:first:pl-0 md:last:border-r-0">
+                  <p className="font-arch text-lg font-medium text-night-accent">{r.k}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-night-muted">{r.v}</p>
+                </li>
+              ))}
+            </ul>
             {THERMALOOP.specs.length > 0 && (
               <dl className="mt-8 grid max-w-[46rem] divide-y divide-night-line border-y border-night-line">
                 {THERMALOOP.specs.map((sp) => (

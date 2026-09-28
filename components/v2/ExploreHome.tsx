@@ -285,8 +285,8 @@ const SPOTS: Spot[] = [
         body: "Because the whole floor is the emitter, water at just 35 °C heats the room — the lowest flow temperature of any system, and the reason a heat pump feeding underfloor reaches its best efficiency. Floor covering matters: tile and stone perform best, engineered wood works well, and thick carpet needs designing around.",
       },
       {
-        h: "ThermaLoop",
-        body: "DiscreteHeat — the British manufacturer of the ThermaSkirt heated skirting we are accredited to install — now make underfloor heating as well, under the ThermaLoop name. Skirting for some rooms, floors for others, or both: same manufacturer, same low-temperature thinking.",
+        h: "ThermaLoop — our first choice",
+        body: "DiscreteHeat — the British manufacturer of the ThermaSkirt heated skirting we have been accredited to install for years — now make underfloor heating too, under the ThermaLoop name. Knowing how their kit goes together and how it holds up in our customers' homes is why it is where we start. Skirting for some rooms, floors for others, or both: one manufacturer, designed to work together.",
       },
     ],
     faqs: [
