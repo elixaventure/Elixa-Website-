@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SmoothScroll } from "@/components/v2/SmoothScroll";
 import { NavV2 } from "@/components/v2/Nav";
 import { FooterV2 } from "@/components/v2/FooterV2";
-import { UNDERFLOOR_SYSTEMS, UNDERFLOOR_NOTE } from "@/content/underfloorSystems";
+import { UNDERFLOOR_SYSTEMS, UNDERFLOOR_NOTE, THERMALOOP } from "@/content/underfloorSystems";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -177,6 +177,46 @@ export default function UnderfloorHeatingPage() {
                 </details>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ThermaLoop — the branded system, inside the category people
+            actually search for. The page keeps "underfloor heating" in its
+            URL, title and headings for exactly that reason. */}
+        <section className="border-t border-night-line">
+          <div className="mx-auto max-w-[1500px] px-5 py-16 md:px-10 md:py-24">
+            <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
+              {THERMALOOP.maker} — {THERMALOOP.name}
+            </p>
+            <h2 className="v2-narrow mt-4 max-w-[22ch] text-night-text text-3xl font-semibold leading-[1.05] tracking-[-0.02em] md:text-5xl">
+              {THERMALOOP.standfirst}
+            </h2>
+            <p className="mt-6 max-w-[62ch] text-base leading-relaxed text-night-muted md:text-lg">
+              {THERMALOOP.body}
+            </p>
+            {THERMALOOP.specs.length > 0 && (
+              <dl className="mt-8 grid max-w-[46rem] divide-y divide-night-line border-y border-night-line">
+                {THERMALOOP.specs.map((sp) => (
+                  <div
+                    key={sp.k}
+                    className="flex flex-col gap-1 py-3 md:flex-row md:items-baseline md:justify-between md:gap-6"
+                  >
+                    <dt className="font-techmono text-[12px] uppercase tracking-[0.18em] text-night-faint md:text-[11px]">
+                      {sp.k}
+                    </dt>
+                    <dd className="text-base font-medium text-night-text md:text-right md:text-sm">
+                      {sp.v}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            <Link
+              href="/thermaskirt"
+              className="mt-8 inline-flex items-center gap-3 border border-night-text/25 px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
+            >
+              See ThermaSkirt <span aria-hidden>→</span>
+            </Link>
           </div>
         </section>
 
