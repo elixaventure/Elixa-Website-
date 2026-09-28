@@ -37,6 +37,25 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Check the enquiry inbox is wired up
+        env:
+          KEY: ${{ vars.NEXT_PUBLIC_WEB3FORMS_KEY }}
+          ENDPOINT: ${{ vars.NEXT_PUBLIC_FORM_ENDPOINT }}
+        run: |
+          # Presence and length only — never the value. A static export bakes
+          # these in at build time, so a variable that is missing, misspelled
+          # or added as a Secret instead silently ships a quote form that
+          # falls back to opening the visitor's own email app.
+          if [ -n "$(echo "$KEY" | tr -d '[:space:]')" ]; then
+            echo "Web3Forms key: SET (${#KEY} characters)"
+          else
+            echo "Web3Forms key: NOT SET -- the quote form will fall back to mailto"
+          fi
+          if [ -n "$(echo "$ENDPOINT" | tr -d '[:space:]')" ]; then
+            echo "Custom form endpoint: SET"
+          else
+            echo "Custom form endpoint: not set"
+          fi
       - name: Build static export
         run: npm run build
         env:
