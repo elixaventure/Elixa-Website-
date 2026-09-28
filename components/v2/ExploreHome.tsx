@@ -138,7 +138,7 @@ const SPOTS: Spot[] = [
       { k: "Output", v: "3–4 kWh heat per kWh in" },
       { k: "SCOP", v: "≈ 4.0 with 40 °C emitters" },
       { k: "Flow temp design", v: "35–55 °C by emitter" },
-      { k: "Grant", v: "£7,500 — £9,000 off oil/LPG" },
+      { k: "Grant", v: "Up to £9,000" },
     ],
     sections: [
       {
@@ -313,7 +313,7 @@ const SPOTS: Spot[] = [
     scale: 2.1,
     title: "ThermaSkirt Heated Skirting",
     blurb:
-      "The skirting board becomes the radiator — a discreet aluminium perimeter emitter around every room that frees the walls and retrofits with far less disruption than underfloor.",
+      "The skirting board becomes the radiator — a discrete aluminium perimeter emitter around every room that frees the walls and retrofits with far less disruption than underfloor.",
     stats: [
       { k: "Flow temp", v: "40 °C — heat-pump ready" },
       { k: "Heat pump SCOP", v: "≈ 4.0" },

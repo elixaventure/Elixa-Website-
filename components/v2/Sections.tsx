@@ -256,7 +256,13 @@ export function Grants() {
       <div className="mx-auto grid max-w-[1500px] items-center gap-12 px-5 py-24 md:px-10 md:py-36 lg:grid-cols-2">
         <div>
           <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">Grants & funding</p>
-          <motion.p {...rise} className="v2-narrow mt-5 font-arch text-[5.5rem] font-semibold leading-none tracking-[-0.03em] text-night-text md:text-[8rem]">
+          {/* "Up to" carries real weight here: £9,000 is the off-gas-grid
+              oil/LPG rate, not what every home gets. The qualifying detail
+              sits directly underneath. */}
+          <motion.p {...rise} className="mt-5 font-techmono text-sm uppercase tracking-[0.24em] text-night-muted">
+            Up to
+          </motion.p>
+          <motion.p {...rise} className="v2-narrow mt-1 font-arch text-[5.5rem] font-semibold leading-none tracking-[-0.03em] text-night-text md:text-[8rem]">
             £9,000
           </motion.p>
           <p className="mt-3 max-w-[40ch] text-lg text-night-muted">
