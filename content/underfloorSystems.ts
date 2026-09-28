@@ -94,10 +94,39 @@ export const UNDERFLOOR_NOTE =
 export const THERMALOOP = {
   name: "ThermaLoop",
   maker: "DiscreteHeat",
-  standfirst:
-    "Underfloor heating from the manufacturer behind ThermaSkirt.",
+  /**
+   * Framed as Elixa's own preference, not as measured performance.
+   *
+   * "Best performing" or "most efficient" would be a comparative claim, and
+   * neither we nor the customer has a single output or efficiency figure for
+   * ThermaLoop to stand it up — the product is not even publicly listed yet.
+   * Under the CAP code that is the kind of claim that has to be substantiated
+   * on request. What IS substantiated is the relationship: years as an
+   * accredited installer of this manufacturer's other product. So the claim
+   * made here is that Elixa trust them, and why — which is Elixa's to make.
+   *
+   * If DiscreteHeat publish performance data, a stronger claim can be made
+   * on the back of it. Until then this is the honest version.
+   */
+  flag: "Our first choice",
+  standfirst: "The underfloor system we reach for first.",
   body:
-    "DiscreteHeat are the British manufacturer of ThermaSkirt, the heated skirting we have been accredited to install for years. They now make underfloor heating too — so whether your rooms are better suited to skirting, to floors, or to a mix of both, the same low-temperature design thinking runs through the lot, from one manufacturer we already know well.",
+    "DiscreteHeat are the British manufacturer of ThermaSkirt, the heated skirting we have been accredited to install for years — long enough to know how their kit goes together, how it holds up in our customers' homes, and what their support is like on the rare occasion something needs sorting. Now they make underfloor heating as well. That track record is why ThermaLoop is where we start, and why we are happy to put our name to it.",
+  /** Every one of these is a fact about Elixa or the maker, not a measurement. */
+  reasons: [
+    {
+      k: "A manufacturer we know",
+      v: "Years as accredited installers of their skirting system, not a supplier we picked from a catalogue.",
+    },
+    {
+      k: "British-made",
+      v: "Designed and manufactured in the UK, with the lead times and support that come with it.",
+    },
+    {
+      k: "Skirting and floors, one maker",
+      v: "Where some rooms suit skirting and others suit floors, both come from the same place and are designed to work together.",
+    },
+  ],
   /** Filled in when DiscreteHeat provide them. Empty renders nothing. */
   specs: [] as { k: string; v: string }[],
 };
