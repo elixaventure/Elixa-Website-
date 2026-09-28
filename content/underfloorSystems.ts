@@ -78,3 +78,26 @@ export const UNDERFLOOR_SYSTEMS: UnderfloorSystem[] = [
 /** the honest caveat that sits under the systems */
 export const UNDERFLOOR_NOTE =
   "Outputs are typical design values and depend on floor covering, insulation and room heat loss — tile and stone give the most, thick carpet the least. The right method falls out of the survey: what your floors are made of, how much height you can give up, and what's heating the water.";
+
+/**
+ * THERMALOOP — DiscreteHeat's underfloor heating.
+ *
+ * The brand name lives here alone so correcting its styling is a one-line
+ * change. It is spelled to match ThermaSkirt, its sibling product from the
+ * same manufacturer; check it against DiscreteHeat's own literature.
+ *
+ * Deliberately no build-up heights, outputs or pipe sizes: we do not have
+ * them from the manufacturer, and inventing specification figures for a
+ * named product is not something this site does. Add them to `specs` when
+ * DiscreteHeat supply them and the strip below will render them.
+ */
+export const THERMALOOP = {
+  name: "ThermaLoop",
+  maker: "DiscreteHeat",
+  standfirst:
+    "Underfloor heating from the manufacturer behind ThermaSkirt.",
+  body:
+    "DiscreteHeat are the British manufacturer of ThermaSkirt, the heated skirting we have been accredited to install for years. They now make underfloor heating too — so whether your rooms are better suited to skirting, to floors, or to a mix of both, the same low-temperature design thinking runs through the lot, from one manufacturer we already know well.",
+  /** Filled in when DiscreteHeat provide them. Empty renders nothing. */
+  specs: [] as { k: string; v: string }[],
+};
