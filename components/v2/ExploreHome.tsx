@@ -138,7 +138,7 @@ const SPOTS: Spot[] = [
       { k: "Output", v: "3–4 kWh heat per kWh in" },
       { k: "SCOP", v: "≈ 4.0 with 40 °C emitters" },
       { k: "Flow temp design", v: "35–55 °C by emitter" },
-      { k: "Grant", v: "£7,500 — £9,000 off oil/LPG" },
+      { k: "Grant", v: "Up to £9,000" },
     ],
     sections: [
       {
