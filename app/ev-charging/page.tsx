@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SmoothScroll } from "@/components/v2/SmoothScroll";
 import { NavV2 } from "@/components/v2/Nav";
 import { FooterV2 } from "@/components/v2/FooterV2";
+import { BackLink } from "@/components/v2/BackLink";
 import { EV_CHARGER_RANGE, EV_NOTE } from "@/content/evChargerRange";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
@@ -42,6 +43,9 @@ export default function EvChargingPage() {
         {/* header */}
         <header className="mx-auto grid max-w-[1500px] items-start gap-10 px-5 pb-16 pt-36 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] md:gap-16 md:px-10 md:pb-20 md:pt-44">
           <div>
+            <div className="mb-6">
+              <BackLink href="/#solutions" label="All solutions" />
+            </div>
             <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
               EV charging — the range
             </p>

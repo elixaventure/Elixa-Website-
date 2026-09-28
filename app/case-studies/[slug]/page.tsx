@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SmoothScroll } from "@/components/v2/SmoothScroll";
 import { NavV2 } from "@/components/v2/Nav";
 import { FooterV2 } from "@/components/v2/FooterV2";
+import { BackLink } from "@/components/v2/BackLink";
 import { CASE_STUDIES } from "@/content/caseStudies";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
@@ -31,6 +32,9 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
 
         {/* header */}
         <header className="mx-auto max-w-[1500px] px-5 pb-12 pt-36 md:px-10 md:pb-16 md:pt-44">
+          <div className="mb-6">
+            <BackLink href="/case-studies" label="All case studies" />
+          </div>
           <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
             {cs.kind}
           </p>
