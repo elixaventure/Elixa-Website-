@@ -313,7 +313,7 @@ const SPOTS: Spot[] = [
     scale: 2.1,
     title: "ThermaSkirt Heated Skirting",
     blurb:
-      "The skirting board becomes the radiator — a discreet aluminium perimeter emitter around every room that frees the walls and retrofits with far less disruption than underfloor.",
+      "The skirting board becomes the radiator — a discrete aluminium perimeter emitter around every room that frees the walls and retrofits with far less disruption than underfloor.",
     stats: [
       { k: "Flow temp", v: "40 °C — heat-pump ready" },
       { k: "Heat pump SCOP", v: "≈ 4.0" },
