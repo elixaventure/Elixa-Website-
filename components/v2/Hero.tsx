@@ -67,16 +67,73 @@ export function HeroV2() {
     };
   }, []);
 
-  // video: show only if the file actually exists
+  // Video: reveal and play, without depending on catching a single event.
+  //
+  // The previous version only revealed the video inside a "canplay" listener
+  // attached after hydration. When that event had already fired — cached file,
+  // fast connection — the listener never ran, so the video sat at opacity 0
+  // and was never played: indistinguishable from the video being broken, and
+  // "fixed" by a reload that happened to land the other side of the race.
+  //
+  // So: act on current readyState as well as future events, try play on each,
+  // and retry when the tab comes back or the visitor first touches the page
+  // (a real gesture lifts any autoplay refusal).
   useEffect(() => {
     const v = video.current;
     if (!v) return;
-    const onCan = () => {
+
+    // React does not reliably reflect `muted` to the DOM attribute, and iOS
+    // refuses to autoplay anything it does not consider muted.
+    v.muted = true;
+
+    let done = false;
+    const reveal = () => {
       v.style.opacity = "1";
-      v.play().catch(() => {});
     };
-    v.addEventListener("canplay", onCan);
-    return () => v.removeEventListener("canplay", onCan);
+    const tryPlay = () => {
+      const p = v.play();
+      if (p && typeof p.then === "function") {
+        p.then(() => {
+          done = true;
+          reveal();
+        }).catch(() => {
+          /* autoplay refused — the poster stands in until a gesture */
+        });
+      }
+    };
+
+    // HAVE_CURRENT_DATA or better: there is already a frame to show.
+    if (v.readyState >= 2) {
+      reveal();
+      tryPlay();
+    }
+
+    const onReady = () => {
+      reveal();
+      tryPlay();
+    };
+    const onVisible = () => {
+      if (!document.hidden && !done) tryPlay();
+    };
+    const onGesture = () => {
+      if (!done) tryPlay();
+    };
+
+    v.addEventListener("loadeddata", onReady);
+    v.addEventListener("canplay", onReady);
+    v.addEventListener("playing", reveal);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pointerdown", onGesture, { once: true });
+    window.addEventListener("touchstart", onGesture, { once: true });
+
+    return () => {
+      v.removeEventListener("loadeddata", onReady);
+      v.removeEventListener("canplay", onReady);
+      v.removeEventListener("playing", reveal);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pointerdown", onGesture);
+      window.removeEventListener("touchstart", onGesture);
+    };
   }, []);
 
   // cinematic scroll transition out of the hero
@@ -110,10 +167,16 @@ export function HeroV2() {
           loop
           autoPlay
           playsInline
-          preload="metadata"
+          preload="auto"
           poster={`${BASE}/media/hero-poster.jpg`}
           className="absolute inset-0 h-full w-full object-cover object-[50%_30%] opacity-0 transition-opacity duration-1000 md:object-center"
         >
+          {/* Both kept deliberately. They are within 80 kB of each other and
+              each visitor downloads only one, so the pair costs nothing per
+              visit and buys full coverage: Chromium builds without the
+              proprietary H.264 decoder need the VP9, iOS needs the mp4.
+              preload="auto" because this is the hero — always in view, meant
+              to play, and now a third of the bytes it used to be. */}
           <source src={`${BASE}/media/hero.webm`} type="video/webm" />
           <source src={`${BASE}/media/hero.mp4`} type="video/mp4" />
         </video>
