@@ -9,6 +9,7 @@ import {
   type SignOff,
 } from "@/content/signoffs";
 import { PhotoStrip } from "@/components/v2/Lightbox";
+import { Stars } from "@/components/v2/Stars";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -49,10 +50,12 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
             </h2>
           </div>
           {summary && (
-            <p className="font-techmono text-[11px] uppercase tracking-[0.18em] text-night-faint">
-              {summary.average} out of 5 · {summary.count}{" "}
-              {summary.count === 1 ? "review" : "reviews"}
-            </p>
+            <div className="flex items-center gap-3">
+              <Stars value={summary.average} count={summary.count} size={18} />
+              <span className="font-techmono text-[11px] uppercase tracking-[0.18em] text-night-text">
+                {summary.average} out of 5
+              </span>
+            </div>
           )}
         </div>
 
@@ -85,6 +88,11 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
                   </p>
                 </div>
 
+                {/* Where the eye lands, rather than buried under the write-up.
+                    Absent entirely when the customer did not leave one — an
+                    empty row of outlines reads as nought out of five. */}
+                {typeof s.rating === "number" && <Stars value={s.rating} className="mt-4" size={16} />}
+
                 {/* The admin types this into a text box in TaskFlow, so the line
                     breaks they put in are meant. */}
                 <p className="mt-4 whitespace-pre-line text-base leading-relaxed text-night-muted">
@@ -113,9 +121,10 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
                     </p>
                     <footer className="mt-3 font-techmono text-[11px] uppercase tracking-[0.16em] text-night-faint">
                       {/* Anonymous is a choice the customer makes at sign-off,
-                          so it has to read as deliberate rather than missing. */}
+                          so it has to read as deliberate rather than missing.
+                          No rating repeated here — the stars above already
+                          carry it, and twice reads as sales copy. */}
                       {s.firstName ? `${s.firstName}, ${s.area}` : s.area}
-                      {typeof s.rating === "number" && ` · ${s.rating}/5`}
                     </footer>
                   </blockquote>
                 )}
