@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { recentSignOffs, signOffMonth, ratingSummary, type SignOff } from "@/content/signoffs";
+import {
+  recentSignOffs,
+  signOffMonth,
+  ratingSummary,
+  signOffSlug,
+  systemLabel,
+  SIGNOFFS,
+  type SignOff,
+} from "@/content/signoffs";
 import { PhotoStrip } from "@/components/v2/Lightbox";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
@@ -14,7 +22,7 @@ const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 /** What the viewer shows under the photograph, so it is not context-free. */
 function contextFor(s: SignOff) {
   return {
-    system: s.system,
+    system: systemLabel(s),
     credit: s.firstName ? `${s.firstName}, ${s.area}` : s.area,
     month: signOffMonth(s),
     comment: s.comment,
@@ -70,7 +78,7 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
               <div className="p-6">
                 <div className="flex flex-wrap items-baseline justify-between gap-3">
                   <p className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-accent">
-                    {s.system}
+                    {systemLabel(s)}
                   </p>
                   <p className="font-techmono text-[11px] uppercase tracking-[0.16em] text-night-faint">
                     {signOffMonth(s)}
@@ -87,6 +95,16 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
                 {s.video && s.photos?.length ? (
                   <PhotoStrip photos={s.photos} variant="link" className="mt-4" context={contextFor(s)} />
                 ) : null}
+
+                <Link
+                  href={`/completed/${signOffSlug(s)}`}
+                  className="group mt-5 inline-flex items-center gap-2 font-techmono text-[11px] uppercase tracking-[0.16em] text-night-accent transition-colors hover:text-night-text"
+                >
+                  Read about this job{" "}
+                  <span aria-hidden className="inline-block transition-transform group-hover:translate-x-1">
+                    →
+                  </span>
+                </Link>
 
                 {s.comment && (
                   <blockquote className="mt-6 border-l-2 border-night-accent pl-4">
@@ -106,12 +124,23 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
           ))}
         </div>
 
-        <Link
-          href="/quote"
-          className="mt-12 inline-flex items-center gap-3 border border-night-accent px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
-        >
-          Book your free survey <span aria-hidden>→</span>
-        </Link>
+        <div className="mt-12 flex flex-wrap gap-4">
+          <Link
+            href="/quote"
+            className="inline-flex items-center gap-3 border border-night-accent px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
+          >
+            Book your free survey <span aria-hidden>→</span>
+          </Link>
+          {/* Only worth offering once there is more behind it than is shown. */}
+          {SIGNOFFS.length > items.length && (
+            <Link
+              href="/completed"
+              className="inline-flex items-center gap-3 border border-night-line px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-muted transition-colors hover:border-night-accent hover:text-night-text"
+            >
+              All {SIGNOFFS.length} completed jobs
+            </Link>
+          )}
+        </div>
       </div>
     </section>
   );
