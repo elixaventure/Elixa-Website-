@@ -21,8 +21,33 @@ const STOPS = [
   "#D4DBE2 95%",
   "#EEF2F6 100%",
 ];
-const RISE = `linear-gradient(to bottom, ${STOPS.join(", ")})`;
 const FALL = `linear-gradient(to top, ${STOPS.join(", ")})`;
+
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
+/**
+ * Earth's limb, above the form.
+ *
+ * The photograph carries the horizon: black at the top, the sunlit rim,
+ * cloud and atmosphere, settling into daylight. Stretched to the strip
+ * rather than cropped to it, so the rim always lands inside the band
+ * whatever the viewport — a band of atmosphere squashed a little reads as
+ * atmosphere; one cropped so the rim falls outside reads as a mistake.
+ *
+ * The gradient on top pins the two joins. The photograph's own top and
+ * bottom rows are within two or three levels of the sections either side,
+ * and two or three levels across a full-width flat area is a visible line.
+ */
+const HORIZON: React.CSSProperties = {
+  backgroundColor: "#080B0F",
+  backgroundImage: [
+    "linear-gradient(to bottom, #080B0F 0%, rgba(8,11,15,0) 12%, rgba(238,242,246,0) 88%, #EEF2F6 100%)",
+    `url("${BASE}/media/horizon.jpg")`,
+  ].join(", "),
+  backgroundSize: "100% 100%, 100% 100%",
+  backgroundRepeat: "no-repeat, no-repeat",
+  backgroundPosition: "center, center",
+};
 
 export const metadata: Metadata = {
   title: "Request a Free Survey",
@@ -60,7 +85,7 @@ export default function QuotePage() {
             the form's own card floats on the light, then it fades back down
             into the footer. No hard edge anywhere. */}
         <section>
-          <div aria-hidden className="h-36 w-full md:h-56" style={{ background: RISE }} />
+          <div aria-hidden className="h-36 w-full md:h-56" style={HORIZON} />
           <div className="bg-[#EEF2F6]">
             <div className="mx-auto max-w-[1500px] px-5 pb-14 text-navy md:px-10 md:pb-20" data-lenis-prevent>
               <QuoteLauncher />
