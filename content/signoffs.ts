@@ -55,10 +55,73 @@ export interface SignOff {
 }
 
 /**
- * Populated from signoffs.json at build time once the TaskFlow integration
- * is live. Until then the sections that read it render nothing.
+ * Read from content/signoffs.json at build time — the file TaskFlow writes.
+ *
+ * Read from disk in a try/catch rather than imported, deliberately. This file
+ * is written by an external system, and a plain import means one malformed
+ * character there fails the build and blocks every later change to the site
+ * until somebody notices. Instead a broken file degrades to no sign-offs, the
+ * site keeps building, and the reason is printed in the build log.
+ *
+ * Safe because only server components read this. If that ever changes, this
+ * has to change with it.
  */
-export const SIGNOFFS: SignOff[] = [];
+function loadSignOffs(): SignOff[] {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const fs = require("fs") as typeof import("fs");
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const path = require("path") as typeof import("path");
+    const file = path.join(process.cwd(), "content", "signoffs.json");
+    if (!fs.existsSync(file)) return [];
+    const raw: unknown = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (!Array.isArray(raw)) {
+      console.warn("[signoffs] expected an array — ignoring the file");
+      return [];
+    }
+    const ok: SignOff[] = [];
+    raw.forEach((item, i) => {
+      const bad = invalidReason(item);
+      if (bad) {
+        // One malformed entry must not take the good ones down with it.
+        console.warn(`[signoffs] skipping entry ${i}: ${bad}`);
+        return;
+      }
+      ok.push(item as SignOff);
+    });
+    return ok;
+  } catch (e) {
+    console.warn("[signoffs] could not be read —", (e as Error).message);
+    return [];
+  }
+}
+
+/** Returns why an entry is unusable, or null when it is fine. */
+function invalidReason(v: unknown): string | null {
+  if (typeof v !== "object" || v === null) return "not an object";
+  const o = v as Record<string, unknown>;
+  for (const k of ["id", "date", "area", "summary", "system"]) {
+    if (typeof o[k] !== "string" || !(o[k] as string).trim()) return `missing ${k}`;
+  }
+  if (typeof o.firstName !== "string") return "missing firstName (use \"\" for anonymous)";
+  if (Number.isNaN(Date.parse(o.date as string))) return `unparseable date "${o.date}"`;
+  if (o.rating !== undefined) {
+    const r = o.rating;
+    if (typeof r !== "number" || r < 1 || r > 5) return `rating must be 1-5, got ${String(r)}`;
+  }
+  if (o.photos !== undefined) {
+    if (!Array.isArray(o.photos)) return "photos must be an array";
+    for (const ph of o.photos as unknown[]) {
+      const q = ph as Record<string, unknown>;
+      if (typeof q?.src !== "string" || typeof q?.alt !== "string") {
+        return "each photo needs src and alt";
+      }
+    }
+  }
+  return null;
+}
+
+export const SIGNOFFS: SignOff[] = loadSignOffs();
 
 /** Newest first — what a visitor wants, and what recency signals reward. */
 export function recentSignOffs(limit?: number): SignOff[] {
