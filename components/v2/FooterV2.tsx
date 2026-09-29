@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { site } from "@/content/site";
+import { site, legalNav } from "@/content/site";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -101,6 +101,21 @@ export function FooterV2() {
           <p className="font-techmono text-[11px] uppercase tracking-[0.14em] text-night-faint">
             © {new Date().getFullYear()} {site.legalName}
           </p>
+          {/* A UK business site needs its privacy and cookie policies
+              reachable from every page; the v2 footer had no legal row at
+              all. Driven from legalNav so it stays in one place. */}
+          <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            {legalNav.map((l) => (
+              <li key={l.href}>
+                <Link
+                  href={l.href}
+                  className="font-techmono text-[11px] uppercase tracking-[0.14em] text-night-faint transition-colors hover:text-night-text"
+                >
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
           <p className="font-techmono text-[11px] uppercase tracking-[0.14em] text-night-faint">{site.areaServed}</p>
         </div>
       </div>

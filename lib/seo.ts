@@ -13,8 +13,17 @@ export function pageMeta(opts: {
   rawTitle?: string;
 }): Metadata {
   const url = `${site.url}${opts.path ?? ""}`;
-  const title = opts.rawTitle ?? titleTemplate(opts.title);
+  // The root layout already appends " | Elixa Renewables Group" via its title
+  // template, so the page title goes in bare — templating it here too was
+  // producing "Privacy Policy | Elixa Renewables Group | Elixa Renewables
+  // Group" and eating characters Google truncates at around 60. A rawTitle is
+  // marked absolute so it bypasses the template entirely.
   const description = opts.description ?? site.description;
+  const title = opts.rawTitle
+    ? { absolute: opts.rawTitle }
+    : (opts.title ?? `${site.name} — ${site.tagline}`);
+  // Social cards do not go through the template, so they carry the brand.
+  const socialTitle = opts.rawTitle ?? titleTemplate(opts.title);
   return {
     title,
     description,
@@ -23,14 +32,14 @@ export function pageMeta(opts: {
       type: "website",
       url,
       siteName: site.name,
-      title,
+      title: socialTitle,
       description,
       locale: "en_GB",
       images: [{ url: `${site.url}/og.png`, width: 1200, height: 630, alt: site.name }],
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: socialTitle,
       description,
       images: [`${site.url}/og.png`],
     },

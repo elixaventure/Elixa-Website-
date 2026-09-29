@@ -19,6 +19,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/quote",
     "/contact",
     ...serviceSlugs.map((s) => `/${s}`),
+    "/photo-permission",
     "/privacy-policy",
     "/cookie-policy",
     "/terms",
