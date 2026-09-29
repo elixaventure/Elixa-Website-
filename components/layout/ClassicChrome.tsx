@@ -18,6 +18,7 @@ const V2_ROUTES = new Set([
   "/ev-charging",
   "/air-conditioning",
   "/projects",
+  "/completed",
   "/case-studies",
   "/grants-funding",
   "/about",
