@@ -90,4 +90,5 @@ export const legalNav: NavItem[] = [
   { label: "Privacy Policy", href: "/privacy-policy" },
   { label: "Cookie Policy", href: "/cookie-policy" },
   { label: "Terms & Conditions", href: "/terms" },
+  { label: "Photo Permission", href: "/photo-permission" },
 ];
