@@ -1,20 +1,12 @@
 import Link from "next/link";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { pageMeta, signOffIndexSchema, reviewSchema, breadcrumbSchema } from "@/lib/seo";
+import { pageMeta, reviewSchema, breadcrumbSchema } from "@/lib/seo";
 import { SmoothScroll } from "@/components/v2/SmoothScroll";
 import { NavV2 } from "@/components/v2/Nav";
 import { FooterV2 } from "@/components/v2/FooterV2";
 import { BackLink } from "@/components/v2/BackLink";
-import {
-  SIGNOFFS,
-  signOffsByMonth,
-  signOffSlug,
-  signOffTitle,
-  systemLabel,
-  ratingSummary,
-} from "@/content/signoffs";
-
-const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
+import { SIGNOFFS, signOffsByMonth, ratingSummary } from "@/content/signoffs";
+import { SignOffCard } from "@/components/v2/SignOffCard";
 
 export const metadata = pageMeta({
   title: "Recently Completed Installations",
@@ -48,9 +40,8 @@ export default function CompletedPage() {
         <JsonLd
           data={
             [
-              signOffIndexSchema(
-                SIGNOFFS.map((s) => ({ slug: signOffSlug(s), title: signOffTitle(s) })),
-              ),
+              // The reviews are visible on this page, which is what Google
+              // requires of review markup — so it belongs here and nowhere else.
               reviewSchema(summary, SIGNOFFS),
               breadcrumbSchema([
                 { name: "Home", path: "/" },
@@ -93,44 +84,9 @@ export default function CompletedPage() {
                 </h2>
 
                 <div className="mt-8 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                  {items.map((s) => {
-                    const slug = signOffSlug(s);
-                    return (
-                      <Link
-                        key={s.id}
-                        href={`/completed/${slug}`}
-                        className="group block border border-night-line transition-colors hover:border-night-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-night-accent"
-                      >
-                        {s.photos?.length ? (
-                          <img
-                            src={`${BASE}${s.photos[0].src}`}
-                            alt={s.photos[0].alt}
-                            loading="lazy"
-                            className="aspect-[4/3] w-full object-cover"
-                          />
-                        ) : null}
-                        <div className="p-6">
-                          <p className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-accent">
-                            {systemLabel(s)}
-                          </p>
-                          <h3 className="v2-narrow mt-3 text-xl font-semibold leading-tight text-night-text">
-                            {signOffTitle(s)}
-                          </h3>
-                          {/* Two lines is enough to know whether to open it;
-                              the whole thing is on the page behind. */}
-                          <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-night-muted">
-                            {s.summary}
-                          </p>
-                          <p className="mt-5 font-techmono text-[11px] uppercase tracking-[0.16em] text-night-accent">
-                            Read about this job{" "}
-                            <span aria-hidden className="inline-block transition-transform group-hover:translate-x-1">
-                              →
-                            </span>
-                          </p>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                  {items.map((s) => (
+                    <SignOffCard key={s.id} s={s} />
+                  ))}
                 </div>
               </div>
             </section>
