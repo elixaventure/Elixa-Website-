@@ -148,26 +148,18 @@ export function signOffMonth(s: SignOff): string {
 /**
  * A readable, permanent URL for one sign-off.
  *
- * Built from the system and the town — the words somebody would actually
- * search — with a short tail from TaskFlow's id so two ThermaSkirt jobs in
- * Manchester can never collide. The tail rather than a counter because a
- * counter would renumber every later job the moment an earlier one is
- * withdrawn, breaking URLs that are already indexed.
+ * Not a route — an anchor on the archive, so one job can still be linked to
+ * and shared without giving it a page of its own to live on. Built from the
+ * system and the town, with a short tail from TaskFlow's id so two
+ * ThermaSkirt jobs in Manchester cannot collide. A tail rather than a
+ * counter, because a counter renumbers every later job the moment an earlier
+ * one is withdrawn, breaking links already sent to people.
  */
 export function signOffSlug(s: SignOff): string {
   const kebab = (t: string) =>
     t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   const tail = s.id.replace(/[^a-z0-9]/gi, "").slice(-6).toLowerCase();
   return [kebab(s.system), kebab(s.area), tail].filter(Boolean).join("-");
-}
-
-export function findSignOff(slug: string): SignOff | undefined {
-  return SIGNOFFS.find((s) => signOffSlug(s) === slug);
-}
-
-/** "ThermaSkirt in Manchester" — the page title, and what people search. */
-export function signOffTitle(s: SignOff): string {
-  return `${systemLabel(s)} in ${s.area}`;
 }
 
 /**
