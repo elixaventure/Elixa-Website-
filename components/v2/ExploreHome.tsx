@@ -664,18 +664,40 @@ export function ExploreHome() {
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-[1500px] flex-wrap gap-x-6 gap-y-2 px-5 pb-16 pt-5 md:px-10 md:pb-24">
-        {SPOTS.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => setActive(s)}
-            className={`py-2 font-techmono text-sm uppercase tracking-[0.16em] transition-colors ${
-              active?.id === s.id ? "text-night-accent" : "text-night-muted hover:text-night-text"
-            }`}
-          >
-            {s.label}
-          </button>
-        ))}
+      {/* The same seven systems as the pins on the house, for anyone who
+          would rather read a list than hunt a photograph — which on a phone
+          is most people. They were bare text in a wrapping row before: no
+          border, no background, and a 34px tap target, so they read as
+          captions rather than as the buttons they always were. */}
+      <div className="mx-auto max-w-[1500px] px-5 pb-16 pt-6 md:px-10 md:pb-24">
+        <p className="font-techmono text-[11px] uppercase tracking-[0.24em] text-night-faint">
+          Or pick a system
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
+          {SPOTS.map((s) => {
+            const on = active?.id === s.id;
+            return (
+              <button
+                key={s.id}
+                onClick={() => setActive(s)}
+                aria-pressed={on}
+                className={`group flex min-h-[64px] items-center justify-between gap-2 border px-4 py-4 text-left font-techmono text-[11px] uppercase leading-tight tracking-[0.14em] transition-colors ${
+                  on
+                    ? "border-night-accent bg-night-accent/12 text-night-accent"
+                    : "border-night-line text-night-muted hover:border-night-accent/60 hover:text-night-text"
+                }`}
+              >
+                <span>{s.label}</span>
+                <span
+                  aria-hidden
+                  className={`shrink-0 transition-transform ${on ? "" : "group-hover:translate-x-0.5"}`}
+                >
+                  →
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
