@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { pageSchema } from "@/lib/seo";
+
 import Link from "next/link";
 import { SmoothScroll } from "@/components/v2/SmoothScroll";
 import { NavV2 } from "@/components/v2/Nav";
@@ -58,6 +61,14 @@ export default function ThermaskirtPage() {
       <style>{`html, body { background-color: #080B0F; }`}</style>
       <div className="v2-grain bg-night font-arch text-night-text antialiased">
         <NavV2 />
+        <JsonLd
+          data={pageSchema({
+            name: "ThermaSkirt Heated Skirting Installation",
+            description: "The skirting board becomes the radiator — profiles, sizes, finishes, outputs and the electric ThermaSkirt-e, fitted room by room with no walls opened and little or no floor lifting.",
+            slug: "thermaskirt",
+            faqs: FAQS,
+          })}
+        />
 
         {/* header */}
         <header className="mx-auto grid max-w-[1500px] items-start gap-10 px-5 pb-16 pt-36 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] md:gap-16 md:px-10 md:pb-20 md:pt-44">

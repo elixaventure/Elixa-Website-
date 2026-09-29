@@ -6,7 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { MobileBar } from "@/components/layout/MobileBar";
 import { Analytics } from "@/components/layout/Analytics";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { organizationSchema, localBusinessSchema } from "@/lib/seo";
+import { organizationSchema, localBusinessSchema, websiteSchema } from "@/lib/seo";
 import { site } from "@/content/site";
 
 export const metadata: Metadata = {
@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en-GB">
       <body>
-        <JsonLd data={[organizationSchema(), localBusinessSchema()]} />
+        <JsonLd data={[organizationSchema(), localBusinessSchema(), websiteSchema()]} />
         <Analytics />
         <a
           href="#main"

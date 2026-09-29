@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { caseStudyIndexSchema, breadcrumbSchema } from "@/lib/seo";
 import Link from "next/link";
 import { SmoothScroll } from "@/components/v2/SmoothScroll";
 import { NavV2 } from "@/components/v2/Nav";
@@ -19,6 +21,15 @@ export default function CaseStudiesPage() {
       <style>{`html, body { background-color: #080B0F; }`}</style>
       <div className="v2-grain bg-night font-arch text-night-text antialiased">
         <NavV2 />
+        <JsonLd
+          data={[
+            caseStudyIndexSchema(CASE_STUDIES),
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Case Studies", path: "/case-studies" },
+            ]),
+          ]}
+        />
 
         {/* header */}
         <header className="mx-auto max-w-[1500px] px-5 pb-14 pt-36 md:px-10 md:pb-16 md:pt-44">

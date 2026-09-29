@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { pageSchema } from "@/lib/seo";
+
 import Link from "next/link";
 import { SmoothScroll } from "@/components/v2/SmoothScroll";
 import { NavV2 } from "@/components/v2/Nav";
@@ -99,6 +102,14 @@ export default function GrantsPage() {
       <style>{`html, body { background-color: #080B0F; }`}</style>
       <div className="v2-grain bg-night font-arch text-night-text antialiased">
         <NavV2 />
+        <JsonLd
+          data={pageSchema({
+            name: "Heat Pump Grants and Funding",
+            description: "The Boiler Upgrade Scheme, 0% VAT on energy-saving installs and the Smart Export Guarantee — what each is worth, who qualifies, and how we handle the paperwork for you.",
+            slug: "grants-funding",
+            faqs: FAQS,
+          })}
+        />
 
         {/* header */}
         <header className="mx-auto max-w-[1500px] px-5 pb-14 pt-36 md:px-10 md:pb-16 md:pt-44">

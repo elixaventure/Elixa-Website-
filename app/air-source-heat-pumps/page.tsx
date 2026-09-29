@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { pageSchema } from "@/lib/seo";
+
 import Link from "next/link";
 import { SmoothScroll } from "@/components/v2/SmoothScroll";
 import { NavV2 } from "@/components/v2/Nav";
@@ -20,6 +23,13 @@ export default function HeatPumpsPage() {
       <style>{`html, body { background-color: #080B0F; }`}</style>
       <div className="v2-grain bg-night font-arch text-night-text antialiased">
         <NavV2 />
+        <JsonLd
+          data={pageSchema({
+            name: "Air Source Heat Pump Installation",
+            description: "The heat pumps we design with — Vaillant, Mitsubishi, Daikin, Samsung and Grant — with honest efficiency figures, and why the survey chooses the unit, not a league table.",
+            slug: "air-source-heat-pumps",
+          })}
+        />
 
         {/* header */}
         <header className="mx-auto grid max-w-[1500px] items-start gap-10 px-5 pb-16 pt-36 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] md:gap-16 md:px-10 md:pb-20 md:pt-44">
