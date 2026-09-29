@@ -75,15 +75,19 @@ export function SectionJump() {
           eating the screen it is meant to save. */}
       <div
         ref={rail}
-        className="mx-auto flex max-w-[1500px] gap-1 overflow-x-auto px-3 py-2 [scrollbar-width:none] md:justify-center md:px-10 [&::-webkit-scrollbar]:hidden">
+        className="mx-auto flex max-w-[1500px] gap-1.5 overflow-x-auto px-3 py-2.5 [scrollbar-width:none] md:justify-center md:px-10 [&::-webkit-scrollbar]:hidden">
         {items.map((l) => (
           <a
             key={l.id}
             href={`#${l.id}`}
             aria-current={active === l.id ? "true" : undefined}
-            className={`shrink-0 whitespace-nowrap px-4 py-2 font-techmono text-[11px] uppercase tracking-[0.16em] transition-colors ${
+            /* Every chip keeps the same geometry whatever its state. Growing
+               the active one would reflow its neighbours on each section
+               change, and on a rail that also scrolls itself to centre the
+               active chip, that reads as a twitch. The pill does the work. */
+            className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 font-techmono text-[12px] uppercase tracking-[0.16em] transition-colors duration-300 ${
               active === l.id
-                ? "text-night-accent"
+                ? "bg-night-accent/15 text-night-accent ring-1 ring-inset ring-night-accent/45"
                 : "text-night-faint hover:text-night-text"
             }`}
           >
