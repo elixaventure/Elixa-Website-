@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { recentSignOffs, signOffMonth, ratingSummary } from "@/content/signoffs";
+import { PhotoStrip } from "@/components/v2/Lightbox";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -52,12 +53,7 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
                   <source src={`${BASE}${s.video.src}`} type="video/mp4" />
                 </video>
               ) : s.photos?.length ? (
-                <img
-                  src={`${BASE}${s.photos[0].src}`}
-                  alt={s.photos[0].alt}
-                  loading="lazy"
-                  className="aspect-[4/3] w-full object-cover"
-                />
+                <PhotoStrip photos={s.photos} />
               ) : null}
 
               <div className="p-6">
@@ -71,6 +67,11 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
                 </div>
 
                 <p className="mt-4 text-base leading-relaxed text-night-muted">{s.summary}</p>
+
+                {/* A card led by a video would otherwise bury its stills. */}
+                {s.video && s.photos?.length ? (
+                  <PhotoStrip photos={s.photos} variant="link" className="mt-4" />
+                ) : null}
 
                 {s.comment && (
                   <blockquote className="mt-6 border-l-2 border-night-accent pl-4">
