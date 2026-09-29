@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { recentSignOffs, signOffMonth, ratingSummary } from "@/content/signoffs";
+import { SignOffGallery } from "@/components/v2/SignOffGallery";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -52,12 +53,7 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
                   <source src={`${BASE}${s.video.src}`} type="video/mp4" />
                 </video>
               ) : s.photos?.length ? (
-                <img
-                  src={`${BASE}${s.photos[0].src}`}
-                  alt={s.photos[0].alt}
-                  loading="lazy"
-                  className="aspect-[4/3] w-full object-cover"
-                />
+                <SignOffGallery photos={s.photos} base={BASE} />
               ) : null}
 
               <div className="p-6">
