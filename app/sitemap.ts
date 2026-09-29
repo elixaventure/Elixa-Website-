@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { site } from "@/content/site";
 import { serviceSlugs } from "@/content/services";
 import { CASE_STUDIES } from "@/content/caseStudies";
+import { SIGNOFFS, signOffSlug } from "@/content/signoffs";
 
 export const dynamic = "force-static";
 
@@ -13,6 +14,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/projects",
     "/case-studies",
     ...CASE_STUDIES.map((c) => `/case-studies/${c.slug}`),
+    "/completed",
+    ...SIGNOFFS.map((s) => `/completed/${signOffSlug(s)}`),
     "/quick-quote",
     "/grants-funding",
     "/calculator",

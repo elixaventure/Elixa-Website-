@@ -319,3 +319,79 @@ export function reviewSchema(
       : {}),
   };
 }
+
+/**
+ * One completed job, marked up.
+ *
+ * Unlike the case studies this has a real sign-off date, so datePublished is
+ * a fact rather than a guess and the freshness signal is honest. The
+ * customer's rating becomes a Review only where they actually left one.
+ */
+export function signOffSchema(s: {
+  slug: string;
+  title: string;
+  summary: string;
+  system: string;
+  area: string;
+  date: string;
+  firstName: string;
+  comment?: string;
+  rating?: number;
+  photos?: { src: string; alt: string }[];
+}) {
+  const url = `${site.url}/completed/${s.slug}`;
+  return {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "@id": `${url}#article`,
+    headline: s.title,
+    description: s.summary,
+    articleSection: s.system,
+    url,
+    datePublished: s.date,
+    author: { "@id": ORG_ID },
+    publisher: { "@id": ORG_ID },
+    isPartOf: { "@id": WEBSITE_ID },
+    inLanguage: "en-GB",
+    ...(s.photos?.length
+      ? { image: s.photos.map((p) => `${site.url}${p.src}`) }
+      : {}),
+    contentLocation: {
+      "@type": "Place",
+      name: s.area,
+      address: { "@type": "PostalAddress", addressLocality: s.area, addressCountry: "GB" },
+    },
+    ...(s.comment && typeof s.rating === "number"
+      ? {
+          review: {
+            "@type": "Review",
+            reviewBody: s.comment,
+            datePublished: s.date,
+            reviewRating: {
+              "@type": "Rating",
+              ratingValue: s.rating,
+              bestRating: 5,
+              worstRating: 1,
+            },
+            // A customer who chose to stay anonymous is not given a name here.
+            ...(s.firstName ? { author: { "@type": "Person", name: s.firstName } } : {}),
+            itemReviewed: { "@id": BUSINESS_ID },
+          },
+        }
+      : {}),
+  };
+}
+
+export function signOffIndexSchema(items: { slug: string; title: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Recently completed installations by Elixa Renewables",
+    itemListElement: items.map((s, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: s.title,
+      url: `${site.url}/completed/${s.slug}`,
+    })),
+  };
+}

@@ -144,3 +144,69 @@ export function signOffMonth(s: SignOff): string {
     ? ""
     : d.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 }
+
+/**
+ * A readable, permanent URL for one sign-off.
+ *
+ * Built from the system and the town — the words somebody would actually
+ * search — with a short tail from TaskFlow's id so two ThermaSkirt jobs in
+ * Manchester can never collide. The tail rather than a counter because a
+ * counter would renumber every later job the moment an earlier one is
+ * withdrawn, breaking URLs that are already indexed.
+ */
+export function signOffSlug(s: SignOff): string {
+  const kebab = (t: string) =>
+    t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const tail = s.id.replace(/[^a-z0-9]/gi, "").slice(-6).toLowerCase();
+  return [kebab(s.system), kebab(s.area), tail].filter(Boolean).join("-");
+}
+
+export function findSignOff(slug: string): SignOff | undefined {
+  return SIGNOFFS.find((s) => signOffSlug(s) === slug);
+}
+
+/** "ThermaSkirt in Manchester" — the page title, and what people search. */
+export function signOffTitle(s: SignOff): string {
+  return `${systemLabel(s)} in ${s.area}`;
+}
+
+/**
+ * Newest first, grouped by the month they were signed off.
+ *
+ * Nothing is ever dropped. Every completed job is a page that can be found,
+ * and five a month compounds — throwing the old ones away would throw away
+ * the reason the site gets found at all.
+ */
+export function signOffsByMonth(): { month: string; items: SignOff[] }[] {
+  const groups: { month: string; items: SignOff[] }[] = [];
+  for (const s of recentSignOffs()) {
+    const month = signOffMonth(s);
+    const last = groups[groups.length - 1];
+    if (last && last.month === month) last.items.push(s);
+    else groups.push({ month, items: [s] });
+  }
+  return groups;
+}
+
+/**
+ * Brand names, spelt the way the brand spells them.
+ *
+ * The system is a free-text field in TaskFlow, so "Thermaskirt" and
+ * "thermaskirt" both arrive, and until now both became an <h1>. This only
+ * corrects the capitals of names we own or install under licence — it never
+ * changes a word, and anything unrecognised passes straight through, so a
+ * new system type is not silently mangled.
+ */
+const BRAND_CASE: Record<string, string> = {
+  thermaskirt: "ThermaSkirt",
+  thermaloop: "ThermaLoop",
+  "thermaloop underfloor": "ThermaLoop underfloor",
+  "air source heat pump": "Air source heat pump",
+  "ground source heat pump": "Ground source heat pump",
+  "solar pv": "Solar PV",
+  "ev charger": "EV charger",
+};
+
+export function systemLabel(s: SignOff): string {
+  return BRAND_CASE[s.system.trim().toLowerCase()] ?? s.system;
+}

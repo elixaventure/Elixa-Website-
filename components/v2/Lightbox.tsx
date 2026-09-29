@@ -40,24 +40,35 @@ export function PhotoStrip({
   className = "",
   variant = "cover",
   context,
+  openAtIndex = 0,
+  showCount = true,
 }: {
   photos: Photo[];
   className?: string;
   /** "link" is for cards already led by a video, so the stills stay reachable. */
   variant?: "cover" | "link";
   context?: PhotoContext;
+  /**
+   * Which photograph this tile shows, and which the viewer opens at. On a
+   * page laying the whole set out, clicking the third and being shown the
+   * first is a small betrayal people notice.
+   */
+  openAtIndex?: number;
+  /** Off where a caption already sits beside the tile and the count would nag. */
+  showCount?: boolean;
 }) {
   const [openAt, setOpenAt] = useState<number | null>(null);
   if (!photos.length) return null;
 
-  const cover = photos[0];
+  const i = Math.min(Math.max(openAtIndex, 0), photos.length - 1);
+  const cover = photos[i];
 
   if (variant === "link") {
     return (
       <>
         <button
           type="button"
-          onClick={() => setOpenAt(0)}
+          onClick={() => setOpenAt(i)}
           className={`inline-flex items-center gap-2 font-techmono text-[11px] uppercase tracking-[0.16em] text-night-accent transition-colors hover:text-night-text focus:outline-none focus-visible:ring-2 focus-visible:ring-night-accent ${className}`}
         >
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
@@ -74,8 +85,12 @@ export function PhotoStrip({
     <>
       <button
         type="button"
-        onClick={() => setOpenAt(0)}
-        aria-label={`View ${photos.length === 1 ? "photograph" : `all ${photos.length} photographs`} — ${cover.alt}`}
+        onClick={() => setOpenAt(i)}
+        aria-label={
+          showCount && photos.length > 1
+            ? `View all ${photos.length} photographs — ${cover.alt}`
+            : `View full size — ${cover.alt}`
+        }
         className={`group relative block w-full overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-night-accent focus-visible:ring-offset-2 focus-visible:ring-offset-night ${className}`}
       >
         <img
@@ -98,7 +113,7 @@ export function PhotoStrip({
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
           </svg>
-          {photos.length > 1 ? `${photos.length} photos` : "View"}
+          {showCount && photos.length > 1 ? `${photos.length} photos` : "View"}
         </span>
       </button>
 
