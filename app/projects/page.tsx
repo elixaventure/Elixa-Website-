@@ -6,6 +6,10 @@ import { SmoothScroll } from "@/components/v2/SmoothScroll";
 import { NavV2 } from "@/components/v2/Nav";
 import { FooterV2 } from "@/components/v2/FooterV2";
 import { INSTALLS } from "@/content/installs";
+import { RecentSignOffs } from "@/components/v2/RecentSignOffs";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { reviewSchema, breadcrumbSchema } from "@/lib/seo";
+import { recentSignOffs, ratingSummary } from "@/content/signoffs";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -26,6 +30,15 @@ export default function ProjectsPage() {
       <style>{`html, body { background-color: #080B0F; }`}</style>
       <div className="v2-grain bg-night font-arch text-night-text antialiased">
         <NavV2 />
+        <JsonLd
+          data={[
+            reviewSchema(ratingSummary(), recentSignOffs()),
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Projects", path: "/projects" },
+            ]),
+          ].filter(Boolean) as object[]}
+        />
 
         {/* header */}
         <header className="mx-auto max-w-[1500px] px-5 pb-14 pt-36 md:px-10 md:pb-16 md:pt-44">
@@ -40,6 +53,8 @@ export default function ProjectsPage() {
             it — the outdoor units, the plant rooms, and the pipework nobody usually shows you.
           </p>
         </header>
+
+        <RecentSignOffs />
 
         {/* installs — alternating editorial rows */}
         <section className="border-t border-night-line">
