@@ -186,24 +186,24 @@ export function HeroV2() {
         <div className="absolute inset-0 [background:radial-gradient(120%_90%_at_50%_40%,transparent_55%,rgba(4,6,9,0.65)_100%)]" />
       </div>
 
-      <div ref={copy} className="relative z-10 mx-auto flex h-full max-w-[1500px] flex-col justify-end px-5 pb-24 pt-28 md:px-10 md:pb-28">
-        <p className="mb-6 font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
+      <div ref={copy} className="relative z-10 mx-auto flex h-full max-w-[1500px] flex-col [justify-content:safe_flex-end] px-5 pb-20 pt-28 md:px-10 md:pb-28">
+        <p className="mb-4 font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent md:mb-6">
           Elixa Renewables — Low-carbon systems
         </p>
-        <h1 className="v2-narrow max-w-[17ch] font-arch text-[12vw] font-semibold leading-[0.98] tracking-[-0.02em] text-night-text sm:text-[8vw] lg:text-[6.2rem]" style={{ textWrap: "balance" }}>
+        <h1 className="v2-narrow max-w-[17ch] font-arch text-[11.5vw] font-semibold leading-[0.96] md:leading-[0.98] tracking-[-0.02em] text-night-text sm:text-[8vw] lg:text-[6.2rem]" style={{ textWrap: "balance" }}>
           Low-carbon heating. Designed around your home.
         </h1>
-        <p className="mt-7 max-w-[52ch] text-base leading-relaxed text-night-muted md:text-lg">
+        <p className="mt-5 max-w-[52ch] text-base leading-relaxed text-night-muted md:mt-7 md:text-lg">
           Heat pumps, solar, modern heating systems and intelligent home energy solutions — designed,
           installed and supported by Elixa Renewables.
         </p>
-        <div className="mt-10 flex flex-wrap items-center gap-4">
+        <div className="mt-7 flex flex-wrap items-center gap-3 md:mt-10 md:gap-4">
           {/* Quick Quote leads: it is the one action that returns something
               immediately, so it gets the solid fill. Heat pumps only — solar
               and the rest still go through the full enquiry form. */}
           <Link
             href="/quick-quote"
-            className="group relative overflow-hidden border border-night-accent bg-night-accent px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night transition-colors"
+            className="group relative overflow-hidden border border-night-accent bg-night-accent px-8 py-4 font-techmono text-sm md:py-5 uppercase tracking-[0.16em] text-night transition-colors"
           >
             <span className="relative z-10 flex items-center gap-3">
               Quick Heat Pump Quote
@@ -214,14 +214,14 @@ export function HeroV2() {
           </Link>
           <Link
             href="/#solutions"
-            className="group relative overflow-hidden border border-night-accent px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:text-night"
+            className="group relative overflow-hidden border border-night-accent px-8 py-4 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:text-night md:py-5"
           >
             <span className="absolute inset-0 -z-0 origin-left scale-x-0 bg-night-accent transition-transform duration-300 ease-out group-hover:scale-x-100" />
             <span className="relative z-10">Explore Our Solutions</span>
           </Link>
           <Link
             href="/quote"
-            className="border border-night-text/25 px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
+            className="hidden border border-night-text/25 px-8 py-4 font-techmono text-sm uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60 sm:inline-block md:py-5"
           >
             Request a Survey
           </Link>
