@@ -4,6 +4,7 @@ import { NavV2 } from "@/components/v2/Nav";
 import { HeroV2 } from "@/components/v2/Hero";
 import { ExploreHome } from "@/components/v2/ExploreHome";
 import { WhyElixa, Projects, Process, Grants, FinalCta } from "@/components/v2/Sections";
+import { RecentSignOffs } from "@/components/v2/RecentSignOffs";
 import { FooterV2 } from "@/components/v2/FooterV2";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function HomePage() {
         <HeroV2 />
         <ExploreHome />
         <WhyElixa />
+        <RecentSignOffs limit={3} />
         <Projects />
         <Process />
         <Grants />
