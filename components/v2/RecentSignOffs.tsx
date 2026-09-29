@@ -66,7 +66,11 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
                   </p>
                 </div>
 
-                <p className="mt-4 text-base leading-relaxed text-night-muted">{s.summary}</p>
+                {/* The admin types this into a text box in TaskFlow, so the line
+                    breaks they put in are meant. */}
+                <p className="mt-4 whitespace-pre-line text-base leading-relaxed text-night-muted">
+                  {s.summary}
+                </p>
 
                 {/* A card led by a video would otherwise bury its stills. */}
                 {s.video && s.photos?.length ? (
