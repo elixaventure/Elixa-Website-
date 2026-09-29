@@ -11,6 +11,22 @@ export interface Photo {
 }
 
 /**
+ * What the photograph is of, beyond the photograph.
+ *
+ * Full screen, a picture of a threshold strip means very little on its own.
+ * Read underneath the system, the town and the customer's own words it means
+ * something, and that is the whole point of the section.
+ */
+export interface PhotoContext {
+  system: string;
+  /** "Sarah, Manchester", or just the town where they stayed anonymous */
+  credit: string;
+  month: string;
+  comment?: string;
+  rating?: number;
+}
+
+/**
  * The cover photograph on a sign-off card, and the full-size viewer behind it.
  *
  * A single 4:3 crop of an installation is not much use to somebody deciding
@@ -23,11 +39,13 @@ export function PhotoStrip({
   photos,
   className = "",
   variant = "cover",
+  context,
 }: {
   photos: Photo[];
   className?: string;
   /** "link" is for cards already led by a video, so the stills stay reachable. */
   variant?: "cover" | "link";
+  context?: PhotoContext;
 }) {
   const [openAt, setOpenAt] = useState<number | null>(null);
   if (!photos.length) return null;
@@ -47,7 +65,7 @@ export function PhotoStrip({
           </svg>
           View {photos.length} {photos.length === 1 ? "photograph" : "photographs"}
         </button>
-        <Lightbox photos={photos} openAt={openAt} onClose={() => setOpenAt(null)} />
+        <Lightbox photos={photos} openAt={openAt} onClose={() => setOpenAt(null)} context={context} />
       </>
     );
   }
@@ -84,7 +102,7 @@ export function PhotoStrip({
         </span>
       </button>
 
-      <Lightbox photos={photos} openAt={openAt} onClose={() => setOpenAt(null)} />
+      <Lightbox photos={photos} openAt={openAt} onClose={() => setOpenAt(null)} context={context} />
     </>
   );
 }
@@ -100,10 +118,12 @@ export function Lightbox({
   photos,
   openAt,
   onClose,
+  context,
 }: {
   photos: Photo[];
   openAt: number | null;
   onClose: () => void;
+  context?: PhotoContext;
 }) {
   const [mounted, setMounted] = useState(false);
   const [i, setI] = useState(0);
@@ -262,9 +282,22 @@ export function Lightbox({
         )}
       </div>
 
-      <p className="mx-auto max-w-[70ch] px-6 py-5 text-center text-sm leading-relaxed text-night-muted md:py-7">
-        {photo.alt}
-      </p>
+      <div className="mx-auto w-full max-w-[70ch] px-6 py-5 text-center md:py-6">
+        <p className="text-sm leading-relaxed text-night-muted">{photo.alt}</p>
+
+        {context && (
+          <p className="mt-3 font-techmono text-[10px] uppercase tracking-[0.18em] text-night-faint">
+            {[context.system, context.credit, context.month].filter(Boolean).join(" · ")}
+            {typeof context.rating === "number" && ` · ${context.rating}/5`}
+          </p>
+        )}
+
+        {context?.comment && (
+          <p className="mt-4 border-t border-night-line pt-4 text-sm leading-relaxed text-night-text">
+            &ldquo;{context.comment}&rdquo;
+          </p>
+        )}
+      </div>
     </div>,
     document.body,
   );

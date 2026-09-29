@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { recentSignOffs, signOffMonth, ratingSummary } from "@/content/signoffs";
+import { recentSignOffs, signOffMonth, ratingSummary, type SignOff } from "@/content/signoffs";
 import { PhotoStrip } from "@/components/v2/Lightbox";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
@@ -11,6 +11,17 @@ const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
  * soon", no placeholder cards. A section promising customer feedback that
  * shows none reads worse than no section.
  */
+/** What the viewer shows under the photograph, so it is not context-free. */
+function contextFor(s: SignOff) {
+  return {
+    system: s.system,
+    credit: s.firstName ? `${s.firstName}, ${s.area}` : s.area,
+    month: signOffMonth(s),
+    comment: s.comment,
+    rating: s.rating,
+  };
+}
+
 export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
   const items = recentSignOffs(limit);
   if (!items.length) return null;
@@ -53,7 +64,7 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
                   <source src={`${BASE}${s.video.src}`} type="video/mp4" />
                 </video>
               ) : s.photos?.length ? (
-                <PhotoStrip photos={s.photos} />
+                <PhotoStrip photos={s.photos} context={contextFor(s)} />
               ) : null}
 
               <div className="p-6">
@@ -74,7 +85,7 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
 
                 {/* A card led by a video would otherwise bury its stills. */}
                 {s.video && s.photos?.length ? (
-                  <PhotoStrip photos={s.photos} variant="link" className="mt-4" />
+                  <PhotoStrip photos={s.photos} variant="link" className="mt-4" context={contextFor(s)} />
                 ) : null}
 
                 {s.comment && (
