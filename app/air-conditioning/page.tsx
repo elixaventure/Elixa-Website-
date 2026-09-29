@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { pageSchema } from "@/lib/seo";
+
 import Link from "next/link";
 import { SmoothScroll } from "@/components/v2/SmoothScroll";
 import { NavV2 } from "@/components/v2/Nav";
@@ -39,6 +42,14 @@ export default function AirConditioningPage() {
       <style>{`html, body { background-color: #080B0F; }`}</style>
       <div className="v2-grain bg-night font-arch text-night-text antialiased">
         <NavV2 />
+        <JsonLd
+          data={pageSchema({
+            name: "Air Conditioning Installation",
+            description: "The wall units we design with — Mitsubishi Electric, Daikin and Fujitsu — whisper-quiet air-to-air heat pumps that cool in summer and heat single rooms efficiently in winter.",
+            slug: "air-conditioning",
+            faqs: FAQS,
+          })}
+        />
 
         {/* header */}
         <header className="mx-auto grid max-w-[1500px] items-start gap-10 px-5 pb-16 pt-36 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] md:gap-16 md:px-10 md:pb-20 md:pt-44">

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { caseStudySchema, breadcrumbSchema } from "@/lib/seo";
 import Link from "next/link";
 import { SmoothScroll } from "@/components/v2/SmoothScroll";
 import { NavV2 } from "@/components/v2/Nav";
@@ -29,6 +31,16 @@ export default function CaseStudyPage({ params }: { params: { slug: string } }) 
       <style>{`html, body { background-color: #080B0F; }`}</style>
       <div className="v2-grain bg-night font-arch text-night-text antialiased">
         <NavV2 />
+        <JsonLd
+          data={[
+            caseStudySchema(cs),
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Case Studies", path: "/case-studies" },
+              { name: cs.title, path: `/case-studies/${cs.slug}` },
+            ]),
+          ]}
+        />
 
         {/* header */}
         <header className="mx-auto max-w-[1500px] px-5 pb-12 pt-36 md:px-10 md:pb-16 md:pt-44">
