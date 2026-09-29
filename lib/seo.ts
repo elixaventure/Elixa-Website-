@@ -259,3 +259,63 @@ export function caseStudyIndexSchema(items: { slug: string; title: string }[]) {
     })),
   };
 }
+
+/**
+ * Review markup, built only from genuine sign-off ratings.
+ *
+ * This is the piece AI assistants reportedly weigh most heavily, and it is
+ * also the one where inventing data would be both dishonest and a breach of
+ * Google's structured data policy — which risks a manual action, not merely
+ * a lost rich result. So it returns null until real ratings exist, and the
+ * numbers come from the sign-offs rather than from anywhere else.
+ *
+ * Emit it on the page where the reviews are actually visible; Google
+ * requires the marked-up reviews to be present on that page.
+ */
+export function reviewSchema(
+  summary: { count: number; average: number } | null,
+  reviews: {
+    id: string;
+    firstName: string;
+    area: string;
+    comment?: string;
+    rating?: number;
+    date: string;
+  }[],
+) {
+  if (!summary) return null;
+  const withComment = reviews.filter((r) => r.comment && typeof r.rating === "number");
+  return {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "@id": BUSINESS_ID,
+    name: site.legalName,
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: summary.average,
+      reviewCount: summary.count,
+      bestRating: 5,
+      worstRating: 1,
+    },
+    ...(withComment.length
+      ? {
+          review: withComment.map((r) => ({
+            "@type": "Review",
+            datePublished: r.date,
+            reviewBody: r.comment,
+            reviewRating: {
+              "@type": "Rating",
+              ratingValue: r.rating,
+              bestRating: 5,
+              worstRating: 1,
+            },
+            author: {
+              "@type": "Person",
+              // Exactly what the customer agreed to publish, nothing more.
+              name: r.firstName ? `${r.firstName}, ${r.area}` : `Customer, ${r.area}`,
+            },
+          })),
+        }
+      : {}),
+  };
+}
