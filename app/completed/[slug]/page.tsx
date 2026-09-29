@@ -7,6 +7,7 @@ import { NavV2 } from "@/components/v2/Nav";
 import { FooterV2 } from "@/components/v2/FooterV2";
 import { BackLink } from "@/components/v2/BackLink";
 import { PhotoStrip } from "@/components/v2/Lightbox";
+import { Stars } from "@/components/v2/Stars";
 import {
   SIGNOFFS,
   findSignOff,
@@ -111,9 +112,11 @@ export default function CompletedJobPage({ params }: { params: { slug: string } 
               <p className="text-xl leading-relaxed text-night-text md:text-2xl">
                 &ldquo;{s.comment}&rdquo;
               </p>
-              <footer className="mt-5 font-techmono text-[11px] uppercase tracking-[0.18em] text-night-faint">
-                {credit}
-                {typeof s.rating === "number" && ` · ${s.rating}/5`}
+              <footer className="mt-5 flex flex-wrap items-center gap-3">
+                {typeof s.rating === "number" && <Stars value={s.rating} size={16} />}
+                <span className="font-techmono text-[11px] uppercase tracking-[0.18em] text-night-faint">
+                  {credit}
+                </span>
               </footer>
             </blockquote>
           </section>

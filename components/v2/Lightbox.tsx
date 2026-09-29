@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Stars } from "@/components/v2/Stars";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -301,10 +302,12 @@ export function Lightbox({
         <p className="text-sm leading-relaxed text-night-muted">{photo.alt}</p>
 
         {context && (
-          <p className="mt-3 font-techmono text-[10px] uppercase tracking-[0.18em] text-night-faint">
-            {[context.system, context.credit, context.month].filter(Boolean).join(" · ")}
-            {typeof context.rating === "number" && ` · ${context.rating}/5`}
-          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+            <p className="font-techmono text-[10px] uppercase tracking-[0.18em] text-night-faint">
+              {[context.system, context.credit, context.month].filter(Boolean).join(" · ")}
+            </p>
+            {typeof context.rating === "number" && <Stars value={context.rating} size={13} />}
+          </div>
         )}
 
         {context?.comment && (
