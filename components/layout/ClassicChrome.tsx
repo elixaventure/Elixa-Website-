@@ -2,34 +2,15 @@
 
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { isV2Route } from "@/lib/v2Routes";
 
 /**
  * The classic (light) site chrome wraps every page EXCEPT the rebuilt dark
- * pages, which carry their own navigation and footer. As inner pages are
- * rebuilt to the new design, add their routes here.
+ * pages, which carry their own navigation and footer. The route list lives
+ * in lib/v2Routes so this and the v2 chrome cannot drift apart.
  */
-const V2_ROUTES = new Set([
-  "/",
-  "/air-source-heat-pumps",
-  "/solar-pv",
-  "/thermaskirt",
-  "/underfloor-heating",
-  "/battery-storage",
-  "/ev-charging",
-  "/air-conditioning",
-  "/projects",
-  "/completed",
-  "/case-studies",
-  "/grants-funding",
-  "/about",
-  "/contact",
-  "/quote",
-  "/quick-quote",
-]);
-
 export function ClassicChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const path = pathname?.replace(/\/$/, "") || "/";
-  if (V2_ROUTES.has(path) || pathname === "/" || path.startsWith("/case-studies/")) return null;
+  if (isV2Route(pathname)) return null;
   return <>{children}</>;
 }

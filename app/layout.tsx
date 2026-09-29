@@ -3,6 +3,8 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { ClassicChrome } from "@/components/layout/ClassicChrome";
 import { Footer } from "@/components/layout/Footer";
+import { V2Chrome } from "@/components/layout/V2Chrome";
+import { MobileNavV2 } from "@/components/v2/MobileNavV2";
 import { MobileBar } from "@/components/layout/MobileBar";
 import { Analytics } from "@/components/layout/Analytics";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -64,6 +66,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Footer />
           <MobileBar />
         </ClassicChrome>
+        <V2Chrome>
+          <MobileNavV2 />
+        </V2Chrome>
       </body>
     </html>
   );
