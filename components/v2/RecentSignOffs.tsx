@@ -53,7 +53,18 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
                   <source src={`${BASE}${s.video.src}`} type="video/mp4" />
                 </video>
               ) : s.photos?.length ? (
-                <SignOffGallery photos={s.photos} base={BASE} />
+                <SignOffGallery
+                  photos={s.photos}
+                  base={BASE}
+                  details={{
+                    system: s.system,
+                    area: s.area,
+                    firstName: s.firstName,
+                    month: signOffMonth(s),
+                    comment: s.comment,
+                    rating: s.rating,
+                  }}
+                />
               ) : null}
 
               <div className="p-6">
