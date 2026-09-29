@@ -411,7 +411,7 @@ export function ExploreHome() {
     : { backgroundSize: "100%", backgroundPosition: "50% 50%" };
 
   return (
-    <section id="solutions" className="relative border-t border-night-line bg-night">
+    <section id="solutions" className="scroll-mt-36 relative border-t border-night-line bg-night">
       <div className="mx-auto max-w-[1500px] px-5 pb-8 pt-20 md:px-10 md:pt-28">
         <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">Solutions</p>
         <h2 className="v2-narrow mt-3 max-w-[18ch] font-arch text-4xl font-semibold leading-[1.02] tracking-[-0.02em] text-night-text md:text-6xl">

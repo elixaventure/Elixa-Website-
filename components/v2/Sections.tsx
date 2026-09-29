@@ -49,8 +49,8 @@ const PRINCIPLES = [
 
 export function WhyElixa() {
   return (
-    <section className="border-t border-night-line bg-night-deep">
-      <div className="mx-auto grid max-w-[1500px] gap-14 px-5 py-24 md:px-10 md:py-36 lg:grid-cols-[1fr_1.1fr] lg:gap-24">
+    <section id="why" className="scroll-mt-36 border-t border-night-line bg-night-deep">
+      <div className="mx-auto grid max-w-[1500px] gap-14 px-5 py-16 md:px-10 md:py-28 lg:grid-cols-[1fr_1.1fr] lg:gap-24">
         <div className="lg:sticky lg:top-32 lg:self-start">
           <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">Why Elixa</p>
           <motion.h2 {...rise} className="v2-narrow mt-4 font-arch text-5xl font-semibold leading-[1.0] tracking-[-0.02em] text-night-text md:text-7xl">
@@ -88,13 +88,15 @@ export function WhyElixa() {
 
 /* The four installation case studies, then the technical guide as a strip. */
 const SPANS = ["lg:col-span-7", "lg:col-span-5", "lg:col-span-5", "lg:col-span-7"];
-const FEATURED = CASE_STUDIES.filter((c) => c.kind === "Installation case study").slice(0, 4);
+// Two on the homepage, not four. The four were 29% of the page on a phone
+// and the other two are one tap away on /case-studies.
+const FEATURED = CASE_STUDIES.filter((c) => c.kind === "Installation case study").slice(0, 2);
 const GUIDE = CASE_STUDIES.find((c) => c.kind === "Technical guide");
 
 export function Projects() {
   return (
-    <section className="border-t border-night-line bg-night">
-      <div className="mx-auto max-w-[1500px] px-5 py-24 md:px-10 md:py-36">
+    <section id="case-studies" className="scroll-mt-36 border-t border-night-line bg-night">
+      <div className="mx-auto max-w-[1500px] px-5 py-16 md:px-10 md:py-28">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">Case studies</p>
@@ -215,8 +217,8 @@ export function Process() {
   }, []);
 
   return (
-    <section className="border-t border-night-line bg-night-deep">
-      <div className="mx-auto max-w-[1500px] px-5 py-24 md:px-10 md:py-36">
+    <section id="process" className="scroll-mt-36 border-t border-night-line bg-night-deep">
+      <div className="mx-auto max-w-[1500px] px-5 py-16 md:px-10 md:py-28">
         <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">How it works</p>
         <h2 className="v2-narrow mt-4 max-w-[18ch] font-arch text-4xl font-semibold leading-[1.02] tracking-[-0.02em] text-night-text md:text-6xl">
           One line, start to finish.
@@ -252,8 +254,8 @@ export function Process() {
 
 export function Grants() {
   return (
-    <section className="border-t border-night-line bg-night">
-      <div className="mx-auto grid max-w-[1500px] items-center gap-12 px-5 py-24 md:px-10 md:py-36 lg:grid-cols-2">
+    <section id="grants" className="scroll-mt-36 border-t border-night-line bg-night">
+      <div className="mx-auto grid max-w-[1500px] items-center gap-12 px-5 py-16 md:px-10 md:py-28 lg:grid-cols-2">
         <div>
           <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">Grants & funding</p>
           {/* "Up to" carries real weight here: £9,000 is the off-gas-grid

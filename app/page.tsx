@@ -5,6 +5,7 @@ import { HeroV2 } from "@/components/v2/Hero";
 import { ExploreHome } from "@/components/v2/ExploreHome";
 import { WhyElixa, Projects, Process, Grants, FinalCta } from "@/components/v2/Sections";
 import { RecentSignOffs } from "@/components/v2/RecentSignOffs";
+import { SectionJump } from "@/components/v2/SectionJump";
 import { FooterV2 } from "@/components/v2/FooterV2";
 
 export const metadata: Metadata = {
@@ -22,9 +23,12 @@ export default function HomePage() {
       <div className="v2-grain bg-night font-arch text-night-text antialiased">
         <NavV2 />
         <HeroV2 />
+        <SectionJump />
         <ExploreHome />
-        <WhyElixa />
+        {/* Finished work before the pitch. Somebody weighing up five figures
+            wants proof that we do this, not another paragraph saying we do. */}
         <RecentSignOffs limit={3} />
+        <WhyElixa />
         <Projects />
         <Process />
         <Grants />
