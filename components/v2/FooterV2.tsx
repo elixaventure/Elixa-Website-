@@ -82,6 +82,30 @@ export function FooterV2() {
           </ul>
         </div>
       </div>
+      {/* Google reviews.
+          A quiet footer link, deliberately — reviews have to come from real
+          customers, so this is for somebody who already dealt with us and
+          went looking, not a prompt shown to every passing visitor. The
+          real invitation goes out by text after the job, from TaskFlow.
+          Renders nothing at all until the URL is set. */}
+      {site.googleReviewUrl && (
+        <div className="border-t border-night-line">
+          <div className="mx-auto max-w-[1500px] px-5 py-5 md:px-10">
+            <a
+              href={site.googleReviewUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 font-techmono text-[11px] uppercase tracking-[0.14em] text-night-faint transition-colors hover:text-night-accent"
+            >
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
+                <path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8L12 3.6Z" />
+              </svg>
+              Had work done? Leave us a Google review
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* accreditations — a quiet line, not a badge wall */}
       <div className="border-t border-night-line">
         <ul className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-x-6 gap-y-2 px-5 py-5 md:px-10">

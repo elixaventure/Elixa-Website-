@@ -25,6 +25,16 @@ export const site = {
   },
   areaServed: "United Kingdom",
   /**
+   * The Google review link, from Google Business Profile's own "ask for
+   * reviews" tool, or built by hand as
+   * https://search.google.com/local/writereview?placeid=<PLACE_ID>
+   *
+   * Empty until the real one is pasted in. Everything that uses it renders
+   * nothing while it is empty — a "review us" link that goes nowhere, or
+   * worse to somebody else's listing, is worse than no link.
+   */
+  googleReviewUrl: "",
+  /**
    * Accreditations exactly as Elixa publish them on their own marketing —
    * nothing here is inferred. Rendered as a quiet line in the footer rather
    * than as third-party logos, whose brand colours fight the dark palette.
