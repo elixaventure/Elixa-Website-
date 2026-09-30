@@ -33,7 +33,7 @@ export const site = {
    * nothing while it is empty — a "review us" link that goes nowhere, or
    * worse to somebody else's listing, is worse than no link.
    */
-  googleReviewUrl: "",
+  googleReviewUrl: "https://maps.app.goo.gl/etucww9ZwYzLxBt59",
   /**
    * Accreditations exactly as Elixa publish them on their own marketing —
    * nothing here is inferred. Rendered as a quiet line in the footer rather
