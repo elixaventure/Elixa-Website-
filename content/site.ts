@@ -25,15 +25,20 @@ export const site = {
   },
   areaServed: "United Kingdom",
   /**
-   * The Google review link, from Google Business Profile's own "ask for
-   * reviews" tool, or built by hand as
-   * https://search.google.com/local/writereview?placeid=<PLACE_ID>
+   * Where a customer goes to leave a review. Both are the WRITE form, not
+   * the profile page — the difference is several taps, and taps lose people.
    *
-   * Empty until the real one is pasted in. Everything that uses it renders
-   * nothing while it is empty — a "review us" link that goes nowhere, or
+   *   Google      Business Profile's own "ask for reviews" tool, or
+   *               https://search.google.com/local/writereview?placeid=<ID>
+   *   Trustpilot  /evaluate/<domain>. The /review/<domain> URL is the public
+   *               profile where reviews are read, not written.
+   *
+   * Either can be empty; the footer renders only the ones that are set, and
+   * nothing at all when neither is. A "review us" link that goes nowhere, or
    * worse to somebody else's listing, is worse than no link.
    */
   googleReviewUrl: "https://maps.app.goo.gl/etucww9ZwYzLxBt59",
+  trustpilotReviewUrl: "https://www.trustpilot.com/evaluate/elixarenewables.co.uk",
   /**
    * Accreditations exactly as Elixa publish them on their own marketing —
    * nothing here is inferred. Rendered as a quiet line in the footer rather
