@@ -24,6 +24,44 @@
 
 const WEB3FORMS_ENDPOINT = "https://api.web3forms.com/submit";
 
+/**
+ * TaskFlow — the installers' own app.
+ *
+ * Set NEXT_PUBLIC_TASKFLOW_LEAD_URL (the web-lead Edge Function) and
+ * NEXT_PUBLIC_TASKFLOW_SITE_KEY and every enquiry also lands in the app,
+ * where it can be turned into a job without anybody retyping it.
+ *
+ * Posted SEPARATELY from the inbox delivery above, and the result is
+ * ignored. The enquiry is the thing that matters: if the app is down,
+ * or the key is wrong, or the function has not been deployed yet, the
+ * visitor must still get through by email — and if the inbox bounces,
+ * the lead is still in the app. Neither can lose the other.
+ *
+ * The site key is public, exactly like the Web3Forms access key beside
+ * it. It stops drive-by posting; it is not a secret and the function
+ * does not treat it as one.
+ */
+const TASKFLOW_URL = (process.env.NEXT_PUBLIC_TASKFLOW_LEAD_URL || "").trim();
+const TASKFLOW_KEY = (process.env.NEXT_PUBLIC_TASKFLOW_SITE_KEY || "").trim();
+
+async function postToTaskFlow(data: Record<string, unknown>, fileName?: string) {
+  if (!TASKFLOW_URL) return;
+  try {
+    await fetch(TASKFLOW_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...data,
+        ...(fileName ? { floor_plan: `Attached: ${fileName}` } : {}),
+        site_key: TASKFLOW_KEY,
+      }),
+    });
+  } catch {
+    // Deliberately silent. This is the second of two deliveries and the
+    // visitor has already been told their enquiry is on its way.
+  }
+}
+
 const WEB3FORMS_KEY = (process.env.NEXT_PUBLIC_WEB3FORMS_KEY || "").trim();
 const CUSTOM_ENDPOINT = (process.env.NEXT_PUBLIC_FORM_ENDPOINT || "").trim();
 
@@ -52,7 +90,16 @@ async function postJson(payload: Record<string, unknown>): Promise<boolean> {
 }
 
 export async function submitLead(data: Record<string, unknown>, file?: File | null): Promise<boolean> {
-  if (!FORM_ENDPOINT) return false;
+  // Sent before the inbox delivery is awaited, so a slow or failing
+  // inbox cannot hold it up or take it down with it.
+  void postToTaskFlow(data, file?.name);
+
+  if (!FORM_ENDPOINT) {
+    // With TaskFlow configured the enquiry HAS landed somewhere a human
+    // will see, so the page should say thank you rather than fall back
+    // to opening the visitor's email client.
+    return TASKFLOW_URL ? true : false;
+  }
   try {
     const payload = withMeta(data);
 
