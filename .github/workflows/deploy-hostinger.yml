@@ -52,6 +52,11 @@ jobs:
           NEXT_PUBLIC_PLAN_API_URL: ${{ vars.NEXT_PUBLIC_PLAN_API_URL }}
           NEXT_PUBLIC_FORM_ENDPOINT: ${{ vars.NEXT_PUBLIC_FORM_ENDPOINT }}
           NEXT_PUBLIC_WEB3FORMS_KEY: ${{ vars.NEXT_PUBLIC_WEB3FORMS_KEY }}
+          # Kept in step with deploy.yml. This workflow is dormant, but if
+          # it is ever switched on it must not ship a site that quietly
+          # stops posting enquiries to the app.
+          NEXT_PUBLIC_TASKFLOW_LEAD_URL: ${{ vars.NEXT_PUBLIC_TASKFLOW_LEAD_URL }}
+          NEXT_PUBLIC_TASKFLOW_SITE_KEY: ${{ vars.NEXT_PUBLIC_TASKFLOW_SITE_KEY }}
       - name: Upload to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
