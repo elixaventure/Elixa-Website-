@@ -49,7 +49,7 @@ const PRINCIPLES = [
 
 export function WhyElixa() {
   return (
-    <section id="why" className="scroll-mt-36 border-t border-night-line bg-night-deep">
+    <section id="why" className="scroll-mt-[calc(var(--v2-nav-h)+70px)] border-t border-night-line bg-night-deep">
       <div className="mx-auto grid max-w-[1500px] gap-14 px-5 py-16 md:px-10 md:py-28 lg:grid-cols-[1fr_1.1fr] lg:gap-24">
         <div className="lg:sticky lg:top-32 lg:self-start">
           <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">Why Elixa</p>
@@ -95,7 +95,7 @@ const GUIDE = CASE_STUDIES.find((c) => c.kind === "Technical guide");
 
 export function Projects() {
   return (
-    <section id="case-studies" className="scroll-mt-36 border-t border-night-line bg-night">
+    <section id="case-studies" className="scroll-mt-[calc(var(--v2-nav-h)+70px)] border-t border-night-line bg-night">
       <div className="mx-auto max-w-[1500px] px-5 py-16 md:px-10 md:py-28">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
@@ -217,7 +217,7 @@ export function Process() {
   }, []);
 
   return (
-    <section id="process" className="scroll-mt-36 border-t border-night-line bg-night-deep">
+    <section id="process" className="scroll-mt-[calc(var(--v2-nav-h)+70px)] border-t border-night-line bg-night-deep">
       <div className="mx-auto max-w-[1500px] px-5 py-16 md:px-10 md:py-28">
         <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">How it works</p>
         <h2 className="v2-narrow mt-4 max-w-[18ch] font-arch text-4xl font-semibold leading-[1.02] tracking-[-0.02em] text-night-text md:text-6xl">
@@ -254,7 +254,7 @@ export function Process() {
 
 export function Grants() {
   return (
-    <section id="grants" className="scroll-mt-36 border-t border-night-line bg-night">
+    <section id="grants" className="scroll-mt-[calc(var(--v2-nav-h)+70px)] border-t border-night-line bg-night">
       <div className="mx-auto grid max-w-[1500px] items-center gap-12 px-5 py-16 md:px-10 md:py-28 lg:grid-cols-2">
         <div>
           <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">Grants & funding</p>
