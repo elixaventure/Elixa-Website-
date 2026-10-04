@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
     "",
     "/smart-energy-home",
+    "/heat-source",
     "/about",
     "/projects",
     "/case-studies",

@@ -42,6 +42,8 @@ jobs:
           KEY_VAR: ${{ vars.NEXT_PUBLIC_WEB3FORMS_KEY }}
           KEY_SECRET: ${{ secrets.NEXT_PUBLIC_WEB3FORMS_KEY }}
           ENDPOINT: ${{ vars.NEXT_PUBLIC_FORM_ENDPOINT || secrets.NEXT_PUBLIC_FORM_ENDPOINT }}
+          TF_URL: ${{ vars.NEXT_PUBLIC_TASKFLOW_LEAD_URL || secrets.NEXT_PUBLIC_TASKFLOW_LEAD_URL }}
+          TF_KEY: ${{ vars.NEXT_PUBLIC_TASKFLOW_SITE_KEY || secrets.NEXT_PUBLIC_TASKFLOW_SITE_KEY }}
         run: |
           # Presence and length only — never the value. A static export bakes
           # these in at build time, so a key that never reaches the build
@@ -60,6 +62,18 @@ jobs:
             say "Custom form endpoint: SET"
           else
             say "Custom form endpoint: not set"
+          fi
+          # Both halves, named separately: a URL with no key is rejected by
+          # the function with a 403 that looks from the outside exactly like
+          # nothing happening at all.
+          if [ -n "$(echo "$TF_URL" | tr -d '[:space:]')" ] && [ -n "$(echo "$TF_KEY" | tr -d '[:space:]')" ]; then
+            say "TaskFlow leads: SET -- enquiries also post to the app"
+          elif [ -n "$(echo "$TF_URL" | tr -d '[:space:]')" ]; then
+            say "TaskFlow leads: URL set but SITE KEY MISSING -- the app will reject every enquiry"
+          elif [ -n "$(echo "$TF_KEY" | tr -d '[:space:]')" ]; then
+            say "TaskFlow leads: site key set but URL MISSING -- nothing will be posted to the app"
+          else
+            say "TaskFlow leads: not set -- enquiries go to the inbox only"
           fi
       - name: Build static export
         run: npm run build
@@ -87,6 +101,16 @@ jobs:
           # destination inbox -- so accepting it as a Secret costs nothing
           # and saves a support round when it lands on the wrong tab.
           NEXT_PUBLIC_WEB3FORMS_KEY: ${{ vars.NEXT_PUBLIC_WEB3FORMS_KEY || secrets.NEXT_PUBLIC_WEB3FORMS_KEY }}
+          # TaskFlow — the installers' app. Set both repo variables and
+          # every enquiry also lands in their leads inbox, alongside the
+          # email above. A static export bakes these in at build time, so
+          # they have to be listed HERE: setting the repository variables
+          # on their own does nothing, which is exactly how the first
+          # attempt at this silently posted nowhere.
+          NEXT_PUBLIC_TASKFLOW_LEAD_URL: ${{ vars.NEXT_PUBLIC_TASKFLOW_LEAD_URL || secrets.NEXT_PUBLIC_TASKFLOW_LEAD_URL }}
+          # Public by design, like the Web3Forms key above — it only names
+          # a destination — so it is accepted from either tab.
+          NEXT_PUBLIC_TASKFLOW_SITE_KEY: ${{ vars.NEXT_PUBLIC_TASKFLOW_SITE_KEY || secrets.NEXT_PUBLIC_TASKFLOW_SITE_KEY }}
       - run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:

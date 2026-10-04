@@ -10,6 +10,7 @@
 export const V2_ROUTES = new Set([
   "/",
   "/air-source-heat-pumps",
+  "/heat-source",
   "/solar-pv",
   "/thermaskirt",
   "/underfloor-heating",
