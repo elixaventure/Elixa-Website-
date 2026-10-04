@@ -7,10 +7,34 @@ import { cn } from "@/lib/cn";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
-const MENU = [
+type MenuItem = {
+  label: string;
+  href: string;
+  /** when present, the item opens rather than simply navigating */
+  children?: { label: string; href: string; note?: string }[];
+};
+
+/**
+ * "Heat Source" rather than "Heat Pumps".
+ *
+ * We lead with heat pumps, but we fit boilers too, and somebody who needs
+ * one and sees only heat pumps assumes we cannot help and rings elsewhere.
+ * Naming the category and putting the options under it keeps the renewable
+ * first without pretending it is the only thing we do.
+ */
+const MENU: MenuItem[] = [
   { label: "Home", href: "/" },
   { label: "Solutions", href: "/#solutions" },
-  { label: "Heat Pumps", href: "/air-source-heat-pumps" },
+  {
+    label: "Heat Source",
+    href: "/heat-source",
+    children: [
+      { label: "Air source heat pumps", href: "/air-source-heat-pumps", note: "Our pick" },
+      { label: "Electric boilers", href: "/heat-source#electric-boiler" },
+      { label: "Gas boilers", href: "/heat-source#gas-boiler" },
+      { label: "Compare all three", href: "/heat-source" },
+    ],
+  },
   { label: "Solar", href: "/solar-pv" },
   { label: "Heating", href: "/thermaskirt" },
   { label: "Projects", href: "/projects" },
@@ -44,15 +68,49 @@ export function NavV2() {
         </Link>
 
         <nav className="hidden items-center gap-7 lg:flex" aria-label="Primary">
-          {MENU.map((m) => (
-            <Link
-              key={m.label}
-              href={m.href}
-              className="py-2 font-techmono text-xs uppercase tracking-[0.14em] text-night-muted transition-colors hover:text-night-text"
-            >
-              {m.label}
-            </Link>
-          ))}
+          {MENU.map((m) =>
+            m.children ? (
+              // Hover opens it, focus-within keeps it open for the keyboard,
+              // and the label is still a real link so it works either way.
+              <div key={m.label} className="group relative">
+                <Link
+                  href={m.href}
+                  className="flex items-center gap-1.5 py-2 font-techmono text-xs uppercase tracking-[0.14em] text-night-muted transition-colors group-hover:text-night-text group-focus-within:text-night-text"
+                >
+                  {m.label}
+                  <svg aria-hidden viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.4" className="transition-transform group-hover:rotate-180">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </Link>
+                <div className="invisible absolute left-1/2 top-full w-[260px] -translate-x-1/2 pt-3 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                  <div className="border border-night-line bg-night/95 p-2 backdrop-blur-md">
+                    {m.children.map((c) => (
+                      <Link
+                        key={c.label}
+                        href={c.href}
+                        className="flex items-center justify-between gap-3 px-4 py-3 font-techmono text-[11px] uppercase tracking-[0.12em] text-night-muted transition-colors hover:bg-night-accent/10 hover:text-night-accent"
+                      >
+                        {c.label}
+                        {c.note && (
+                          <span className="shrink-0 rounded-full bg-night-accent/15 px-2 py-0.5 text-[9px] text-night-accent">
+                            {c.note}
+                          </span>
+                        )}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Link
+                key={m.label}
+                href={m.href}
+                className="py-2 font-techmono text-xs uppercase tracking-[0.14em] text-night-muted transition-colors hover:text-night-text"
+              >
+                {m.label}
+              </Link>
+            ),
+          )}
         </nav>
 
         <div className="flex items-center gap-4">
@@ -81,16 +139,53 @@ export function NavV2() {
       {open && (
         <nav className="border-t border-night-line bg-night px-6 py-6 lg:hidden" aria-label="Mobile">
           <div className="grid gap-4">
-            {MENU.map((m) => (
-              <Link
-                key={m.label}
-                href={m.href}
-                onClick={() => setOpen(false)}
-                className="py-1.5 font-arch text-2xl font-medium text-night-text"
-              >
-                {m.label}
-              </Link>
-            ))}
+            {MENU.map((m) =>
+              m.children ? (
+                // Shown open rather than behind an accordion. There is one
+                // group, and burying three options under an extra tap on the
+                // device where taps cost the most defeats the point of
+                // widening the category in the first place.
+                <div key={m.label} className="border-l-2 border-night-accent pl-4">
+                  <Link
+                    href={m.href}
+                    onClick={() => setOpen(false)}
+                    className="block py-1.5 font-arch text-2xl font-medium text-night-text"
+                  >
+                    {m.label}
+                  </Link>
+                  <div className="mt-3 grid gap-2">
+                    {m.children
+                      .filter((c) => c.href !== m.href)
+                      .map((c) => (
+                        <Link
+                          key={c.label}
+                          href={c.href}
+                          onClick={() => setOpen(false)}
+                          className="flex min-h-[52px] items-center justify-between gap-3 border border-night-line px-4 py-3 font-techmono text-[11px] uppercase tracking-[0.12em] text-night-muted"
+                        >
+                          <span>{c.label}</span>
+                          {c.note ? (
+                            <span className="shrink-0 rounded-full bg-night-accent/15 px-2 py-1 text-[9px] text-night-accent">
+                              {c.note}
+                            </span>
+                          ) : (
+                            <span aria-hidden className="text-night-accent">&rarr;</span>
+                          )}
+                        </Link>
+                      ))}
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  key={m.label}
+                  href={m.href}
+                  onClick={() => setOpen(false)}
+                  className="py-1.5 font-arch text-2xl font-medium text-night-text"
+                >
+                  {m.label}
+                </Link>
+              ),
+            )}
             <Link
               href="/quick-quote"
               onClick={() => setOpen(false)}
