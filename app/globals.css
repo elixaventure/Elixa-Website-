@@ -46,6 +46,17 @@
 
 :root {
   --nav-h: 76px;
+  /* The dark header's height. The sticky jump bar hangs off it and the
+     scroll-margin on every jump target is measured from it, so all three
+     have to agree — they used to agree by three copies of "76px", which is
+     a bug waiting for somebody to change one of them. */
+  --v2-nav-h: 88px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --v2-nav-h: 96px;
+  }
 }
 
 @layer base {

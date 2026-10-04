@@ -69,7 +69,7 @@ export function SectionJump() {
   return (
     <nav
       aria-label="Jump to a section"
-      className="sticky top-[76px] z-40 border-y border-night-line bg-night/90 backdrop-blur-md"
+      className="sticky top-[var(--v2-nav-h)] z-40 border-y border-night-line bg-night/90 backdrop-blur-md"
     >
       {/* Scrolls sideways on a phone rather than wrapping to two rows and
           eating the screen it is meant to save. */}

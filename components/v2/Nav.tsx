@@ -62,9 +62,9 @@ export function NavV2() {
         solid || open ? "border-b border-night-line bg-night/90 backdrop-blur-md" : "bg-transparent",
       )}
     >
-      <div className="mx-auto flex h-[76px] max-w-[1500px] items-center justify-between px-5 md:px-10">
+      <div className="mx-auto flex h-[var(--v2-nav-h)] max-w-[1500px] items-center justify-between px-5 md:px-10">
         <Link href="/" className="flex items-center" aria-label="Elixa Renewables — home">
-          <Image src={`${BASE}/brand/elixa-logo-ondark-2.png`} alt="Elixa Renewables Group" width={150} height={72} priority className="h-9 w-auto" />
+          <Image src={`${BASE}/brand/elixa-logo-ondark-2.png`} alt="Elixa Renewables Group" width={150} height={72} priority className="h-[50px] w-auto" />
         </Link>
 
         <nav className="hidden items-center gap-7 lg:flex" aria-label="Primary">

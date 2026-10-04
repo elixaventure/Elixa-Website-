@@ -17,7 +17,7 @@ export function RecentSignOffs({ limit = 6 }: { limit?: number }) {
   const summary = ratingSummary();
 
   return (
-    <section id="recent" className="scroll-mt-36 border-t border-night-line">
+    <section id="recent" className="scroll-mt-[calc(var(--v2-nav-h)+70px)] border-t border-night-line">
       <div className="mx-auto max-w-[1500px] px-5 py-16 md:px-10 md:py-24">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
