@@ -37,6 +37,12 @@ export const site = {
    * nothing at all when neither is. A "review us" link that goes nowhere, or
    * worse to somebody else's listing, is worse than no link.
    */
+  /**
+   * Meta (Facebook) pixel. Public by nature — it is visible in the page
+   * source of every site that runs one — so it lives here rather than in a
+   * secret. Empty disables it entirely; it also never loads without consent.
+   */
+  metaPixelId: "2370075870431649",
   googleReviewUrl: "https://maps.app.goo.gl/etucww9ZwYzLxBt59",
   trustpilotReviewUrl: "https://www.trustpilot.com/evaluate/elixarenewables.co.uk",
   /**
