@@ -101,7 +101,7 @@ export function NavV2() {
           <Image src={`${BASE}/brand/elixa-logo-ondark-2.png`} alt="Elixa Renewables Group" width={150} height={72} priority className="h-[50px] w-auto" />
         </Link>
 
-        <nav className="hidden items-center gap-4 xl:flex 2xl:gap-6" aria-label="Primary">
+        <nav className="hidden items-center gap-2.5 lg:flex xl:gap-4 2xl:gap-6" aria-label="Primary">
           {MENU.map((m) =>
             m.children ? (
               // Hover opens it, focus-within keeps it open for the keyboard,
@@ -109,7 +109,7 @@ export function NavV2() {
               <div key={m.label} className="group relative">
                 <Link
                   href={m.href}
-                  className="flex items-center gap-1.5 py-2 font-techmono text-xs uppercase tracking-[0.14em] text-night-muted transition-colors group-hover:text-night-text group-focus-within:text-night-text"
+                  className="flex items-center gap-1 py-2 font-techmono text-[10px] uppercase tracking-[0.1em] text-night-muted xl:gap-1.5 xl:text-xs xl:tracking-[0.14em] transition-colors group-hover:text-night-text group-focus-within:text-night-text"
                 >
                   {m.label}
                   <svg aria-hidden viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.4" className="transition-transform group-hover:rotate-180">
@@ -139,7 +139,7 @@ export function NavV2() {
               <Link
                 key={m.label}
                 href={m.href}
-                className="py-2 font-techmono text-xs uppercase tracking-[0.14em] text-night-muted transition-colors hover:text-night-text"
+                className="py-2 font-techmono text-[10px] uppercase tracking-[0.1em] text-night-muted transition-colors hover:text-night-text xl:text-xs xl:tracking-[0.14em]"
               >
                 {m.label}
               </Link>
@@ -162,7 +162,7 @@ export function NavV2() {
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-label="Menu"
-            className="flex h-12 w-12 flex-col items-center justify-center gap-[6px] xl:hidden"
+            className="flex h-12 w-12 flex-col items-center justify-center gap-[6px] lg:hidden"
           >
             <span className={cn("h-[2px] w-7 bg-night-text transition-transform", open && "translate-y-[4px] rotate-45")} />
             <span className={cn("h-[2px] w-7 bg-night-text transition-transform", open && "-translate-y-[4px] -rotate-45")} />
@@ -171,7 +171,7 @@ export function NavV2() {
       </div>
 
       {open && (
-        <nav className="border-t border-night-line bg-night px-6 py-6 xl:hidden" aria-label="Mobile">
+        <nav className="border-t border-night-line bg-night px-6 py-6 lg:hidden" aria-label="Mobile">
           <div className="grid gap-4">
             {MENU.map((m) =>
               m.children ? (
