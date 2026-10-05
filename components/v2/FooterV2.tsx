@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { site, legalNav } from "@/content/site";
+import { CookieSettingsLink } from "@/components/layout/CookieSettingsLink";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -141,6 +142,9 @@ export function FooterV2() {
               reachable from every page; the v2 footer had no legal row at
               all. Driven from legalNav so it stays in one place. */}
           <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <li>
+              <CookieSettingsLink className="font-techmono text-[11px] uppercase tracking-[0.14em] text-night-faint transition-colors hover:text-night-text" />
+            </li>
             {legalNav.map((l) => (
               <li key={l.href}>
                 <Link

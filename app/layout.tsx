@@ -4,6 +4,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { ClassicChrome } from "@/components/layout/ClassicChrome";
 import { Footer } from "@/components/layout/Footer";
 import { V2Chrome } from "@/components/layout/V2Chrome";
+import { CookieConsent } from "@/components/layout/CookieConsent";
+import { MetaPixel } from "@/components/layout/MetaPixel";
 import { MobileNavV2 } from "@/components/v2/MobileNavV2";
 import { MobileBar } from "@/components/layout/MobileBar";
 import { Analytics } from "@/components/layout/Analytics";
@@ -69,6 +71,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <V2Chrome>
           <MobileNavV2 />
         </V2Chrome>
+        {/* Both on every page, classic and v2. The banner shows until a
+            choice is made; the pixel loads only once that choice is yes. */}
+        <CookieConsent />
+        <MetaPixel />
       </body>
     </html>
   );
