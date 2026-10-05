@@ -15,6 +15,14 @@ type MenuItem = {
 };
 
 /**
+ * Four pages existed but could not be reached from here: air conditioning,
+ * battery storage, EV charging and underfloor heating. A page nobody can
+ * find is a page that does not exist.
+ *
+ * Grouping the related ones keeps the row to ten items so it still fits a
+ * laptop. "Home" came out to make room — the logo is the home link on every
+ * site ever built, and it already carries the aria-label to say so.
+ *
  * "Heat Source" rather than "Heat Pumps".
  *
  * We lead with heat pumps, but we fit boilers too, and somebody who needs
@@ -23,7 +31,6 @@ type MenuItem = {
  * first without pretending it is the only thing we do.
  */
 const MENU: MenuItem[] = [
-  { label: "Home", href: "/" },
   { label: "Solutions", href: "/#solutions" },
   {
     label: "Heat Source",
@@ -35,10 +42,37 @@ const MENU: MenuItem[] = [
       { label: "Compare all three", href: "/heat-source" },
     ],
   },
-  { label: "Solar", href: "/solar-pv" },
-  { label: "Heating", href: "/thermaskirt" },
-  { label: "Projects", href: "/projects" },
-  { label: "Case Studies", href: "/case-studies" },
+  {
+    // The emitters — what delivers the heat, as against what makes it.
+    label: "Heating",
+    href: "/thermaskirt",
+    children: [
+      { label: "ThermaSkirt", href: "/thermaskirt" },
+      { label: "Underfloor heating", href: "/underfloor-heating" },
+    ],
+  },
+  { label: "Air Conditioning", href: "/air-conditioning" },
+  {
+    label: "Solar",
+    href: "/solar-pv",
+    children: [
+      { label: "Solar PV", href: "/solar-pv" },
+      { label: "Battery storage", href: "/battery-storage" },
+      { label: "EV charging", href: "/ev-charging" },
+    ],
+  },
+  {
+    // Three kinds of proof, all answering the same question, so one item.
+    // This also surfaces /completed, which was only reachable from a button
+    // on the homepage.
+    label: "Our Work",
+    href: "/projects",
+    children: [
+      { label: "Recently completed", href: "/completed" },
+      { label: "Install photos", href: "/projects" },
+      { label: "Case studies", href: "/case-studies" },
+    ],
+  },
   { label: "Grants", href: "/grants-funding" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
@@ -67,7 +101,7 @@ export function NavV2() {
           <Image src={`${BASE}/brand/elixa-logo-ondark-2.png`} alt="Elixa Renewables Group" width={150} height={72} priority className="h-[50px] w-auto" />
         </Link>
 
-        <nav className="hidden items-center gap-7 lg:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-4 xl:flex 2xl:gap-6" aria-label="Primary">
           {MENU.map((m) =>
             m.children ? (
               // Hover opens it, focus-within keeps it open for the keyboard,
@@ -128,7 +162,7 @@ export function NavV2() {
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-label="Menu"
-            className="flex h-12 w-12 flex-col items-center justify-center gap-[6px] lg:hidden"
+            className="flex h-12 w-12 flex-col items-center justify-center gap-[6px] xl:hidden"
           >
             <span className={cn("h-[2px] w-7 bg-night-text transition-transform", open && "translate-y-[4px] rotate-45")} />
             <span className={cn("h-[2px] w-7 bg-night-text transition-transform", open && "-translate-y-[4px] -rotate-45")} />
@@ -137,7 +171,7 @@ export function NavV2() {
       </div>
 
       {open && (
-        <nav className="border-t border-night-line bg-night px-6 py-6 lg:hidden" aria-label="Mobile">
+        <nav className="border-t border-night-line bg-night px-6 py-6 xl:hidden" aria-label="Mobile">
           <div className="grid gap-4">
             {MENU.map((m) =>
               m.children ? (
