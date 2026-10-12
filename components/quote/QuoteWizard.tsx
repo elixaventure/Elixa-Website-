@@ -59,6 +59,11 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
     interests: preselect.filter((slug) => services.some((s) => s.slug === slug)),
   }));
   const [planFile, setPlanFile] = useState<File | null>(null);
+  // Whether the plan actually travelled. Web3Forms only forwards attachments
+  // on a paid plan; on the free one the enquiry goes and the file does not.
+  // Somebody who has just uploaded a floor plan and been thanked believes it
+  // arrived, so when it has not, the closing screen has to say so.
+  const [planLanded, setPlanLanded] = useState(true);
   // how the enquiry actually left the page: posted for us, or handed to
   // the visitor's email app for them to send. The closing screen must not
   // claim "on their way" when it is still sitting in their drafts.
@@ -118,7 +123,7 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
 
     // Preferred: post to the configured inbox/CRM. Fallback: mailto.
     if (FORM_ENDPOINT) {
-      const ok = await submitLead({
+      const { ok, attachmentDelivered } = await submitLead({
         name: a.name,
         phone: a.phone,
         email: a.email,
@@ -133,6 +138,7 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
         message: a.message,
         source: "quote-wizard",
       }, planFile);
+      setPlanLanded(!planFile || attachmentDelivered);
       if (ok) {
         clearPlan();
         setRoute("posted");
@@ -350,6 +356,32 @@ export function QuoteWizard({ preselect = [] }: { preselect?: string[] }) {
                       </a>
                       .
                     </p>
+
+                    {/* Said plainly and immediately. Finding out a week later
+                        that the plan never arrived is worse than being asked
+                        for it now, and the button makes it one tap. */}
+                    {planFile && !planLanded && (
+                      <div className="mx-auto mt-6 max-w-md rounded-2xl border border-navy/15 bg-mist p-5 text-left">
+                        <p className="text-sm font-semibold text-navy">
+                          One thing — your floor plan didn&rsquo;t send
+                        </p>
+                        <p className="mt-2 text-sm leading-relaxed text-navy/70">
+                          Everything else reached us, but &ldquo;{planFile.name}&rdquo; was too
+                          large for our form to carry. Send it over and we&rsquo;ll match it to
+                          your enquiry.
+                        </p>
+                        <a
+                          href={`${site.emailHref}?subject=${encodeURIComponent(
+                            `Floor plan — ${a.name || "my enquiry"}`,
+                          )}&body=${encodeURIComponent(
+                            `Attaching my floor plan for the enquiry I've just sent.\n\nName: ${a.name}\nPostcode: ${a.postcode}\n\n(Please attach ${planFile.name} before sending.)`,
+                          )}`}
+                          className="mt-4 inline-flex min-h-[48px] items-center rounded-full bg-elixa-cyan px-6 text-sm font-semibold text-white"
+                        >
+                          Email the plan
+                        </a>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>

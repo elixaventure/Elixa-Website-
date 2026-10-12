@@ -89,7 +89,24 @@ async function postJson(payload: Record<string, unknown>): Promise<boolean> {
   return res.ok;
 }
 
-export async function submitLead(data: Record<string, unknown>, file?: File | null): Promise<boolean> {
+export interface LeadResult {
+  /** the enquiry reached somewhere a human will see it */
+  ok: boolean;
+  /**
+   * The floor plan actually travelled with it.
+   *
+   * False whenever a file was offered and did not make it — Web3Forms only
+   * forwards attachments on a paid plan, and refuses them otherwise. The
+   * enquiry still goes, but the visitor must be told, because otherwise they
+   * believe they have sent a plan that nobody has.
+   */
+  attachmentDelivered: boolean;
+}
+
+export async function submitLead(
+  data: Record<string, unknown>,
+  file?: File | null,
+): Promise<LeadResult> {
   // Sent before the inbox delivery is awaited, so a slow or failing
   // inbox cannot hold it up or take it down with it.
   void postToTaskFlow(data, file?.name);
@@ -97,13 +114,14 @@ export async function submitLead(data: Record<string, unknown>, file?: File | nu
   if (!FORM_ENDPOINT) {
     // With TaskFlow configured the enquiry HAS landed somewhere a human
     // will see, so the page should say thank you rather than fall back
-    // to opening the visitor's email client.
-    return TASKFLOW_URL ? true : false;
+    // to opening the visitor's email client. TaskFlow receives the file's
+    // name, not the file, so a plan has never travelled on this path.
+    return { ok: Boolean(TASKFLOW_URL), attachmentDelivered: false };
   }
   try {
     const payload = withMeta(data);
 
-    if (!file) return await postJson(payload);
+    if (!file) return { ok: await postJson(payload), attachmentDelivered: false };
 
     // Attachment rides along with the lead where the plan allows it.
     const fd = new FormData();
@@ -115,16 +133,19 @@ export async function submitLead(data: Record<string, unknown>, file?: File | nu
       headers: { Accept: "application/json" },
       body: fd,
     });
-    if (res.ok) return true;
+    if (res.ok) return { ok: true, attachmentDelivered: true };
 
     // The file was refused (e.g. attachments aren't on this plan, or it is
     // over the size limit). An enquiry with no plan attached still beats a
     // lost enquiry, so send it again as plain JSON and say the plan exists.
-    return await postJson({
+    const ok = await postJson({
       ...payload,
-      floor_plan: `Yes — "${file.name}" (not attached; we'll ask for it by email)`,
+      floor_plan: `Yes — "${file.name}" — NOT ATTACHED. Reply and ask ${
+        data.name || "the customer"
+      } to send it.`,
     });
+    return { ok, attachmentDelivered: false };
   } catch {
-    return false;
+    return { ok: false, attachmentDelivered: false };
   }
 }
