@@ -76,7 +76,7 @@ export function QuickQuote() {
     });
 
     if (FORM_ENDPOINT) {
-      const ok = await submitLead(payload);
+      const { ok } = await submitLead(payload);
       if (ok) {
         setRoute("posted");
         setStep(DONE);

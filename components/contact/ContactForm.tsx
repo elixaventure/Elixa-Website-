@@ -33,7 +33,7 @@ export function ContactForm() {
     track("email_click", { location: "contact-form" });
 
     // Preferred: post to the configured inbox/CRM. Fallback: mailto.
-    if (FORM_ENDPOINT && (await submitLead(payload))) {
+    if (FORM_ENDPOINT && (await submitLead(payload)).ok) {
       setNote({ type: "ok", msg: "Thank you — your enquiry has been sent. We'll be in touch shortly." });
       form.reset();
       return;
