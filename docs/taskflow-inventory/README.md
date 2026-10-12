@@ -68,8 +68,34 @@ line, show them as a list, let the installer untick anything irrelevant
 - Keep the source image against every price. Six months on, when a number
   looks wrong, the answer is "here is the invoice it came from".
 - Stamp every price with its date and supplier.
-- Mark a price stale after a set age — three months is a reasonable start —
-  and have the BOQ flag stale lines rather than quoting them silently.
+- Mark a price stale after three months.
+
+## The staleness reminder
+
+Flagging a stale price inside a quote is too late — by then you are already
+quoting and the merchant is miles away. So the app should raise it on its
+own.
+
+Once a week, if anything has gone over three months old, one notification:
+
+> 14 prices haven't been checked since July. Next invoice you photograph
+> will refresh most of them.
+
+Then a screen listing them, oldest first, with the supplier against each, so
+the list can be read in the van before a merchant run.
+
+Two things that keep it from becoming noise:
+
+- **Photographing a new invoice refreshes every matching line automatically.**
+  The list shrinks as a side effect of normal work, without anybody tending
+  it. That is the whole point of building from invoices.
+- **One notification a week, never per item.** Fourteen separate alerts for
+  fourteen old prices is how a useful reminder becomes something people turn
+  off.
+
+A stale price is still better than no price. Keep quoting from it — flag it
+in the BOQ as unverified and show its date — rather than refusing to price
+the line.
 
 ## What the BOQ does with it
 
