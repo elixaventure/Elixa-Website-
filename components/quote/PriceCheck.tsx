@@ -52,6 +52,11 @@ export function PriceCheck() {
   const [estimate, setEstimate] = useState<Estimate | null>(null);
   const [demo, setDemo] = useState<DemoPrices | null>(null);
   const [contact, setContact] = useState({ name: "", phone: "", postcode: "" });
+  // Asked after the figure, never before it. The count does not price the
+  // job — emitter sizing comes out of the heat-loss survey — but it tells
+  // whoever rings them the size of the conversation, and asking here costs
+  // nothing because they have already decided to hear from us.
+  const [rads, setRads] = useState("");
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -167,6 +172,7 @@ export function PriceCheck() {
       heats_it_now: labelFor("fuel", answers.fuel),
       hot_water_cylinder: labelFor("cyl", answers.cyl),
       indicative_range: outcome,
+      radiators: rads || "Not said",
       emitters: "Not included — to be discussed by phone",
       source: "price-check",
     };
@@ -462,6 +468,36 @@ export function PriceCheck() {
                   />
                 </label>
               ))}
+            </div>
+
+            <div className="mt-5">
+              <span className="mb-2.5 block font-techmono text-[10px] uppercase tracking-[0.2em] text-night-faint">
+                Radiators <span className="text-night-faint/70">· optional</span>
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {["Up to 6", "7–10", "11–15", "16+", "None"].map((r) => {
+                  const on = rads === r;
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRads(on ? "" : r)}
+                      aria-pressed={on}
+                      className={`min-h-[46px] rounded-xl border px-4 text-[14px] font-medium transition-colors ${
+                        on
+                          ? "border-night-accent bg-night-accent/[0.12] text-night-accent"
+                          : "border-night-line bg-night-surface text-night-muted hover:border-night-accent/45"
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2.5 text-[12px] leading-relaxed text-night-faint">
+                Saves a question on the call. A rough count is fine, and skipping it changes
+                nothing.
+              </p>
             </div>
 
             <button
