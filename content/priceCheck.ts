@@ -20,23 +20,55 @@ export interface Choice {
   note?: string;
 }
 
+/**
+ * A screen. Usually one question, but the first one carries two.
+ *
+ * Bedrooms and bathrooms are both size questions and both answerable
+ * without looking anything up, so they share a screen rather than costing
+ * two taps' worth of people. Bedrooms drive the heat loss and so the unit;
+ * bathrooms drive the hot water demand and so the cylinder. Asking only the
+ * first is how a four-bath house ends up quoted on a 200 litre tank.
+ */
+export interface Group {
+  id: "beds" | "baths";
+  label: string;
+  options: Choice[];
+}
+
 export interface Ask {
-  id: "beds" | "fuel" | "cyl";
+  id: "size" | "fuel" | "cyl";
   title: string;
   hint?: string;
-  options: Choice[];
+  /** A single list of options, or several labelled ones on one screen. */
+  options?: Choice[];
+  groups?: Group[];
 }
 
 export const ASKS: Ask[] = [
   {
-    id: "beds",
+    id: "size",
     title: "What would a heat pump cost you?",
-    hint: "Three taps. No email, no phone number, no waiting for somebody to ring you back with a figure.",
-    options: [
-      { key: "1-2", label: "1 or 2 bedrooms" },
-      { key: "3", label: "3 bedrooms" },
-      { key: "4", label: "4 bedrooms" },
-      { key: "5plus", label: "5 or more" },
+    hint: "A few taps. No email, no phone number, no waiting for somebody to ring you back with a figure.",
+    groups: [
+      {
+        id: "beds",
+        label: "Bedrooms",
+        options: [
+          { key: "1-2", label: "1–2" },
+          { key: "3", label: "3" },
+          { key: "4", label: "4" },
+          { key: "5plus", label: "5+" },
+        ],
+      },
+      {
+        id: "baths",
+        label: "Bathrooms",
+        options: [
+          { key: "1", label: "1" },
+          { key: "2", label: "2" },
+          { key: "3plus", label: "3+" },
+        ],
+      },
     ],
   },
   {
@@ -78,6 +110,31 @@ export const NO_PRICE: Record<string, string> = {
 
 export function pricable(answers: Record<string, string>): boolean {
   return Boolean(answers.fuel) && !NO_PRICE[answers.fuel];
+}
+
+/** Every option on a screen, however that screen is laid out. */
+export function choicesOf(ask: Ask): Choice[] {
+  return ask.options ?? (ask.groups ?? []).flatMap((g) => g.options);
+}
+
+/** The answer to one group or question, in words, for the enquiry. */
+export function labelFor(id: string, key: string | undefined): string {
+  if (!key) return "—";
+  for (const a of ASKS) {
+    if (a.options && a.id === id) {
+      return a.options.find((o) => o.key === key)?.label ?? "—";
+    }
+    for (const g of a.groups ?? []) {
+      if (g.id === id) return g.options.find((o) => o.key === key)?.label ?? "—";
+    }
+  }
+  return "—";
+}
+
+/** A screen is answered once every group on it has a pick. */
+export function answered(ask: Ask, answers: Record<string, string>): boolean {
+  if (ask.options) return Boolean(answers[ask.id]);
+  return (ask.groups ?? []).every((g) => Boolean(answers[g.id]));
 }
 
 /**
