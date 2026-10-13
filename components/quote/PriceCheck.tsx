@@ -19,6 +19,7 @@ import { track } from "@/lib/analytics";
 import { fetchEstimate, ESTIMATE_URL, type Estimate } from "@/lib/estimate";
 import { submitLead, FORM_ENDPOINT } from "@/lib/forms";
 import { handoffLink } from "@/lib/handoff";
+import { CALL_TIMES, callDays, describeCall, type Slot } from "@/lib/callSlots";
 import { PriceBar, type Bar } from "@/components/quote/PriceBar";
 
 const money = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
@@ -58,6 +59,12 @@ export function PriceCheck() {
   // whoever rings them the size of the conversation, and asking here costs
   // nothing because they have already decided to hear from us.
   const [rads, setRads] = useState("");
+  // When they would like ringing. Worked out in the browser, because a
+  // page built on Monday would otherwise still be offering Monday as
+  // "today" on Thursday.
+  const [days, setDays] = useState<Slot[]>([]);
+  const [day, setDay] = useState("");
+  const [time, setTime] = useState("");
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -68,6 +75,7 @@ export function PriceCheck() {
   // content/priceCheck.ts for why.
   useEffect(() => {
     setDemo(parseDemo(window.location.search));
+    setDays(callDays());
   }, []);
 
   // Fired when a figure is on the screen, not when one was worked out —
@@ -228,6 +236,7 @@ export function PriceCheck() {
       radiators: rads || "Not said",
       grant_assumed: figure && figure.grant > 0 ? money(figure.grant) : "None",
       next_step: "Call, then free survey",
+      preferred_call: when || "No preference given",
       cost_before_grant: figure
         ? figure.beforeFrom === figure.beforeTo
           ? money(figure.beforeFrom)
@@ -243,6 +252,11 @@ export function PriceCheck() {
   };
 
   const canSend = contact.name.trim() && contact.phone.trim() && contact.postcode.trim();
+
+  const when = describeCall(
+    days.find((d) => d.key === day),
+    CALL_TIMES.find((t) => t.key === time),
+  );
 
   /* ------------------------------------------------------- pieces --- */
 
@@ -554,6 +568,59 @@ export function PriceCheck() {
               ))}
             </div>
 
+            {days.length > 0 && (
+              <div className="mt-6">
+                <span className="mb-2.5 block font-techmono text-[10px] uppercase tracking-[0.2em] text-night-faint">
+                  When suits for the call?
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {days.map((d) => {
+                    const on = day === d.key;
+                    return (
+                      <button
+                        key={d.key}
+                        type="button"
+                        onClick={() => setDay(on ? "" : d.key)}
+                        aria-pressed={on}
+                        className={`min-h-[46px] rounded-xl border px-4 text-[14px] font-medium transition-colors ${
+                          on
+                            ? "border-night-accent bg-night-accent/[0.12] text-night-accent"
+                            : "border-night-line bg-night-surface text-night-muted hover:border-night-accent/45"
+                        }`}
+                      >
+                        {d.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {CALL_TIMES.map((t) => {
+                    const on = time === t.key;
+                    return (
+                      <button
+                        key={t.key}
+                        type="button"
+                        onClick={() => setTime(on ? "" : t.key)}
+                        aria-pressed={on}
+                        className={`min-h-[46px] flex-1 rounded-xl border px-4 text-[14px] font-medium transition-colors ${
+                          on
+                            ? "border-night-accent bg-night-accent/[0.12] text-night-accent"
+                            : "border-night-line bg-night-surface text-night-muted hover:border-night-accent/45"
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2.5 text-[12px] leading-relaxed text-night-faint">
+                  {when
+                    ? `We'll ring you ${when}.`
+                    : "Pick a day, a time, or both. Leave it and we'll ring when we can."}
+                </p>
+              </div>
+            )}
+
             <div className="mt-5">
               <span className="mb-2.5 block font-techmono text-[10px] uppercase tracking-[0.2em] text-night-faint">
                 Radiators <span className="text-night-faint/70">· optional</span>
@@ -614,7 +681,7 @@ export function PriceCheck() {
               Received
             </p>
             <h1 className="v2-narrow mt-4 max-w-[18ch] font-arch text-[2rem] font-bold leading-[1.02] tracking-[-0.025em] text-night-text sm:text-[2.6rem]">
-              Thanks — we'll call you.
+              {when ? `Thanks — we'll call ${when}.` : "Thanks — we'll call you."}
             </h1>
             <p className="mt-4 max-w-[48ch] text-[15px] leading-relaxed text-night-muted">
               {contact.name.trim().split(" ")[0]
@@ -624,7 +691,10 @@ export function PriceCheck() {
             </p>
             <ol className="mt-6 grid gap-3">
               {[
-                ["A call", "Ten minutes or so. We go through the radiators, the cylinder and anything the form couldn't cover."],
+                [
+                  when ? `A call ${when}` : "A call",
+                  "Ten minutes or so. We go through the radiators, the cylinder and anything the form couldn't cover.",
+                ],
                 ["A free survey", "Booked on that call. Room-by-room heat loss, and the figure we stand behind comes from it."],
               ].map(([t, d], i) => (
                 <li key={t} className="flex gap-4 rounded-xl border border-night-line bg-night-surface p-4">
