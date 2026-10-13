@@ -18,6 +18,7 @@ import { site } from "@/content/site";
 import { track } from "@/lib/analytics";
 import { fetchEstimate, ESTIMATE_URL, type Estimate } from "@/lib/estimate";
 import { submitLead, FORM_ENDPOINT } from "@/lib/forms";
+import { handoffLink } from "@/lib/handoff";
 
 const money = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
 
@@ -391,8 +392,10 @@ export function PriceCheck() {
             >
               Book my free survey
             </button>
+            {/* Carries what they just said, so the longer form picks up
+                where this left off instead of asking it all again. */}
             <Link
-              href="/quick-quote"
+              href={handoffLink(answers)}
               className="mt-3 flex min-h-[58px] w-full items-center justify-center rounded-xl border border-night-line px-6 font-techmono text-[12.5px] uppercase tracking-[0.14em] text-night-text transition-colors hover:border-night-text"
             >
               Answer more, narrow it down

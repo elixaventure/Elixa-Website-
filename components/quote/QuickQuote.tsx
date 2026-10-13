@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   QUESTIONS,
   UNSURE,
+  narrowCurrent,
   quote,
   describe,
   detailQuestionsFor,
@@ -17,6 +18,7 @@ import {
 import { site } from "@/content/site";
 import { track } from "@/lib/analytics";
 import { submitLead, FORM_ENDPOINT } from "@/lib/forms";
+import { readHandoff, type Handoff } from "@/lib/handoff";
 import { fetchEstimate, bandToMetres, ESTIMATE_URL, type Estimate } from "@/lib/estimate";
 
 const money = (n: number) => `£${n.toLocaleString("en-GB")}`;
@@ -56,6 +58,8 @@ export function QuickQuote() {
   const [contact, setContact] = useState({ name: "", phone: "", email: "", postcode: "" });
   const [sending, setSending] = useState(false);
   const [route, setRoute] = useState<"posted" | "email">("posted");
+  // What the advert landing page already heard, when they came from there.
+  const [handoff, setHandoff] = useState<Handoff | null>(null);
   // The figure from the office's own price list, fetched rather than
   // calculated here — see lib/estimate.ts for why.
   const [estimate, setEstimate] = useState<Estimate | null>(null);
@@ -63,22 +67,52 @@ export function QuickQuote() {
 
   const top = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const h = readHandoff(window.location.search);
+    if (!h) return;
+    setHandoff(h);
+    setA((prev) => ({ ...h.answers, ...prev }));
+    // Take the answers back out of the address. They are one person's, and
+    // a link copied out of the bar and sent to somebody else should not
+    // arrive pre-filled with them.
+    try {
+      const u = new URL(window.location.href);
+      ["from", "beds", "baths", "fuel", "cyl"].forEach((k) => u.searchParams.delete(k));
+      window.history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
+    } catch {
+      /* an address we cannot rewrite is only untidy */
+    }
+  }, []);
+
+  /**
+   * The questions still worth asking.
+   *
+   * Anything the landing page already settled is dropped, and the one
+   * question it half-answered is narrowed rather than repeated.
+   */
+  const asks = useMemo(() => {
+    const narrowed = handoff ? narrowCurrent(handoff.fuel, handoff.cylinder) : null;
+    return QUESTIONS.map((q) => (q.id === "current" && narrowed ? narrowed : q)).filter(
+      (q) => !handoff?.answers[q.id],
+    );
+  }, [handoff]);
+
   // Which extras are worth asking depends on the answers so far — there is
   // no point offering a choice of heat pump to somebody having an electric
   // boiler.
   const detailQs = useMemo(() => detailQuestionsFor(a), [a]);
 
-  const GATE = QUESTIONS.length;
+  const GATE = asks.length;
   const steps = useMemo<Step[]>(
     () => [
-      ...QUESTIONS.map((q) => ({ kind: "q" as const, q })),
+      ...asks.map((q) => ({ kind: "q" as const, q })),
       { kind: "gate" as const },
       ...(detail ? detailQs.map((q) => ({ kind: "q" as const, q, detail: true })) : []),
       { kind: "result" as const },
       { kind: "contact" as const },
       { kind: "done" as const },
     ],
-    [detail, detailQs],
+    [asks, detail, detailQs],
   );
 
   const RESULT = GATE + 1 + (detail ? detailQs.length : 0);
@@ -282,14 +316,14 @@ export function QuickQuote() {
         <div className="mb-10">
           <div className="flex items-baseline justify-between font-techmono text-[11px] uppercase tracking-[0.2em] text-night-faint">
             <span>
-              {String(step + 1).padStart(2, "0")} / {String(QUESTIONS.length).padStart(2, "0")}
+              {String(step + 1).padStart(2, "0")} / {String(asks.length).padStart(2, "0")}
             </span>
             <span>About a minute</span>
           </div>
           <div className="mt-3 h-px w-full bg-night-line">
             <motion.div
               className="h-px bg-night-accent"
-              animate={{ width: `${((step + 1) / QUESTIONS.length) * 100}%` }}
+              animate={{ width: `${((step + 1) / asks.length) * 100}%` }}
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             />
           </div>
@@ -301,6 +335,33 @@ export function QuickQuote() {
           <span>
             {String(step - GATE).padStart(2, "0")} / {String(detailQs.length).padStart(2, "0")}
           </span>
+        </div>
+      )}
+
+      {handoff && handoff.carried.length > 0 && cur.kind === "q" && !cur.detail && (
+        <div className="mb-7 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 rounded-xl border border-night-line bg-night-surface/40 px-4 py-3">
+          <p className="text-sm leading-relaxed text-night-muted">
+            <span className="font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+              Carried over
+            </span>
+            <br />
+            {handoff.carried.join(" · ")} — so we won't ask again.
+          </p>
+          {/* Somebody who mis-tapped on the way in needs a way out of it.
+              Without this the wrong answer is carried silently and there is
+              nothing on screen that can change it. */}
+          <button
+            type="button"
+            onClick={() => {
+              setHandoff(null);
+              setA({});
+              setDetail(false);
+              setStep(0);
+            }}
+            className="font-techmono text-[10px] uppercase tracking-[0.18em] text-night-faint underline underline-offset-4 transition-colors hover:text-night-text"
+          >
+            Change these
+          </button>
         </div>
       )}
 

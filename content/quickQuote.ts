@@ -129,6 +129,54 @@ export const QUESTIONS: Question[] = [
   },
 ];
 
+/**
+ * The fuel question, narrowed by what the landing page already heard.
+ *
+ * Somebody who has just said "gas boiler" and is then shown the same eight
+ * options, gas combi among them, has been asked the same question twice.
+ * Asked instead which KIND of gas boiler, they have been asked a follow-up.
+ * The difference is only in what is on screen, and it is the whole
+ * difference between the two experiences.
+ *
+ * Returns null where the answer is already settled and the question should
+ * not appear at all.
+ */
+export function narrowCurrent(fuel?: string, cylinder?: string): Question | null {
+  const pick = (id: string) => {
+    const q = QUESTIONS.find((x) => x.id === "current")!;
+    return q.options.find((o) => o.key === id)!;
+  };
+
+  if (fuel === "gas") {
+    // Already settled: a gas boiler with no cylinder is a combi.
+    if (cylinder === "no") return null;
+    const options =
+      cylinder === "yes"
+        ? [pick("gas-system"), pick("gas-regular")]
+        : [pick("gas-combi"), pick("gas-system"), pick("gas-regular")];
+    return {
+      id: "current",
+      title: "Which kind of gas boiler?",
+      hint:
+        cylinder === "yes"
+          ? "You said there is a cylinder, so it is one of these two."
+          : "The three it could be.",
+      options: [...options, unsure],
+    };
+  }
+
+  if (fuel === "oil") {
+    return {
+      id: "current",
+      title: "Oil or LPG?",
+      hint: "Both are off the gas grid; they qualify for the same grant.",
+      options: [pick("oil"), pick("lpg"), unsure],
+    };
+  }
+
+  return null;
+}
+
 /* -------------------------------------------------- the extra detail --- */
 
 /**
