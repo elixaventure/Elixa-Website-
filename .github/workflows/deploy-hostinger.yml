@@ -57,6 +57,15 @@ jobs:
           # stops posting enquiries to the app.
           NEXT_PUBLIC_TASKFLOW_LEAD_URL: ${{ vars.NEXT_PUBLIC_TASKFLOW_LEAD_URL }}
           NEXT_PUBLIC_TASKFLOW_SITE_KEY: ${{ vars.NEXT_PUBLIC_TASKFLOW_SITE_KEY }}
+          # The live heat pump price. Unset -> the quick quote asks for
+          # details and a person prices it, exactly as it does now. Set
+          # both and it calls the Supabase function, which works the
+          # figure out from the price list in TaskFlow. The price list
+          # itself never comes near this build.
+          NEXT_PUBLIC_ESTIMATE_URL: ${{ vars.NEXT_PUBLIC_ESTIMATE_URL || secrets.NEXT_PUBLIC_ESTIMATE_URL }}
+          # Public by design, like the keys above -- it only names a
+          # destination -- so it is accepted from either tab.
+          NEXT_PUBLIC_ESTIMATE_SITE_KEY: ${{ vars.NEXT_PUBLIC_ESTIMATE_SITE_KEY || secrets.NEXT_PUBLIC_ESTIMATE_SITE_KEY }}
       - name: Upload to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
