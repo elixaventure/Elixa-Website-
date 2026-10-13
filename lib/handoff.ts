@@ -32,12 +32,20 @@ export interface Handoff {
 /** The link from the landing page's result to the full quote. */
 export function handoffLink(answers: Record<string, string>): string {
   const p = new URLSearchParams({ from: "price-check" });
-  ["beds", "baths", "fuel", "cyl"].forEach((k) => {
+  ["prop", "beds", "baths", "fuel", "cyl"].forEach((k) => {
     if (answers[k]) p.set(k, answers[k]);
   });
   return `/quick-quote/?${p.toString()}`;
 }
 
+const PROPERTY = new Set(["flat", "terraced", "semi", "detached", "bungalow"]);
+const PROPERTY_LABELS: Record<string, string> = {
+  flat: "flat or apartment",
+  terraced: "terraced",
+  semi: "semi-detached",
+  detached: "detached",
+  bungalow: "bungalow",
+};
 const BEDS = new Set(["1-2", "3", "4", "5plus"]);
 const FUEL = new Set(["gas", "oil"]);
 const CYL = new Set(["yes", "no", "dunno"]);
@@ -55,12 +63,18 @@ export function readHandoff(search: string | null | undefined): Handoff | null {
   const q = new URLSearchParams(search);
   if (q.get("from") !== "price-check") return null;
 
+  const prop = q.get("prop") ?? "";
   const beds = q.get("beds") ?? "";
   const fuel = q.get("fuel") ?? "";
   const cyl = q.get("cyl") ?? "";
 
   const answers: Record<string, string> = {};
   const carried: string[] = [];
+
+  if (PROPERTY.has(prop)) {
+    answers.property = prop;
+    carried.push(PROPERTY_LABELS[prop]);
+  }
 
   if (BEDS.has(beds)) {
     answers.bedrooms = beds;
@@ -73,14 +87,17 @@ export function readHandoff(search: string | null | undefined): Handoff | null {
   carried.push("air source heat pump");
 
   if (FUEL.has(fuel)) {
-    // Gas with no cylinder is a combi, and that is the only one of these
-    // that is settled by what they have already said. Everything else is
-    // narrowed below rather than guessed at here.
-    if (fuel === "gas" && cyl === "no") {
-      answers.current = "gas-combi";
-      carried.push("gas combi boiler");
+    // Carried at the coarseness it was given. The kind of gas boiler
+    // changes nothing about the price — only the grant rate does, and that
+    // turns on being off the gas grid — so there is nothing to go back and
+    // ask. Where a cylinder answer settles it for free, it is recorded
+    // exactly; otherwise the coarse answer stands on its own.
+    if (fuel === "gas") {
+      answers.current = cyl === "no" ? "gas-combi" : "gas";
+      carried.push(cyl === "no" ? "gas combi boiler" : "gas boiler");
     } else {
-      carried.push(fuel === "gas" ? "gas boiler" : "oil or LPG");
+      answers.current = "oil-lpg";
+      carried.push("oil or LPG");
     }
   }
 

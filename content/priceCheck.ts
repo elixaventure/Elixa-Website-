@@ -30,7 +30,7 @@ export interface Choice {
  * first is how a four-bath house ends up quoted on a 200 litre tank.
  */
 export interface Group {
-  id: "beds" | "baths";
+  id: "prop" | "beds" | "baths";
   label: string;
   options: Choice[];
 }
@@ -50,6 +50,22 @@ export const ASKS: Ask[] = [
     title: "What would a heat pump cost you?",
     hint: "A few taps. No email, no phone number, no waiting for somebody to ring you back with a figure.",
     groups: [
+      {
+        // First, because it is the question somebody can answer without
+        // thinking and the one that frames the rest. It also means the
+        // longer quote never has to open by asking what kind of house it
+        // is, which was the thing that made clicking through feel like
+        // starting over.
+        id: "prop",
+        label: "Home",
+        options: [
+          { key: "flat", label: "Flat" },
+          { key: "terraced", label: "Terraced" },
+          { key: "semi", label: "Semi" },
+          { key: "detached", label: "Detached" },
+          { key: "bungalow", label: "Bungalow" },
+        ],
+      },
       {
         id: "beds",
         label: "Bedrooms",

@@ -105,6 +105,9 @@ export function PriceCheck() {
     const got = await fetchEstimate({
       bedrooms: next.beds,
       bathrooms: next.baths,
+      // Lets a business that wants to be more specific key its sizing on
+      // "flat:3" rather than "3" alone.
+      property: next.prop,
       // They keep the cylinder they have; anything else is left to the
       // sizing rule, which knows what this business fits.
       ...(next.cyl === "yes" ? { litres: 0 } : {}),
@@ -167,6 +170,7 @@ export function PriceCheck() {
       phone: contact.phone,
       postcode: contact.postcode,
       enquiry_type: "Price Check — advert landing page",
+      property: labelFor("prop", answers.prop),
       bedrooms: labelFor("beds", answers.beds),
       bathrooms: labelFor("baths", answers.baths),
       heats_it_now: labelFor("fuel", answers.fuel),

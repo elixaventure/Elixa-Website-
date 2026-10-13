@@ -6,7 +6,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   QUESTIONS,
   UNSURE,
-  narrowCurrent,
   quote,
   describe,
   detailQuestionsFor,
@@ -87,15 +86,14 @@ export function QuickQuote() {
   /**
    * The questions still worth asking.
    *
-   * Anything the landing page already settled is dropped, and the one
-   * question it half-answered is narrowed rather than repeated.
+   * Anything the landing page already heard is gone, at whatever
+   * coarseness it heard it. Asking a narrower version of a question
+   * somebody has already answered is still asking it again.
    */
-  const asks = useMemo(() => {
-    const narrowed = handoff ? narrowCurrent(handoff.fuel, handoff.cylinder) : null;
-    return QUESTIONS.map((q) => (q.id === "current" && narrowed ? narrowed : q)).filter(
-      (q) => !handoff?.answers[q.id],
-    );
-  }, [handoff]);
+  const asks = useMemo(
+    () => QUESTIONS.filter((q) => !handoff?.answers[q.id]),
+    [handoff],
+  );
 
   // Which extras are worth asking depends on the answers so far — there is
   // no point offering a choice of heat pump to somebody having an electric

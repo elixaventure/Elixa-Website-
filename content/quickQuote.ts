@@ -39,6 +39,23 @@ export interface Question {
   when?: (a: Answers) => boolean;
 }
 
+/**
+ * Answers only the advert landing page produces.
+ *
+ * It asks a coarser question than this one does — "gas boiler", not "gas
+ * combi or system or regular" — and the coarse answer is enough: the kind
+ * of gas boiler changes nothing about the price, only the grant rate does,
+ * and that turns on whether the home is off the gas grid.
+ *
+ * So the coarse answer is carried as it was given, and the question is not
+ * asked again. Narrowing it to "which kind of gas boiler?" was tried and is
+ * the same question in a smaller hat.
+ */
+export const CARRIED_LABELS: Record<string, string> = {
+  gas: "Gas boiler",
+  "oil-lpg": "Oil or LPG boiler",
+};
+
 /** Every question carries this, and choosing it means we price it by hand. */
 export const UNSURE: OptionKey = "unsure";
 const unsure = { key: UNSURE, label: "Not sure", note: "We'll work it out for you" };
@@ -128,54 +145,6 @@ export const QUESTIONS: Question[] = [
     ],
   },
 ];
-
-/**
- * The fuel question, narrowed by what the landing page already heard.
- *
- * Somebody who has just said "gas boiler" and is then shown the same eight
- * options, gas combi among them, has been asked the same question twice.
- * Asked instead which KIND of gas boiler, they have been asked a follow-up.
- * The difference is only in what is on screen, and it is the whole
- * difference between the two experiences.
- *
- * Returns null where the answer is already settled and the question should
- * not appear at all.
- */
-export function narrowCurrent(fuel?: string, cylinder?: string): Question | null {
-  const pick = (id: string) => {
-    const q = QUESTIONS.find((x) => x.id === "current")!;
-    return q.options.find((o) => o.key === id)!;
-  };
-
-  if (fuel === "gas") {
-    // Already settled: a gas boiler with no cylinder is a combi.
-    if (cylinder === "no") return null;
-    const options =
-      cylinder === "yes"
-        ? [pick("gas-system"), pick("gas-regular")]
-        : [pick("gas-combi"), pick("gas-system"), pick("gas-regular")];
-    return {
-      id: "current",
-      title: "Which kind of gas boiler?",
-      hint:
-        cylinder === "yes"
-          ? "You said there is a cylinder, so it is one of these two."
-          : "The three it could be.",
-      options: [...options, unsure],
-    };
-  }
-
-  if (fuel === "oil") {
-    return {
-      id: "current",
-      title: "Oil or LPG?",
-      hint: "Both are off the gas grid; they qualify for the same grant.",
-      options: [pick("oil"), pick("lpg"), unsure],
-    };
-  }
-
-  return null;
-}
 
 /* -------------------------------------------------- the extra detail --- */
 
@@ -310,7 +279,11 @@ export type QuoteResult =
 /** Electric boilers do not attract the Boiler Upgrade Scheme. */
 function grantFor(a: Answers, p: Pricing): number {
   if (a.target !== "ashp") return 0;
-  if (a.current === "oil" || a.current === "lpg") return p.grant.offGasGrid;
+  // "oil-lpg" is the landing page's own answer, which does not separate the
+  // two. It does not need to: they take the same rate.
+  if (a.current === "oil" || a.current === "lpg" || a.current === "oil-lpg") {
+    return p.grant.offGasGrid;
+  }
   return p.grant.standard;
 }
 
@@ -374,7 +347,10 @@ export function quote(a: Answers): QuoteResult {
 export function describe(a: Answers): { k: string; v: string }[] {
   const row = (q: Question) => ({
     k: q.title.replace(/\?$/, ""),
-    v: q.options.find((o) => o.key === a[q.id])?.label ?? "—",
+    v:
+      q.options.find((o) => o.key === a[q.id])?.label ??
+      CARRIED_LABELS[a[q.id]] ??
+      "—",
   });
   return [
     ...QUESTIONS.map(row),
