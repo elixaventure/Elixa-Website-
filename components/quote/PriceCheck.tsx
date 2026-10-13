@@ -64,6 +64,12 @@ export function PriceCheck() {
   // "today" on Thursday.
   const [days, setDays] = useState<Slot[]>([]);
   const [day, setDay] = useState("");
+  // On by default, because most homes qualify and it is the figure
+  // somebody clicked an advert to see. A switch rather than an assumption:
+  // the number moves in front of them, so what the grant is doing to the
+  // price is something they watched happen rather than something they have
+  // to take on trust.
+  const [withGrant, setWithGrant] = useState(true);
   const [time, setTime] = useState("");
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -118,23 +124,45 @@ export function PriceCheck() {
         }
       : null;
 
-  /** The three figures, on one scale, as bars. */
+  const grantOn = Boolean(figure && figure.grant > 0 && withGrant);
+
+  /**
+   * The three figures, on one scale, as bars.
+   *
+   * All three stay on screen when the switch moves, and only their
+   * lengths change: the grant bar shrinks to nothing and the
+   * what-you-pay bar grows to meet the full price. Removing the rows
+   * instead would make the answer jump; this way the grant is seen to
+   * be the difference.
+   */
   const bars: Bar[] = figure
     ? [
-        { label: "Before the grant", from: figure.beforeFrom, to: figure.beforeTo },
+        { label: "Full price", from: figure.beforeFrom, to: figure.beforeTo },
         ...(figure.grant > 0
           ? [
               {
                 label: figure.grantLabel,
                 from: 0,
-                to: figure.grant,
-                note: `−${money(figure.grant)}`,
+                to: grantOn ? figure.grant : 0,
+                note: grantOn ? `−${money(figure.grant)}` : "Not applied",
               },
-              { label: "You'd pay", from: figure.from, to: figure.to, lead: true },
+              {
+                label: "You'd pay",
+                from: grantOn ? figure.from : figure.beforeFrom,
+                to: grantOn ? figure.to : figure.beforeTo,
+                lead: true,
+              },
             ]
           : []),
       ]
     : [];
+
+  /** What the headline says, which is the whole point of the switch. */
+  const shown = figure
+    ? grantOn
+      ? { from: figure.from, to: figure.to }
+      : { from: figure.beforeFrom, to: figure.beforeTo }
+    : null;
 
   const finish = async (next: Record<string, string>) => {
     track("quick_quote_submit", { source: "price-check", answered: "all" });
@@ -234,7 +262,10 @@ export function PriceCheck() {
       hot_water_cylinder: labelFor("cyl", answers.cyl),
       indicative_range: outcome,
       radiators: rads || "Not said",
-      grant_assumed: figure && figure.grant > 0 ? money(figure.grant) : "None",
+      grant_assumed:
+        figure && figure.grant > 0
+          ? `${money(figure.grant)} — shown ${withGrant ? "with" : "without"} it`
+          : "None",
       next_step: "Call, then free survey",
       preferred_call: when || "No preference given",
       cost_before_grant: figure
@@ -415,31 +446,73 @@ export function PriceCheck() {
               Your estimate — subject to survey
             </p>
             <p className="v2-narrow mt-4 font-arch text-[2.9rem] font-bold leading-none tracking-[-0.035em] text-night-text tabular-nums sm:text-[4.2rem]">
-              {money(figure.from)}
-              <span className="font-normal text-night-faint"> – </span>
-              {money(figure.to)}
+              {money(shown!.from)}
+              {shown!.from !== shown!.to && (
+                <>
+                  <span className="font-normal text-night-faint"> – </span>
+                  {money(shown!.to)}
+                </>
+              )}
             </p>
 
             {figure.grant > 0 && (
-              <p className="mt-3 max-w-[48ch] text-[14px] leading-relaxed text-night-muted">
-                With the {money(figure.grant)} {figure.grantLabel} taken off. Before it,{" "}
-                {figure.beforeFrom === figure.beforeTo
-                  ? money(figure.beforeFrom)
-                  : `${money(figure.beforeFrom)} – ${money(figure.beforeTo)}`}
-                .
-              </p>
+              <>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={withGrant}
+                  onClick={() => {
+                    setWithGrant((v) => !v);
+                    track("quick_quote_detail", { from: "price-check-grant-toggle" });
+                  }}
+                  className={`mt-5 flex w-full items-center justify-between gap-4 rounded-xl border px-5 py-4 text-left transition-colors ${
+                    withGrant
+                      ? "border-night-accent/45 bg-night-accent/[0.08]"
+                      : "border-night-line bg-night-surface"
+                  }`}
+                >
+                  <span>
+                    <span className="block text-[15px] font-semibold text-night-text">
+                      {money(figure.grant)} {figure.grantLabel}
+                    </span>
+                    <span className="mt-0.5 block text-[12.5px] leading-relaxed text-night-faint">
+                      Most homes qualify. We apply for it for you.
+                    </span>
+                  </span>
+                  <span
+                    aria-hidden
+                    className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+                      withGrant ? "bg-night-accent" : "bg-night-text/20"
+                    }`}
+                  >
+                    <motion.span
+                      className="absolute top-1 h-5 w-5 rounded-full bg-night"
+                      initial={false}
+                      animate={{ left: withGrant ? 26 : 4 }}
+                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    />
+                  </span>
+                </button>
+                <p className="mt-3 max-w-[50ch] text-[13.5px] leading-relaxed text-night-muted">
+                  {withGrant
+                    ? `Shown with the grant off the price. Switch it off to see the full ${
+                        figure.beforeFrom === figure.beforeTo
+                          ? money(figure.beforeFrom)
+                          : `${money(figure.beforeFrom)} – ${money(figure.beforeTo)}`
+                      }.`
+                    : "Shown without it. Most homes do qualify — switch it back on for that figure."}
+                </p>
+              </>
             )}
 
             {/* Before the grant, the grant, and what is left — on one
                 scale, so the grant is a length rather than a sentence. */}
             <PriceBar bars={bars} />
 
-            {figure.grant > 0 && (
-              <p className="mt-6 max-w-[54ch] rounded-xl border border-night-line bg-night-surface p-4 text-[13.5px] leading-relaxed text-night-muted">
-                We apply for the {figure.grantLabel.toLowerCase()} on your behalf and it comes off
-                what you pay. Whether a property qualifies is confirmed at the survey, not from a
-                form — so treat the figure above as what we expect rather than what you have been
-                granted.
+            {figure.grant > 0 && withGrant && (
+              <p className="mt-6 max-w-[54ch] text-[12.5px] leading-relaxed text-night-faint">
+                Qualifying is confirmed at the survey rather than from a form, so the figure above
+                is what we expect rather than what you have been granted.
               </p>
             )}
 
