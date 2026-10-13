@@ -5,6 +5,7 @@ import { ClassicChrome } from "@/components/layout/ClassicChrome";
 import { Footer } from "@/components/layout/Footer";
 import { V2Chrome } from "@/components/layout/V2Chrome";
 import { CookieConsent } from "@/components/layout/CookieConsent";
+import { StylesheetRecovery } from "@/components/layout/StylesheetRecovery";
 import { MetaPixel } from "@/components/layout/MetaPixel";
 import { MobileNavV2 } from "@/components/v2/MobileNavV2";
 import { MobileBar } from "@/components/layout/MobileBar";
@@ -50,6 +51,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en-GB">
       <body>
+        {/* First thing in the document: if the stylesheet 404'd because this
+            HTML is cached from an earlier deploy, recover the page. */}
+        <StylesheetRecovery />
         <JsonLd data={[organizationSchema(), localBusinessSchema(), websiteSchema()]} />
         <Analytics />
         <a
