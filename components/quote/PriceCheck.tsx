@@ -6,7 +6,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ASKS,
   NO_PRICE,
+  answered,
   demoFigure,
+  labelFor,
   parseDemo,
   pricable,
   type DemoPrices,
@@ -82,30 +84,8 @@ export function PriceCheck() {
         }
       : null;
 
-  const choose = async (id: string, key: string) => {
-    const next = { ...answers, [id]: key };
-    setAnswers(next);
-
-    // No point asking about a cylinder once we know we are not giving a
-    // number. On a page somebody reached by tapping an advert, a question
-    // that cannot change the answer only costs the ones who close the tab.
-    if (id === "fuel" && !pricable(next)) {
-      track("quick_quote_submit", { source: "price-check", answered: "2", outcome: "callback" });
-      setScreen("talk");
-      return;
-    }
-
-    if (step < ASKS.length - 1) {
-      setStep(step + 1);
-      return;
-    }
-
-    track("quick_quote_submit", { source: "price-check", answered: "3" });
-
-    if (!pricable(next)) {
-      setScreen("talk");
-      return;
-    }
+  const finish = async (next: Record<string, string>) => {
+    track("quick_quote_submit", { source: "price-check", answered: "all" });
     // A demo link already has everything it needs.
     if (demo) {
       setScreen("price");
@@ -118,6 +98,7 @@ export function PriceCheck() {
     setScreen("working");
     const got = await fetchEstimate({
       bedrooms: next.beds,
+      bathrooms: next.baths,
       // They keep the cylinder they have; anything else is left to the
       // sizing rule, which knows what this business fits.
       ...(next.cyl === "yes" ? { litres: 0 } : {}),
@@ -125,6 +106,31 @@ export function PriceCheck() {
     });
     setEstimate(got);
     setScreen(got ? "price" : "talk");
+  };
+
+  const choose = (id: string, key: string) => {
+    const next = { ...answers, [id]: key };
+    setAnswers(next);
+
+    // No point asking about a cylinder once we know we are not giving a
+    // number. On a page somebody reached by tapping an advert, a question
+    // that cannot change the answer only costs the ones who close the tab.
+    if (id === "fuel" && !pricable(next)) {
+      track("quick_quote_submit", { source: "price-check", outcome: "callback" });
+      setScreen("talk");
+      return;
+    }
+
+    // The first screen holds two questions. Stay on it until both have an
+    // answer, rather than jumping away the moment one is tapped.
+    if (!answered(ask, next)) return;
+
+    if (step < ASKS.length - 1) {
+      // A beat, so the chip that was just tapped is seen to go green.
+      setTimeout(() => setStep((v) => v + 1), 200);
+      return;
+    }
+    void finish(next);
   };
 
   const back = () => {
@@ -155,9 +161,10 @@ export function PriceCheck() {
       phone: contact.phone,
       postcode: contact.postcode,
       enquiry_type: "Price Check — advert landing page",
-      bedrooms: ASKS[0].options.find((o) => o.key === answers.beds)?.label ?? "—",
-      heats_it_now: ASKS[1].options.find((o) => o.key === answers.fuel)?.label ?? "—",
-      hot_water_cylinder: ASKS[2].options.find((o) => o.key === answers.cyl)?.label ?? "—",
+      bedrooms: labelFor("beds", answers.beds),
+      bathrooms: labelFor("baths", answers.baths),
+      heats_it_now: labelFor("fuel", answers.fuel),
+      hot_water_cylinder: labelFor("cyl", answers.cyl),
       indicative_range: outcome,
       emitters: "Not included — to be discussed by phone",
       source: "price-check",
@@ -232,8 +239,39 @@ export function PriceCheck() {
               <p className="mt-4 max-w-[44ch] text-[15px] leading-relaxed text-night-muted">{ask.hint}</p>
             )}
 
+            {ask.groups ? (
+              <div className="mt-7 grid gap-6">
+                {ask.groups.map((g) => (
+                  <div key={g.id}>
+                    <span className="mb-2.5 block font-techmono text-[10px] uppercase tracking-[0.2em] text-night-faint">
+                      {g.label}
+                    </span>
+                    <div className="flex flex-wrap gap-2.5">
+                      {g.options.map((o) => {
+                        const on = answers[g.id] === o.key;
+                        return (
+                          <button
+                            key={o.key}
+                            type="button"
+                            onClick={() => choose(g.id, o.key)}
+                            aria-pressed={on}
+                            className={`min-h-[58px] min-w-[70px] flex-1 rounded-xl border px-4 text-[17px] font-semibold transition-colors ${
+                              on
+                                ? "border-night-accent bg-night-accent/[0.12] text-night-accent"
+                                : "border-night-line bg-night-surface text-night-text hover:border-night-accent/45"
+                            }`}
+                          >
+                            {o.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
             <div className="mt-7 grid gap-2.5">
-              {ask.options.map((o) => (
+              {(ask.options ?? []).map((o) => (
                 <button
                   key={o.key}
                   type="button"
@@ -253,6 +291,7 @@ export function PriceCheck() {
                 </button>
               ))}
             </div>
+            )}
 
             {step > 0 && (
               <button

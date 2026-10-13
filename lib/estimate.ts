@@ -31,6 +31,8 @@ export interface Estimate {
 export interface EstimateAsk {
   bedrooms?: string;
   property?: string;
+  /** Drives the cylinder, where the business has set a size against it. */
+  bathrooms?: string;
   /** 0 when they are keeping the cylinder they have; omitted when unknown. */
   litres?: number;
   /** The two ends of the distance band the visitor picked, in metres. */
