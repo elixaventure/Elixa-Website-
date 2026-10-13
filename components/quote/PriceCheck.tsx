@@ -19,7 +19,14 @@ import { track } from "@/lib/analytics";
 import { fetchEstimate, ESTIMATE_URL, type Estimate } from "@/lib/estimate";
 import { submitLead, FORM_ENDPOINT } from "@/lib/forms";
 import { handoffLink } from "@/lib/handoff";
-import { CALL_TIMES, callDays, describeCall, type Slot } from "@/lib/callSlots";
+import {
+  CALL_TIMES,
+  SURVEY_TIMES,
+  callDays,
+  describeSlot,
+  surveyDays,
+  type Slot,
+} from "@/lib/callSlots";
 import { PriceBar, type Bar } from "@/components/quote/PriceBar";
 
 const money = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
@@ -64,13 +71,18 @@ export function PriceCheck() {
   // "today" on Thursday.
   const [days, setDays] = useState<Slot[]>([]);
   const [day, setDay] = useState("");
+  const [time, setTime] = useState("");
+  // And the survey, which is the appointment that matters. Pencilled in
+  // rather than booked: the call comes first and settles it.
+  const [sDays, setSDays] = useState<Slot[]>([]);
+  const [sDay, setSDay] = useState("");
+  const [sTime, setSTime] = useState("");
   // On by default, because most homes qualify and it is the figure
   // somebody clicked an advert to see. A switch rather than an assumption:
   // the number moves in front of them, so what the grant is doing to the
   // price is something they watched happen rather than something they have
   // to take on trust.
   const [withGrant, setWithGrant] = useState(true);
-  const [time, setTime] = useState("");
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -82,6 +94,7 @@ export function PriceCheck() {
   useEffect(() => {
     setDemo(parseDemo(window.location.search));
     setDays(callDays());
+    setSDays(surveyDays());
   }, []);
 
   // Fired when a figure is on the screen, not when one was worked out —
@@ -272,6 +285,9 @@ export function PriceCheck() {
       // day after somebody types it; a date does not.
       preferred_call_date: days.find((d) => d.key === day)?.date ?? "",
       preferred_call_window: time || "",
+      preferred_survey: surveyWhen || "No preference given",
+      preferred_survey_date: sDays.find((d) => d.key === sDay)?.date ?? "",
+      preferred_survey_window: sTime || "",
       cost_before_grant: figure
         ? figure.beforeFrom === figure.beforeTo
           ? money(figure.beforeFrom)
@@ -288,12 +304,40 @@ export function PriceCheck() {
 
   const canSend = contact.name.trim() && contact.phone.trim() && contact.postcode.trim();
 
-  const when = describeCall(
+  const when = describeSlot(
     days.find((d) => d.key === day),
     CALL_TIMES.find((t) => t.key === time),
   );
+  const surveyWhen = describeSlot(
+    sDays.find((d) => d.key === sDay),
+    SURVEY_TIMES.find((t) => t.key === sTime),
+  );
 
   /* ------------------------------------------------------- pieces --- */
+
+  /** One chip row, used by both pickers so they cannot drift apart. */
+  const chips = (opts: Slot[], picked: string, set: (v: string) => void) => (
+    <div className="flex flex-wrap gap-2">
+      {opts.map((o) => {
+        const on = picked === o.key;
+        return (
+          <button
+            key={o.key}
+            type="button"
+            onClick={() => set(on ? "" : o.key)}
+            aria-pressed={on}
+            className={`min-h-[46px] rounded-xl border px-4 text-[14px] font-medium transition-colors ${
+              on
+                ? "border-night-accent bg-night-accent/[0.12] text-night-accent"
+                : "border-night-line bg-night-surface text-night-muted hover:border-night-accent/45"
+            }`}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   const phoneBlock = (
     <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-dashed border-night-line px-5 py-4">
@@ -567,7 +611,7 @@ export function PriceCheck() {
               Arrange my free survey
             </button>
             <p className="mt-3 text-center text-[12.5px] leading-relaxed text-night-faint">
-              A short call first to go through it, then we book the survey in.
+              Pick a survey slot and when to ring you. The call comes first.
             </p>
             {/* Carries what they just said, so the longer form picks up
                 where this left off instead of asking it all again. */}
@@ -604,7 +648,7 @@ export function PriceCheck() {
               Arrange my free survey
             </button>
             <p className="mt-3 text-center text-[12.5px] leading-relaxed text-night-faint">
-              A short call first to go through it, then we book the survey in.
+              Pick a survey slot and when to ring you. The call comes first.
             </p>
           </motion.div>
         )}
@@ -619,8 +663,8 @@ export function PriceCheck() {
               Let's get you booked in.
             </h1>
             <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-night-muted">
-              We'll call to go through it properly, then arrange the free survey. We work across the
-              UK, so the postcode is for getting the right engineer to you.
+              Pencil the survey in and tell us when to ring — we always call first. We work across
+              the UK, so the postcode is for getting the right engineer to you.
             </p>
 
             <div className="mt-7 grid gap-3">
@@ -645,55 +689,36 @@ export function PriceCheck() {
               ))}
             </div>
 
-            {days.length > 0 && (
-              <div className="mt-6">
-                <span className="mb-2.5 block font-techmono text-[10px] uppercase tracking-[0.2em] text-night-faint">
-                  When suits for the call?
+            {sDays.length > 0 && (
+              <div className="mt-7 rounded-xl border border-night-line bg-night-surface/40 p-4">
+                <span className="block font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+                  The survey
                 </span>
-                <div className="flex flex-wrap gap-2">
-                  {days.map((d) => {
-                    const on = day === d.key;
-                    return (
-                      <button
-                        key={d.key}
-                        type="button"
-                        onClick={() => setDay(on ? "" : d.key)}
-                        aria-pressed={on}
-                        className={`min-h-[46px] rounded-xl border px-4 text-[14px] font-medium transition-colors ${
-                          on
-                            ? "border-night-accent bg-night-accent/[0.12] text-night-accent"
-                            : "border-night-line bg-night-surface text-night-muted hover:border-night-accent/45"
-                        }`}
-                      >
-                        {d.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {CALL_TIMES.map((t) => {
-                    const on = time === t.key;
-                    return (
-                      <button
-                        key={t.key}
-                        type="button"
-                        onClick={() => setTime(on ? "" : t.key)}
-                        aria-pressed={on}
-                        className={`min-h-[46px] flex-1 rounded-xl border px-4 text-[14px] font-medium transition-colors ${
-                          on
-                            ? "border-night-accent bg-night-accent/[0.12] text-night-accent"
-                            : "border-night-line bg-night-surface text-night-muted hover:border-night-accent/45"
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-night-muted">
+                  Pencil one in and we'll confirm it on the call. About an hour at the property.
+                </p>
+                <div className="mt-3">{chips(sDays, sDay, setSDay)}</div>
+                <div className="mt-2">{chips(SURVEY_TIMES, sTime, setSTime)}</div>
                 <p className="mt-2.5 text-[12px] leading-relaxed text-night-faint">
-                  {when
-                    ? `We'll ring you ${when}.`
-                    : "Pick a day, a time, or both. Leave it and we'll ring when we can."}
+                  {surveyWhen
+                    ? `Pencilled in for ${surveyWhen}.`
+                    : "Not sure yet? Leave it and we'll sort it on the call."}
+                </p>
+              </div>
+            )}
+
+            {days.length > 0 && (
+              <div className="mt-4 rounded-xl border border-night-line bg-night-surface/40 p-4">
+                <span className="block font-techmono text-[10px] uppercase tracking-[0.2em] text-night-accent">
+                  The call first
+                </span>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-night-muted">
+                  Ten minutes to go through the radiators and the cylinder before anybody comes out.
+                </p>
+                <div className="mt-3">{chips(days, day, setDay)}</div>
+                <div className="mt-2">{chips(CALL_TIMES, time, setTime)}</div>
+                <p className="mt-2.5 text-[12px] leading-relaxed text-night-faint">
+                  {when ? `We'll ring you ${when}.` : "Leave it and we'll ring when we can."}
                 </p>
               </div>
             )}
@@ -734,7 +759,7 @@ export function PriceCheck() {
               disabled={!canSend || sending}
               className="mt-6 flex min-h-[58px] w-full items-center justify-center rounded-xl bg-night-accent px-6 font-techmono text-[12.5px] uppercase tracking-[0.14em] text-night transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:bg-night-surface disabled:text-night-faint"
             >
-              {sending ? "Sending…" : "Request my call"}
+              {sending ? "Sending…" : "Book me in"}
             </button>
             {!canSend && (
               <p className="mt-3 font-techmono text-[10px] uppercase tracking-[0.14em] text-night-faint">
@@ -772,7 +797,12 @@ export function PriceCheck() {
                   when ? `A call ${when}` : "A call",
                   "Ten minutes or so. We go through the radiators, the cylinder and anything the form couldn't cover.",
                 ],
-                ["A free survey", "Booked on that call. Room-by-room heat loss, and the figure we stand behind comes from it."],
+                [
+                  surveyWhen ? `A free survey ${surveyWhen}` : "A free survey",
+                  surveyWhen
+                    ? "Pencilled in — we'll confirm it on the call. Room-by-room heat loss, and the figure we stand behind comes from it."
+                    : "Booked on that call. Room-by-room heat loss, and the figure we stand behind comes from it.",
+                ],
               ].map(([t, d], i) => (
                 <li key={t} className="flex gap-4 rounded-xl border border-night-line bg-night-surface p-4">
                   <span className="font-techmono text-[13px] text-night-accent">{i + 1}</span>
