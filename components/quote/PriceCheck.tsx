@@ -268,6 +268,10 @@ export function PriceCheck() {
           : "None",
       next_step: "Call, then free survey",
       preferred_call: when || "No preference given",
+      // The same thing a diary can use. "Tomorrow" stops being true the
+      // day after somebody types it; a date does not.
+      preferred_call_date: days.find((d) => d.key === day)?.date ?? "",
+      preferred_call_window: time || "",
       cost_before_grant: figure
         ? figure.beforeFrom === figure.beforeTo
           ? money(figure.beforeFrom)
