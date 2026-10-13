@@ -214,6 +214,20 @@ export const DETAIL_QUESTIONS: Question[] = [
     ],
   },
   {
+    id: "rads",
+    title: "Roughly how many radiators?",
+    hint:
+      "Not to price them — emitters come out of the heat-loss survey. It tells whoever calls you the size of the conversation before they pick up the phone.",
+    options: [
+      { key: "upto6", label: "Up to 6" },
+      { key: "7to10", label: "7 – 10" },
+      { key: "11to15", label: "11 – 15" },
+      { key: "16plus", label: "16 or more" },
+      { key: "ufh", label: "None — underfloor throughout" },
+      unsure,
+    ],
+  },
+  {
     id: "unit",
     title: "Any preference on the heat pump itself?",
     hint: "No prices against these — you'll see the range at the end either way.",
