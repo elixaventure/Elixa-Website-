@@ -45,6 +45,12 @@
 }
 
 :root {
+  /* Proof that this stylesheet arrived. Read back by the inline recovery
+     script in the layout: Next fingerprints this file, so a visitor holding
+     cached HTML from an earlier deploy asks for a filename that no longer
+     exists, gets a 404, and sees the page with no styling at all. Nothing
+     else on the page can tell the difference, so this is the tell. */
+  --sheet: 1;
   --nav-h: 76px;
   /* The dark header's height. The sticky jump bar hangs off it and the
      scroll-margin on every jump target is measured from it, so all three
