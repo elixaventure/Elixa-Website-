@@ -23,6 +23,15 @@ export interface Slot {
   label: string;
   /** Spoken back in the confirmation, where "Today" would read oddly. */
   spoken: string;
+  /**
+   * The actual date, YYYY-MM-DD.
+   *
+   * Carried because "tomorrow" is only true for about a day. The enquiry
+   * is read by a person on a phone and by a diary that needs a date, and
+   * a note saying "tomorrow in the afternoon" opened on Thursday points
+   * at the wrong day with no way to tell.
+   */
+  date?: string;
 }
 
 /** After this hour, offering a call back today is not a real offer. */
@@ -51,12 +60,22 @@ export function callDays(now = new Date()): Slot[] {
     d.setDate(now.getDate() + i);
     if (d.getDay() === 0) continue;
     if (i === 0 && now.getHours() >= TOO_LATE) continue;
+    // Local parts rather than toISOString(), which converts to UTC and
+    // turns a late-evening Tuesday into Wednesday.
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate(),
+    ).padStart(2, "0")}`;
     out.push(
       i === 0
-        ? { key: "today", label: "Today", spoken: "today" }
+        ? { key: "today", label: "Today", spoken: "today", date: iso }
         : i === 1
-          ? { key: "tomorrow", label: "Tomorrow", spoken: "tomorrow" }
-          : { key: `d${i}`, label: `${SHORT[d.getDay()]} ${d.getDate()}`, spoken: `${DAY[d.getDay()]} the ${ordinal(d.getDate())}` },
+          ? { key: "tomorrow", label: "Tomorrow", spoken: "tomorrow", date: iso }
+          : {
+              key: `d${i}`,
+              label: `${SHORT[d.getDay()]} ${d.getDate()}`,
+              spoken: `${DAY[d.getDay()]} the ${ordinal(d.getDate())}`,
+              date: iso,
+            },
     );
   }
   return out;
