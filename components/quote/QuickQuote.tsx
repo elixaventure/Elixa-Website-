@@ -3,12 +3,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { QUESTIONS, UNSURE, quote, describe, type Answers } from "@/content/quickQuote";
+import {
+  QUESTIONS,
+  UNSURE,
+  quote,
+  describe,
+  detailQuestionsFor,
+  hasDetail,
+  withoutDetail,
+  type Answers,
+  type Question,
+} from "@/content/quickQuote";
 import { site } from "@/content/site";
 import { track } from "@/lib/analytics";
 import { submitLead, FORM_ENDPOINT } from "@/lib/forms";
 
 const money = (n: number) => `£${n.toLocaleString("en-GB")}`;
+
+type Step =
+  | { kind: "q"; q: Question; detail?: boolean }
+  | { kind: "gate" }
+  | { kind: "result" }
+  | { kind: "contact" }
+  | { kind: "done" };
 
 /**
  * Quick Quote — a short, heat-pump-only qualifier that ends in a price range
@@ -17,22 +34,54 @@ const money = (n: number) => `£${n.toLocaleString("en-GB")}`;
  * Order matters commercially: the visitor sees the outcome first and is asked
  * for contact details after it, so the details are given by someone who has
  * already seen the number.
+ *
+ * Two depths, and the split is the point. Seven questions anyone can answer
+ * without leaving the sofa, then an optional step — cylinder position, how
+ * the pipework runs, which unit — for someone who already knows their own
+ * system. The second step is offered, never imposed: skipping it costs the
+ * visitor nothing, and it is offered again on the result for anyone who
+ * decides they do know after all.
+ *
+ * Emitters are out of scope and said so out loud. Radiator and underfloor
+ * sizing comes from the room-by-room heat loss, and pretending a dropdown
+ * can stand in for that would put a number in front of someone that we
+ * could not stand behind. So the result names the exclusion and hands over
+ * the phone instead.
  */
 export function QuickQuote() {
   const [step, setStep] = useState(0);
   const [a, setA] = useState<Answers>({});
+  const [detail, setDetail] = useState(false);
   const [contact, setContact] = useState({ name: "", phone: "", email: "", postcode: "" });
   const [sending, setSending] = useState(false);
   const [route, setRoute] = useState<"posted" | "email">("posted");
 
   const top = useRef<HTMLDivElement>(null);
 
-  const RESULT = QUESTIONS.length;
+  // Which extras are worth asking depends on the answers so far — there is
+  // no point offering a choice of heat pump to somebody having an electric
+  // boiler.
+  const detailQs = useMemo(() => detailQuestionsFor(a), [a]);
+
+  const GATE = QUESTIONS.length;
+  const steps = useMemo<Step[]>(
+    () => [
+      ...QUESTIONS.map((q) => ({ kind: "q" as const, q })),
+      { kind: "gate" as const },
+      ...(detail ? detailQs.map((q) => ({ kind: "q" as const, q, detail: true })) : []),
+      { kind: "result" as const },
+      { kind: "contact" as const },
+      { kind: "done" as const },
+    ],
+    [detail, detailQs],
+  );
+
+  const RESULT = GATE + 1 + (detail ? detailQs.length : 0);
   const CONTACT = RESULT + 1;
   const DONE = CONTACT + 1;
 
+  const cur = steps[Math.min(step, steps.length - 1)];
   const result = useMemo(() => quote(a), [a]);
-  const q = QUESTIONS[step];
 
   // Each step is a different height, and the options run well down a phone
   // screen. Without this you tap an answer near the bottom and the next
@@ -47,10 +96,24 @@ export function QuickQuote() {
     top.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   }, [step]);
 
-  const pick = (key: string) => {
-    setA((prev) => ({ ...prev, [q.id]: key }));
+  const pick = (id: string, key: string) => {
+    setA((prev) => ({ ...prev, [id]: key }));
     // A beat on the highlight before moving, so the choice registers.
     setTimeout(() => setStep((s) => s + 1), 140);
+  };
+
+  const openDetail = () => {
+    setDetail(true);
+    setStep(GATE + 1);
+    track("quick_quote_detail", { from: step === GATE ? "offer" : "result" });
+  };
+
+  const skipDetail = () => {
+    // Clear anything answered on a previous trip through, so the range can
+    // never be quietly refined by answers the visitor has since backed out of.
+    setA((prev) => withoutDetail(prev));
+    setDetail(false);
+    setStep(GATE + 1);
   };
 
   const submit = async () => {
@@ -58,9 +121,9 @@ export function QuickQuote() {
     const answers = describe(a);
     const outcome =
       result.kind === "range"
-        ? `${money(result.from)} – ${money(result.to)} after grant`
+        ? `${money(result.from)} – ${money(result.to)} after grant, subject to site survey`
         : "Priced by hand — visitor was unsure on at least one answer";
-    track("quick_quote_submit", { outcome: result.kind });
+    track("quick_quote_submit", { outcome: result.kind, detail: hasDetail(a) ? "yes" : "no" });
 
     const payload: Record<string, string> = {
       name: contact.name,
@@ -69,6 +132,10 @@ export function QuickQuote() {
       postcode: contact.postcode,
       enquiry_type: "Quick Quote — heat pump",
       indicative_range: outcome,
+      // Worth flagging in the inbox: someone who filled in the extra step
+      // knows their system, and the emitter conversation is the next call.
+      detail_given: hasDetail(a) ? "Yes — extra detail answered" : "No — seven questions only",
+      emitters: "Not included — to be discussed by phone",
       source: "quick-quote",
     };
     answers.forEach(({ k, v }) => {
@@ -87,7 +154,8 @@ export function QuickQuote() {
 
     const body = encodeURIComponent(
       `Name: ${contact.name}\nPhone: ${contact.phone}\nEmail: ${contact.email}\nPostcode: ${contact.postcode}\n\n` +
-        `QUICK QUOTE — HEAT PUMP\n${answers.map((x) => `${x.k}: ${x.v}`).join("\n")}\n\nIndicative range: ${outcome}`,
+        `QUICK QUOTE — HEAT PUMP\n${answers.map((x) => `${x.k}: ${x.v}`).join("\n")}\n\n` +
+        `Indicative range: ${outcome}\nEmitters: not included — to be discussed by phone`,
     );
     setRoute("email");
     window.location.href = `${site.emailHref}?subject=${encodeURIComponent("Quick Quote request")}&body=${body}`;
@@ -97,10 +165,32 @@ export function QuickQuote() {
 
   const canSend = contact.name.trim() && contact.phone.trim() && contact.postcode.trim();
 
+  /** The exclusion, stated the same way wherever it appears. */
+  const emitterNote = (
+    <div className="mt-12 border border-night-line bg-night-surface/30 p-6 md:p-8">
+      <p className="font-techmono text-[11px] uppercase tracking-[0.22em] text-night-accent">
+        What this doesn't cover
+      </p>
+      <p className="mt-4 max-w-[58ch] text-base leading-relaxed text-night-muted">
+        Radiators and underfloor heating are not in the figure above. What the emitters need comes
+        out of a room-by-room heat-loss calculation, and it is the part that most changes what a
+        system costs — too big a question for a form. It is a ten-minute phone call.
+      </p>
+      <a
+        href={site.phoneHref}
+        onClick={() => track("phone_click", { context: "quick-quote-emitters" })}
+        className="mt-6 inline-flex items-center gap-3 border border-night-accent px-7 py-4 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
+      >
+        Talk emitters — {site.phoneDisplay}
+      </a>
+    </div>
+  );
+
   return (
     <div ref={top} className="mx-auto w-full max-w-3xl scroll-mt-28">
-      {/* progress */}
-      {step < RESULT && (
+      {/* progress — the core seven only, so the optional step never makes
+          the visitor feel they are further from the end than they were */}
+      {cur.kind === "q" && !cur.detail && (
         <div className="mb-10">
           <div className="flex items-baseline justify-between font-techmono text-[11px] uppercase tracking-[0.2em] text-night-faint">
             <span>
@@ -117,29 +207,39 @@ export function QuickQuote() {
           </div>
         </div>
       )}
+      {cur.kind === "q" && cur.detail && (
+        <div className="mb-10 flex items-baseline justify-between font-techmono text-[11px] uppercase tracking-[0.2em] text-night-faint">
+          <span className="text-night-accent">Extra detail</span>
+          <span>
+            {String(step - GATE).padStart(2, "0")} / {String(detailQs.length).padStart(2, "0")}
+          </span>
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {/* ---------------------------------------------------- questions --- */}
-        {step < RESULT && (
+        {cur.kind === "q" && (
           <motion.div
-            key={q.id}
+            key={cur.q.id}
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -14 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           >
             <h2 className="v2-narrow max-w-[20ch] font-arch text-3xl font-semibold leading-[1.05] tracking-[-0.02em] text-night-text md:text-5xl">
-              {q.title}
+              {cur.q.title}
             </h2>
-            {q.hint && <p className="mt-4 max-w-[52ch] text-base text-night-muted md:text-lg">{q.hint}</p>}
+            {cur.q.hint && (
+              <p className="mt-4 max-w-[52ch] text-base text-night-muted md:text-lg">{cur.q.hint}</p>
+            )}
 
             <div className="mt-8 grid gap-3">
-              {q.options.map((o) => {
-                const on = a[q.id] === o.key;
+              {cur.q.options.map((o) => {
+                const on = a[cur.q.id] === o.key;
                 return (
                   <button
                     key={o.key}
-                    onClick={() => pick(o.key)}
+                    onClick={() => pick(cur.q.id, o.key)}
                     aria-pressed={on}
                     className={`flex items-center justify-between gap-4 border px-5 py-5 text-left transition-colors ${
                       on
@@ -161,19 +261,82 @@ export function QuickQuote() {
               })}
             </div>
 
-            {step > 0 && (
+            <div className="mt-8 flex flex-wrap items-center gap-6">
+              {step > 0 && (
+                <button
+                  onClick={() => setStep((s) => s - 1)}
+                  className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-faint transition-colors hover:text-night-text"
+                >
+                  ← Back
+                </button>
+              )}
+              {cur.detail && (
+                <button
+                  onClick={() => setStep(RESULT)}
+                  className="font-techmono text-[11px] uppercase tracking-[0.2em] text-night-faint transition-colors hover:text-night-text"
+                >
+                  Skip the rest →
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* --------------------------------------------- the detail offer --- */}
+        {cur.kind === "gate" && (
+          <motion.div
+            key="gate"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -14 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
+              Optional
+            </p>
+            <h2 className="v2-narrow mt-5 max-w-[22ch] font-arch text-3xl font-semibold leading-[1.05] tracking-[-0.02em] text-night-text md:text-5xl">
+              Know your own system? Tighten it up.
+            </h2>
+            <p className="mt-5 max-w-[56ch] text-base text-night-muted md:text-lg">
+              {detailQs.length} more questions — where the cylinder goes, how you'd want the
+              pipework run, and whether you have a view on the unit itself. Answer them and the
+              range narrows. Skip them and you still get one.
+            </p>
+            <ul className="mt-8 divide-y divide-night-line border-y border-night-line">
+              {detailQs.map((q) => (
+                <li
+                  key={q.id}
+                  className="py-3 font-techmono text-[12px] uppercase tracking-[0.16em] text-night-faint md:text-[11px]"
+                >
+                  {q.title.replace(/\?$/, "")}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-10 flex flex-wrap gap-4">
               <button
-                onClick={() => setStep((s) => s - 1)}
-                className="mt-8 font-techmono text-[11px] uppercase tracking-[0.2em] text-night-faint transition-colors hover:text-night-text"
+                onClick={openDetail}
+                className="inline-flex items-center gap-3 border border-night-accent px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
               >
-                ← Back
+                Add the detail <span aria-hidden>→</span>
               </button>
-            )}
+              <button
+                onClick={skipDetail}
+                className="inline-flex items-center gap-3 border border-night-text/25 px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
+              >
+                Straight to my range
+              </button>
+            </div>
+            <button
+              onClick={() => setStep((s) => s - 1)}
+              className="mt-8 font-techmono text-[11px] uppercase tracking-[0.2em] text-night-faint transition-colors hover:text-night-text"
+            >
+              ← Back
+            </button>
           </motion.div>
         )}
 
         {/* ------------------------------------------------------- result --- */}
-        {step === RESULT && (
+        {cur.kind === "result" && (
           <motion.div
             key="result"
             initial={{ opacity: 0, y: 14 }}
@@ -184,7 +347,7 @@ export function QuickQuote() {
             {result.kind === "range" ? (
               <>
                 <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
-                  Indicative range
+                  Indicative range — subject to site survey
                 </p>
                 <p className="v2-narrow mt-5 font-arch text-[3.4rem] font-semibold leading-none tracking-[-0.03em] text-night-text md:text-[5.5rem]">
                   {money(result.from)} – {money(result.to)}
@@ -197,9 +360,12 @@ export function QuickQuote() {
                   </p>
                 )}
                 <p className="mt-4 max-w-[58ch] text-sm leading-relaxed text-night-faint">
-                  This is a guide from seven answers, not a quotation. The real figure comes from a
-                  free survey and a room-by-room heat-loss calculation — that is what we price from,
-                  and it can land either side of this range.
+                  {result.refined > 0
+                    ? "Narrowed by the extra detail you gave. Still a guide and not a quotation"
+                    : "This is a guide from seven answers, not a quotation"}
+                  : the real figure comes from a free survey and a room-by-room heat-loss
+                  calculation — that is what we price from, and it can land either side of this
+                  range.
                 </p>
               </>
             ) : (
@@ -225,13 +391,27 @@ export function QuickQuote() {
               >
                 {result.kind === "range" ? "Book the free survey" : "Get my price"} <span aria-hidden>→</span>
               </button>
+              {!hasDetail(a) && (
+                <button
+                  onClick={openDetail}
+                  className="inline-flex items-center gap-3 border border-night-text/25 px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
+                >
+                  Add more detail
+                </button>
+              )}
               <button
-                onClick={() => setStep(0)}
+                onClick={() => {
+                  setA({});
+                  setDetail(false);
+                  setStep(0);
+                }}
                 className="inline-flex items-center gap-3 border border-night-text/25 px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-text transition-colors hover:border-night-text/60"
               >
                 Start again
               </button>
             </div>
+
+            {emitterNote}
 
             {/* what they told us, so they can see it was actually used */}
             <dl className="mt-12 divide-y divide-night-line border-y border-night-line">
@@ -248,7 +428,7 @@ export function QuickQuote() {
         )}
 
         {/* ------------------------------------------------------ contact --- */}
-        {step === CONTACT && (
+        {cur.kind === "contact" && (
           <motion.div
             key="contact"
             initial={{ opacity: 0, y: 14 }}
@@ -309,7 +489,7 @@ export function QuickQuote() {
         )}
 
         {/* --------------------------------------------------------- done --- */}
-        {step === DONE && (
+        {cur.kind === "done" && (
           <motion.div
             key="done"
             initial={{ opacity: 0, y: 14 }}
@@ -326,7 +506,7 @@ export function QuickQuote() {
             </h2>
             <p className="mt-5 max-w-[54ch] text-base text-night-muted md:text-lg">
               {route === "posted"
-                ? "We have your answers and we'll come back with the next step. If you'd rather talk it through now, call us."
+                ? "We have your answers and we'll come back with the next step. The emitters — radiators or underfloor — are the one thing best settled on the phone, so expect that to come up."
                 : "Your email app should have opened with everything filled in. Nothing reaches us until you send it."}
             </p>
             <div className="mt-8 flex flex-wrap gap-4">

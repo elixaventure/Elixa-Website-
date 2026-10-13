@@ -8,7 +8,7 @@ import { QuickQuote } from "@/components/quote/QuickQuote";
 export const metadata: Metadata = {
   title: "Quick Quote — Heat Pumps",
   description:
-    "Seven questions and an indicative heat pump price range, with the Boiler Upgrade Scheme grant applied. Not sure on something? We'll price it by hand.",
+    "Seven questions and an indicative heat pump price range, with the Boiler Upgrade Scheme grant applied — plus an optional extra step if you already know your own system. Not sure on something? We'll price it by hand.",
 };
 
 export default function QuickQuotePage() {
@@ -27,8 +27,10 @@ export default function QuickQuotePage() {
           </h1>
           <p className="mt-6 max-w-[58ch] text-base leading-relaxed text-night-muted md:text-lg">
             Seven questions about your home and what you're replacing. Not sure about one of them?
-            Say so — we'd rather work it out than have you guess. Looking for solar, battery, EV
-            charging or air conditioning instead?{" "}
+            Say so — we'd rather work it out than have you guess. Know your system well enough to
+            say where the cylinder goes and how you'd want the pipework run? There's an optional
+            step for that, and it narrows the range. Looking for solar, battery, EV charging or air
+            conditioning instead?{" "}
             <Link href="/quote" className="text-night-accent transition-colors hover:text-night-text">
               Use the full enquiry form
             </Link>
