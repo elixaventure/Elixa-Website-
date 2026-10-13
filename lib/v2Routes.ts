@@ -27,6 +27,28 @@ export const V2_ROUTES = new Set([
   "/quick-quote",
 ]);
 
+/**
+ * Routes that carry no site chrome at all.
+ *
+ * A page somebody lands on from a paid advert has one job, and every link
+ * away from it is a way to fail at that job — so these get no navigation,
+ * no footer and no mobile bar, not even the v2 ones. They are still listed
+ * apart from V2_ROUTES rather than inside it, because the two chromes make
+ * opposite decisions from the same list and "neither" is a third answer.
+ */
+export const BARE_ROUTES = new Set([
+  "/price-check",
+]);
+
+export function isBareRoute(pathname: string | null | undefined): boolean {
+  return BARE_ROUTES.has(pathname?.replace(/\/$/, "") || "/");
+}
+
+/** True when the page brings its own chrome, or deliberately has none. */
+export function hasOwnChrome(pathname: string | null | undefined): boolean {
+  return isV2Route(pathname) || isBareRoute(pathname);
+}
+
 export function isV2Route(pathname: string | null | undefined): boolean {
   const path = pathname?.replace(/\/$/, "") || "/";
   return V2_ROUTES.has(path) || pathname === "/" || path.startsWith("/case-studies/");
