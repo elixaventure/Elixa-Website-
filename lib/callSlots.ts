@@ -1,5 +1,6 @@
 /**
- * When the customer would like to be rung.
+ * When the customer would like to be rung, and when they would like
+ * the survey.
  *
  * Not a booking. The installers' app has a calendar, but it publishes no
  * availability — projects sit on it as date blocks, and there is nothing
@@ -47,15 +48,15 @@ function ordinal(n: number) {
 const SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 /**
- * The next few days worth offering.
+ * Days worth offering, from `skip` days out, until `want` of them.
  *
  * Sundays are left out and Saturdays are not — this is a trade, and the
- * people who most want a Saturday call are the ones who cannot take one
- * midweek.
+ * people who most want a Saturday appointment are the ones who cannot
+ * take one midweek.
  */
-export function callDays(now = new Date()): Slot[] {
+function days(now: Date, skip: number, want: number): Slot[] {
   const out: Slot[] = [];
-  for (let i = 0; out.length < 5 && i < 10; i++) {
+  for (let i = skip; out.length < want && i < skip + 30; i++) {
     const d = new Date(now);
     d.setDate(now.getDate() + i);
     if (d.getDay() === 0) continue;
@@ -81,14 +82,38 @@ export function callDays(now = new Date()): Slot[] {
   return out;
 }
 
+/** The call: soon, and today counts until late afternoon. */
+export function callDays(now = new Date()): Slot[] {
+  return days(now, 0, 5);
+}
+
+/**
+ * The survey: further out, and more of them.
+ *
+ * It starts two days from now rather than tomorrow, because the call
+ * comes first and a survey pencilled in for the morning after the
+ * enquiry leaves no room for it. Eight days rather than five, because
+ * somebody arranging to be at home for an hour is working round a
+ * fortnight, not round tomorrow.
+ */
+export function surveyDays(now = new Date()): Slot[] {
+  return days(now, 2, 8);
+}
+
 export const CALL_TIMES: Slot[] = [
   { key: "morning", label: "Morning", spoken: "in the morning" },
   { key: "afternoon", label: "Afternoon", spoken: "in the afternoon" },
   { key: "evening", label: "After 5", spoken: "after five" },
 ];
 
+/** A survey is an hour at the property, so no after-five slot. */
+export const SURVEY_TIMES: Slot[] = [
+  { key: "morning", label: "Morning", spoken: "in the morning" },
+  { key: "afternoon", label: "Afternoon", spoken: "in the afternoon" },
+];
+
 /** What the enquiry carries, and what the confirmation says back. */
-export function describeCall(day?: Slot, time?: Slot): string {
+export function describeSlot(day?: Slot, time?: Slot): string {
   if (!day && !time) return "";
   if (day && time) return `${day.spoken} ${time.spoken}`;
   return (day?.spoken ?? time?.spoken) as string;
