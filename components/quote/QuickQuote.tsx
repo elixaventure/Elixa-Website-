@@ -17,7 +17,7 @@ import {
 import { site } from "@/content/site";
 import { track } from "@/lib/analytics";
 import { submitLead, FORM_ENDPOINT } from "@/lib/forms";
-import { readHandoff, type Handoff } from "@/lib/handoff";
+import { readHandoff, stripHandoff, type Handoff } from "@/lib/handoff";
 import { fetchEstimate, bandToMetres, ESTIMATE_URL, type Estimate } from "@/lib/estimate";
 
 const money = (n: number) => `£${n.toLocaleString("en-GB")}`;
@@ -74,12 +74,13 @@ export function QuickQuote() {
     // Take the answers back out of the address. They are one person's, and
     // a link copied out of the bar and sent to somebody else should not
     // arrive pre-filled with them.
-    try {
-      const u = new URL(window.location.href);
-      ["from", "beds", "baths", "fuel", "cyl"].forEach((k) => u.searchParams.delete(k));
-      window.history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
-    } catch {
-      /* an address we cannot rewrite is only untidy */
+    const clean = stripHandoff(window.location.href);
+    if (clean) {
+      try {
+        window.history.replaceState(null, "", clean);
+      } catch {
+        /* an address we cannot rewrite is only untidy */
+      }
     }
   }, []);
 

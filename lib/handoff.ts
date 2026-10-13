@@ -29,13 +29,35 @@ export interface Handoff {
   cylinder?: string;
 }
 
+/**
+ * Every key the hand-off puts in the address.
+ *
+ * One list, used to build the link and to strip it again, because they
+ * were two lists and drifted the moment a question was added: "prop" was
+ * added to the link and not to the stripping, and ?prop=semi sat in the
+ * address bar afterwards.
+ */
+export const HANDOFF_KEYS = ["from", "prop", "beds", "baths", "fuel", "cyl"] as const;
+
 /** The link from the landing page's result to the full quote. */
 export function handoffLink(answers: Record<string, string>): string {
   const p = new URLSearchParams({ from: "price-check" });
-  ["prop", "beds", "baths", "fuel", "cyl"].forEach((k) => {
-    if (answers[k]) p.set(k, answers[k]);
+  HANDOFF_KEYS.forEach((k) => {
+    if (k !== "from" && answers[k]) p.set(k, answers[k]);
   });
   return `/quick-quote/?${p.toString()}`;
+}
+
+/** Takes them back out, so a copied link is not somebody else's answers. */
+export function stripHandoff(href: string): string | null {
+  try {
+    const u = new URL(href);
+    if (!HANDOFF_KEYS.some((k) => u.searchParams.has(k))) return null;
+    HANDOFF_KEYS.forEach((k) => u.searchParams.delete(k));
+    return u.pathname + (u.search || "") + u.hash;
+  } catch {
+    return null;
+  }
 }
 
 const PROPERTY = new Set(["flat", "terraced", "semi", "detached", "bungalow"]);
