@@ -19,10 +19,12 @@ import { track } from "@/lib/analytics";
 import { fetchEstimate, ESTIMATE_URL, type Estimate } from "@/lib/estimate";
 import { submitLead, FORM_ENDPOINT } from "@/lib/forms";
 import { handoffLink } from "@/lib/handoff";
+import { PriceBar, type Bar } from "@/components/quote/PriceBar";
+import { GRANT_QUESTIONS, HEADLINE, SCHEME, assess } from "@/content/grant";
 
 const money = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`;
 
-type Screen = "ask" | "working" | "price" | "talk" | "form" | "done";
+type Screen = "ask" | "working" | "price" | "grant" | "talk" | "form" | "done";
 
 /**
  * Price Check — the advert landing page.
@@ -57,6 +59,12 @@ export function PriceCheck() {
   // whoever rings them the size of the conversation, and asking here costs
   // nothing because they have already decided to hear from us.
   const [rads, setRads] = useState("");
+  // The grant check. Until it is answered the figure after the grant is
+  // shown as a possibility and labelled as one — the scheme is applied for
+  // by us and decided by Ofgem, and no questionnaire can do better than
+  // "nothing you have told us rules you out".
+  const [grantAnswers, setGrantAnswers] = useState<Record<string, string>>({});
+  const [grantStep, setGrantStep] = useState(0);
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -69,6 +77,16 @@ export function PriceCheck() {
     setDemo(parseDemo(window.location.search));
   }, []);
 
+  // Fired when a figure is on the screen, not when one was worked out —
+  // the two differ whenever the estimate comes back unavailable, and the
+  // one worth optimising an advert towards is the one somebody saw.
+  const seen = useRef(false);
+  useEffect(() => {
+    if (screen !== "price" || seen.current) return;
+    seen.current = true;
+    track("estimate_viewed", { source: "price-check", priced: demo ? "link" : "live" });
+  }, [screen, demo]);
+
   useEffect(() => {
     if (top.current && screen !== "ask") top.current.scrollIntoView({ block: "start", behavior: "smooth" });
   }, [screen]);
@@ -80,15 +98,51 @@ export function PriceCheck() {
 
   /** What to put on screen, from whichever source answered. */
   const figure = demoFig
-    ? { from: demoFig.from, to: demoFig.to, grant: demoFig.grant, grantLabel: "Boiler Upgrade Scheme" }
+    ? {
+        from: demoFig.from,
+        to: demoFig.to,
+        beforeFrom: demoFig.beforeGrant,
+        beforeTo: demoFig.beforeGrant,
+        grant: demoFig.grant,
+        grantLabel: SCHEME.name,
+      }
     : estimate
       ? {
           from: estimate.total.from,
           to: estimate.total.to,
+          beforeFrom: estimate.beforeGrant.from,
+          beforeTo: estimate.beforeGrant.to,
           grant: estimate.grant?.amount ?? 0,
-          grantLabel: estimate.grant?.label ?? "Boiler Upgrade Scheme",
+          grantLabel: estimate.grant?.label ?? SCHEME.name,
         }
       : null;
+
+  const checked = GRANT_QUESTIONS.every((q) => grantAnswers[q.id]);
+  const assessment = checked ? assess(grantAnswers) : null;
+  const grantApplies = !assessment || assessment.outcome !== "unlikely";
+
+  /** The three figures, on one scale, as bars. */
+  const bars: Bar[] = figure
+    ? [
+        { label: "Before the grant", from: figure.beforeFrom, to: figure.beforeTo },
+        ...(figure.grant > 0 && grantApplies
+          ? [
+              {
+                label: assessment?.outcome === "likely" ? figure.grantLabel : `${figure.grantLabel} — potential`,
+                from: 0,
+                to: figure.grant,
+                note: `−${money(figure.grant)}`,
+              },
+              {
+                label: assessment?.outcome === "likely" ? "You pay" : "If the grant applies",
+                from: figure.from,
+                to: figure.to,
+                lead: true,
+              },
+            ]
+          : []),
+      ]
+    : [];
 
   const finish = async (next: Record<string, string>) => {
     track("quick_quote_submit", { source: "price-check", answered: "all" });
@@ -117,9 +171,20 @@ export function PriceCheck() {
     setScreen(got ? "price" : "talk");
   };
 
+  const started = useRef(false);
+
   const choose = (id: string, key: string) => {
     const next = { ...answers, [id]: key };
     setAnswers(next);
+
+    // "Started" means started answering, not landed — PageView already
+    // covers landing. It also lands after the cookie banner has usually
+    // been dealt with, where an on-mount event fires before anyone has
+    // had the chance to say yes and so never reaches Meta at all.
+    if (!started.current) {
+      started.current = true;
+      track("calculator_start", { source: "price-check" });
+    }
 
     // No point asking about a cylinder once we know we are not giving a
     // number. On a page somebody reached by tapping an advert, a question
@@ -177,6 +242,16 @@ export function PriceCheck() {
       hot_water_cylinder: labelFor("cyl", answers.cyl),
       indicative_range: outcome,
       radiators: rads || "Not said",
+      grant_check: assessment
+        ? `${assessment.outcome} — ${GRANT_QUESTIONS.map(
+            (q) => `${q.id}:${grantAnswers[q.id] ?? "—"}`,
+          ).join(", ")}`
+        : "Not checked",
+      cost_before_grant: figure
+        ? figure.beforeFrom === figure.beforeTo
+          ? money(figure.beforeFrom)
+          : `${money(figure.beforeFrom)} – ${money(figure.beforeTo)}`
+        : "—",
       emitters: "Not included — to be discussed by phone",
       source: "price-check",
     };
@@ -342,21 +417,79 @@ export function PriceCheck() {
         {screen === "price" && figure && (
           <motion.div key="price" {...fade}>
             <p className="font-techmono text-[10.5px] uppercase tracking-[0.26em] text-night-accent">
-              Your estimate — subject to survey
+              {assessment ? HEADLINE[assessment.outcome] : "Your estimate — if the grant applies"}
             </p>
             <p className="v2-narrow mt-4 font-arch text-[2.9rem] font-bold leading-none tracking-[-0.035em] text-night-text tabular-nums sm:text-[4.2rem]">
-              {money(figure.from)}
-              <span className="font-normal text-night-faint"> – </span>
-              {money(figure.to)}
+              {grantApplies ? (
+                <>
+                  {money(figure.from)}
+                  <span className="font-normal text-night-faint"> – </span>
+                  {money(figure.to)}
+                </>
+              ) : (
+                <>
+                  {money(figure.beforeFrom)}
+                  {figure.beforeFrom !== figure.beforeTo && (
+                    <>
+                      <span className="font-normal text-night-faint"> – </span>
+                      {money(figure.beforeTo)}
+                    </>
+                  )}
+                </>
+              )}
             </p>
 
-            <dl className="mt-7 border-t border-night-line">
-              {figure.grant > 0 && (
-                <div className="flex justify-between gap-4 border-b border-night-line py-3 text-[14.5px]">
-                  <dt className="text-night-muted">{figure.grantLabel}</dt>
-                  <dd className="font-techmono tabular-nums text-night-accent">−{money(figure.grant)}</dd>
-                </div>
-              )}
+            {grantApplies && figure.grant > 0 && assessment?.outcome !== "likely" && (
+              <p className="mt-3 max-w-[46ch] text-[14px] leading-relaxed text-night-muted">
+                …if the {figure.grantLabel.toLowerCase()} applies. Without it,{" "}
+                {figure.beforeFrom === figure.beforeTo
+                  ? money(figure.beforeFrom)
+                  : `${money(figure.beforeFrom)} – ${money(figure.beforeTo)}`}
+                .
+              </p>
+            )}
+
+            {/* Before the grant, the grant, and what is left — on one
+                scale, so the grant is a length rather than a sentence. */}
+            <PriceBar bars={bars} />
+
+            {assessment ? (
+              <p
+                className={`mt-6 max-w-[52ch] rounded-xl border p-4 text-[13.5px] leading-relaxed ${
+                  assessment.outcome === "likely"
+                    ? "border-night-accent/35 bg-night-accent/[0.07] text-night-muted"
+                    : "border-night-line bg-night-surface text-night-muted"
+                }`}
+              >
+                {assessment.reason}
+              </p>
+            ) : (
+              figure.grant > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGrantStep(0);
+                    setScreen("grant");
+                    track("quick_quote_detail", { from: "price-check-grant" });
+                  }}
+                  className="mt-6 flex min-h-[54px] w-full items-center justify-between gap-4 rounded-xl border border-night-accent/40 bg-night-accent/[0.07] px-5 text-left transition-colors hover:bg-night-accent/[0.12]"
+                >
+                  <span>
+                    <span className="block font-techmono text-[10px] uppercase tracking-[0.18em] text-night-accent">
+                      Three questions
+                    </span>
+                    <span className="mt-1 block text-[14px] text-night-text">
+                      Check whether the {figure.grantLabel.toLowerCase()} applies to you
+                    </span>
+                  </span>
+                  <span aria-hidden className="text-night-accent">
+                    →
+                  </span>
+                </button>
+              )
+            )}
+
+            <dl className="mt-6 border-t border-night-line">
               <div className="flex justify-between gap-4 border-b border-night-line py-3 text-[14.5px]">
                 <dt className="text-night-muted">VAT</dt>
                 <dd className="font-techmono text-night-text">Zero-rated</dd>
@@ -408,10 +541,93 @@ export function PriceCheck() {
               href={handoffLink(answers)}
               className="mt-3 flex min-h-[58px] w-full items-center justify-center rounded-xl border border-night-line px-6 font-techmono text-[12.5px] uppercase tracking-[0.14em] text-night-text transition-colors hover:border-night-text"
             >
-              Answer more, narrow it down
+              Get a more accurate estimate
             </Link>
           </motion.div>
         )}
+
+        {/* ---------------------------------------------- grant check --- */}
+        {screen === "grant" && (() => {
+          const q = GRANT_QUESTIONS[Math.min(grantStep, GRANT_QUESTIONS.length - 1)];
+          return (
+            <motion.div key={`grant-${q.id}`} {...fade}>
+              <div className="mb-7 flex gap-1.5" aria-hidden>
+                {GRANT_QUESTIONS.map((x, i) => (
+                  <span
+                    key={x.id}
+                    className={`h-0.5 flex-1 rounded-full transition-colors duration-500 ${
+                      i <= grantStep ? "bg-night-accent" : "bg-night-line"
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <p className="font-techmono text-[10.5px] uppercase tracking-[0.26em] text-night-accent">
+                {SCHEME.name}
+              </p>
+              <h1 className="v2-narrow mt-4 max-w-[16ch] font-arch text-[2rem] font-bold leading-[1.02] tracking-[-0.025em] text-night-text sm:text-[2.6rem]">
+                {q.title}
+              </h1>
+              {q.hint && (
+                <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-night-muted">{q.hint}</p>
+              )}
+
+              <div className="mt-7 grid gap-2.5">
+                {q.options.map((o) => (
+                  <button
+                    key={o.key}
+                    type="button"
+                    onClick={() => {
+                      const next = { ...grantAnswers, [q.id]: o.key };
+                      setGrantAnswers(next);
+                      if (grantStep < GRANT_QUESTIONS.length - 1) {
+                        setGrantStep(grantStep + 1);
+                        return;
+                      }
+                      track("calculator_complete", {
+                        source: "price-check",
+                        grant: assess(next).outcome,
+                      });
+                      setScreen("price");
+                    }}
+                    className="group flex min-h-[62px] items-center justify-between gap-4 rounded-xl border border-night-line bg-night-surface px-5 py-4 text-left transition-colors hover:border-night-accent/45"
+                  >
+                    <span>
+                      <span className="block text-[16.5px] font-semibold text-night-text">{o.label}</span>
+                      {o.note && <span className="mt-0.5 block text-[12.5px] text-night-faint">{o.note}</span>}
+                    </span>
+                    <span aria-hidden className="text-night-faint transition-colors group-hover:text-night-accent">
+                      →
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-7 flex flex-wrap items-center gap-6">
+                <button
+                  type="button"
+                  onClick={() => (grantStep > 0 ? setGrantStep(grantStep - 1) : setScreen("price"))}
+                  className="font-techmono text-[11px] uppercase tracking-[0.18em] text-night-faint transition-colors hover:text-night-text"
+                >
+                  ← Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScreen("price")}
+                  className="font-techmono text-[11px] uppercase tracking-[0.18em] text-night-faint transition-colors hover:text-night-text"
+                >
+                  Skip this →
+                </button>
+              </div>
+
+              <p className="mt-8 max-w-[52ch] text-[12px] leading-relaxed text-night-faint">
+                We apply for the grant on your behalf, and Ofgem decides. Nothing here is an
+                approval — the most these questions can tell you is whether anything obvious rules
+                you out.
+              </p>
+            </motion.div>
+          );
+        })()}
 
         {/* ----------------------------------------------------- talk --- */}
         {screen === "talk" && (

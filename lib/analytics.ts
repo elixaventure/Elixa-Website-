@@ -11,6 +11,7 @@ declare global {
   interface Window {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
+    fbq?: (...args: unknown[]) => void;
   }
 }
 
@@ -21,11 +22,35 @@ export type ConversionEvent =
   | "quick_quote_submit"
   // the optional extra step, opened by a visitor who knows their own system
   | "quick_quote_detail"
+  // the advert calculator: opened, and a figure actually seen
+  | "calculator_start"
+  | "estimate_viewed"
   | "calculator_complete"
   | "phone_click"
   | "email_click"
   | "cta_click"
   | "survey_booking";
+
+/**
+ * The same events, in the names Meta's reporting understands.
+ *
+ * Lead, Contact and Schedule are Meta's own standard events, so they show
+ * up in Ads Manager as conversions worth optimising towards rather than as
+ * custom events somebody has to go looking for. The two calculator steps
+ * have no standard equivalent and are sent as custom events.
+ *
+ * Anything not listed here stays out of Meta entirely. A pixel that
+ * receives every internal event is one nobody can read.
+ */
+const META: Partial<Record<ConversionEvent, { name: string; standard: boolean }>> = {
+  calculator_start: { name: "CalculatorStart", standard: false },
+  estimate_viewed: { name: "EstimateViewed", standard: false },
+  quick_quote_submit: { name: "Lead", standard: true },
+  quote_submit: { name: "Lead", standard: true },
+  survey_booking: { name: "Schedule", standard: true },
+  phone_click: { name: "Contact", standard: true },
+  email_click: { name: "Contact", standard: true },
+};
 
 export function track(event: ConversionEvent, params: EventParams = {}) {
   if (typeof window === "undefined") return;
@@ -33,6 +58,14 @@ export function track(event: ConversionEvent, params: EventParams = {}) {
   window.dataLayer.push({ event, ...params });
   if (typeof window.gtag === "function") {
     window.gtag("event", event, params);
+  }
+  // Consent needs no check here, and that is the point: fbq only exists
+  // once MetaPixel has loaded the script, and MetaPixel does not load it
+  // until somebody has said yes. No consent, no fbq, nothing sent — so
+  // there is no second gate to forget to update.
+  const meta = META[event];
+  if (meta && typeof window.fbq === "function") {
+    window.fbq(meta.standard ? "track" : "trackCustom", meta.name, params);
   }
 }
 
