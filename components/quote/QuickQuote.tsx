@@ -17,6 +17,7 @@ import {
 import { site } from "@/content/site";
 import { track } from "@/lib/analytics";
 import { submitLead, FORM_ENDPOINT } from "@/lib/forms";
+import { fetchEstimate, bandToMetres, ESTIMATE_URL, type Estimate } from "@/lib/estimate";
 
 const money = (n: number) => `£${n.toLocaleString("en-GB")}`;
 
@@ -55,6 +56,10 @@ export function QuickQuote() {
   const [contact, setContact] = useState({ name: "", phone: "", email: "", postcode: "" });
   const [sending, setSending] = useState(false);
   const [route, setRoute] = useState<"posted" | "email">("posted");
+  // The figure from the office's own price list, fetched rather than
+  // calculated here — see lib/estimate.ts for why.
+  const [estimate, setEstimate] = useState<Estimate | null>(null);
+  const [estimating, setEstimating] = useState(false);
 
   const top = useRef<HTMLDivElement>(null);
 
@@ -96,6 +101,47 @@ export function QuickQuote() {
     top.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   }, [step]);
 
+  // Asked for once the visitor reaches the result, and only when the
+  // answers are ones the office could price: a heat pump, and nothing
+  // left as "not sure". Anything else is a job for a person, which is
+  // what the page already does.
+  const askable =
+    a.target === "ashp" && QUESTIONS.every((q) => a[q.id] && a[q.id] !== UNSURE);
+  const askKey = askable ? `${a.bedrooms}|${a.property}|${a.distance}` : "";
+
+  useEffect(() => {
+    if (cur.kind !== "result" || !askKey || !ESTIMATE_URL) {
+      setEstimate(null);
+      return;
+    }
+    const ac = new AbortController();
+    let live = true;
+    setEstimating(true);
+    fetchEstimate(
+      {
+        bedrooms: a.bedrooms,
+        property: a.property,
+        ...bandToMetres(a.distance),
+        grant: true,
+      },
+      ac.signal,
+    )
+      .then((e) => {
+        if (live) setEstimate(e);
+      })
+      .finally(() => {
+        if (live) setEstimating(false);
+      });
+    return () => {
+      live = false;
+      ac.abort();
+    };
+    // Deliberately keyed on the answers that change the figure, not on
+    // the whole answers object — which gets a new identity on every tap
+    // and would re-ask on each one.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cur.kind, askKey]);
+
   const pick = (id: string, key: string) => {
     setA((prev) => ({ ...prev, [id]: key }));
     // A beat on the highlight before moving, so the choice registers.
@@ -119,11 +165,15 @@ export function QuickQuote() {
   const submit = async () => {
     setSending(true);
     const answers = describe(a);
-    const outcome =
-      result.kind === "range"
-        ? `${money(result.from)} – ${money(result.to)} after grant, subject to site survey`
-        : "Priced by hand — visitor was unsure on at least one answer";
-    track("quick_quote_submit", { outcome: result.kind, detail: hasDetail(a) ? "yes" : "no" });
+    const outcome = figure
+      ? `${figure.from === figure.to ? money(figure.from) : `${money(figure.from)} – ${money(figure.to)}`}` +
+        ` after grant, subject to site survey${estimate ? " (priced from the live list)" : ""}`
+      : "Priced by hand — no figure was shown on the website";
+    track("quick_quote_submit", {
+      outcome: figure ? (figure.firm ? "firm" : "range") : "callback",
+      priced: estimate ? "live" : figure ? "built-in" : "by-hand",
+      detail: hasDetail(a) ? "yes" : "no",
+    });
 
     const payload: Record<string, string> = {
       name: contact.name,
@@ -164,6 +214,44 @@ export function QuickQuote() {
   };
 
   const canSend = contact.name.trim() && contact.phone.trim() && contact.postcode.trim();
+
+  /**
+   * The figure, from whichever side could produce one.
+   *
+   * The office's own price list wins where it answers — it is the live
+   * one, and the one a customer will be quoted from later. The built-in
+   * table is the fallback for a site running without the estimate
+   * endpoint. Neither producing anything is the normal state today, and
+   * means a person prices it.
+   */
+  const figure = estimate
+    ? {
+        firm: estimate.kind === "firm",
+        from: estimate.total.from,
+        to: estimate.total.to,
+        beforeGrant: estimate.beforeGrant,
+        grant: estimate.grant?.amount ?? 0,
+        grantLabel: estimate.grant?.label ?? "Boiler Upgrade Scheme",
+        assumptions: estimate.assumptions ?? [],
+        note: estimate.disclaimer,
+      }
+    : result.kind === "range"
+      ? {
+          firm: false,
+          from: result.from,
+          to: result.to,
+          beforeGrant: result.beforeGrant,
+          grant: result.grant,
+          grantLabel: "Boiler Upgrade Scheme",
+          assumptions: [] as string[],
+          note:
+            (result.refined > 0
+              ? "Narrowed by the extra detail you gave. Still a guide and not a quotation"
+              : "This is a guide from seven answers, not a quotation") +
+            ": the real figure comes from a free survey and a room-by-room heat-loss " +
+            "calculation — that is what we price from, and it can land either side of this range.",
+        }
+      : null;
 
   /** The exclusion, stated the same way wherever it appears. */
   const emitterNote = (
@@ -344,28 +432,60 @@ export function QuickQuote() {
             exit={{ opacity: 0, y: -14 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
-            {result.kind === "range" ? (
+            {estimating ? (
               <>
                 <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
-                  Indicative range — subject to site survey
+                  Working it out
+                </p>
+                <h2 className="v2-narrow mt-5 max-w-[20ch] font-arch text-3xl font-semibold leading-[1.05] tracking-[-0.02em] text-night-text md:text-5xl">
+                  Pricing this from today's list.
+                </h2>
+                <p className="mt-5 max-w-[52ch] text-base text-night-muted md:text-lg">
+                  One moment — this comes off the same prices our office quotes from, not a
+                  guess baked into the website.
+                </p>
+                <div className="mt-8 h-px w-full overflow-hidden bg-night-line">
+                  <motion.div
+                    className="h-px w-1/3 bg-night-accent"
+                    animate={{ x: ["-100%", "300%"] }}
+                    transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                </div>
+              </>
+            ) : figure ? (
+              <>
+                <p className="font-techmono text-[11px] uppercase tracking-[0.3em] text-night-accent">
+                  {figure.firm ? "Your estimate" : "Indicative range"} — subject to site survey
                 </p>
                 <p className="v2-narrow mt-5 font-arch text-[3.4rem] font-semibold leading-none tracking-[-0.03em] text-night-text md:text-[5.5rem]">
-                  {money(result.from)} – {money(result.to)}
+                  {figure.from === figure.to
+                    ? money(figure.from)
+                    : `${money(figure.from)} – ${money(figure.to)}`}
                 </p>
-                {result.grant > 0 && (
+                {figure.grant > 0 && (
                   <p className="mt-5 max-w-[52ch] text-base text-night-muted md:text-lg">
-                    After an assumed {money(result.grant)} Boiler Upgrade Scheme grant, which we apply
+                    After an assumed {money(figure.grant)} {figure.grantLabel} grant, which we apply
                     for on your behalf. Before the grant it would be{" "}
-                    {money(result.beforeGrant.from)} – {money(result.beforeGrant.to)}.
+                    {figure.beforeGrant.from === figure.beforeGrant.to
+                      ? money(figure.beforeGrant.from)
+                      : `${money(figure.beforeGrant.from)} – ${money(figure.beforeGrant.to)}`}
+                    .
                   </p>
                 )}
-                <p className="mt-4 max-w-[58ch] text-sm leading-relaxed text-night-faint">
-                  {result.refined > 0
-                    ? "Narrowed by the extra detail you gave. Still a guide and not a quotation"
-                    : "This is a guide from seven answers, not a quotation"}
-                  : the real figure comes from a free survey and a room-by-room heat-loss
-                  calculation — that is what we price from, and it can land either side of this
-                  range.
+                {figure.assumptions.length > 0 && (
+                  <ul className="mt-6 max-w-[58ch] space-y-2">
+                    {figure.assumptions.map((x) => (
+                      <li key={x} className="flex gap-3 text-sm leading-relaxed text-night-muted">
+                        <span aria-hidden className="text-night-accent">
+                          ·
+                        </span>
+                        {x}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="mt-6 max-w-[58ch] text-sm leading-relaxed text-night-faint">
+                  {figure.note}
                 </p>
               </>
             ) : (
@@ -377,7 +497,7 @@ export function QuickQuote() {
                   Your answers need a human, not a calculator.
                 </h2>
                 <p className="mt-5 max-w-[56ch] text-base text-night-muted md:text-lg">
-                  {result.reason === "unsure"
+                  {result.kind === "callback" && result.reason === "unsure"
                     ? "There's at least one thing you weren't sure about — which is completely normal, and not something to guess at. Leave your details and we'll come back with a proper figure."
                     : "Leave your details and we'll come back with a proper figure."}
                 </p>
@@ -389,7 +509,7 @@ export function QuickQuote() {
                 onClick={() => setStep(CONTACT)}
                 className="inline-flex items-center gap-3 border border-night-accent px-8 py-5 font-techmono text-sm uppercase tracking-[0.16em] text-night-accent transition-colors hover:bg-night-accent hover:text-night"
               >
-                {result.kind === "range" ? "Book the free survey" : "Get my price"} <span aria-hidden>→</span>
+                {figure ? "Book the free survey" : "Get my price"} <span aria-hidden>→</span>
               </button>
               {!hasDetail(a) && (
                 <button
