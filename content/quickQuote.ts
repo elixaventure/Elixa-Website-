@@ -5,6 +5,17 @@
  * air conditioning are not quotable this way, and emitter upgrades are left
  * out for now. Those all still route to /quote.
  *
+ * Two depths. The seven core questions are what anyone can answer from their
+ * sofa. DETAIL_QUESTIONS are the optional extras for someone who knows their
+ * own system — where the cylinder goes, how the pipework gets run, which unit
+ * they want — and they tighten the range without ever being required. Nobody
+ * is made to answer them to get a number, and a "not sure" in there never
+ * costs anyone their price.
+ *
+ * Emitters stay out on purpose. Radiator and underfloor sizing falls out of
+ * the room-by-room heat loss, not a dropdown, so the tool says plainly that
+ * they are excluded and hands the visitor the phone.
+ *
  * ── Why there are no prices in here yet ─────────────────────────────────
  * The range shown to a visitor is a commercial promise. Nothing in this file
  * is guessed: PRICING stays null until Elixa supply real figures, and while
@@ -12,6 +23,8 @@
  * questions, the flow and the enquiry that lands in the inbox all work
  * regardless — filling in PRICING is the only step that switches ranges on.
  */
+
+import { HEAT_PUMP_RANGE } from "./heatPumpRange";
 
 export type OptionKey = string;
 
@@ -22,6 +35,8 @@ export interface Question {
   /** one line under the question, when it needs explaining */
   hint?: string;
   options: { key: OptionKey; label: string; note?: string }[];
+  /** only asked when this is true of the answers so far */
+  when?: (a: Answers) => boolean;
 }
 
 /** Every question carries this, and choosing it means we price it by hand. */
@@ -114,6 +129,67 @@ export const QUESTIONS: Question[] = [
   },
 ];
 
+/* -------------------------------------------------- the extra detail --- */
+
+/**
+ * The optional second depth, for a visitor who knows their own system.
+ *
+ * None of these is required and none of them can send someone to the
+ * callback path — answer them and the range tightens, skip them and nothing
+ * changes. "Not sure" is here anyway, because somebody who opened this step
+ * may still be sure of two out of three.
+ */
+export const DETAIL_QUESTIONS: Question[] = [
+  {
+    id: "cylinder",
+    title: "Where's the hot water cylinder going?",
+    hint: "If there's one there already, that's usually the answer.",
+    options: [
+      { key: "existing", label: "Where the current one is", note: "Swapping a cylinder in place" },
+      { key: "airing", label: "Airing cupboard" },
+      { key: "utility", label: "Utility or plant room" },
+      { key: "garage", label: "Garage or outbuilding" },
+      { key: "loft", label: "Loft" },
+      { key: "tbd", label: "Nowhere obvious yet", note: "We'll find it at survey" },
+      unsure,
+    ],
+  },
+  {
+    id: "distribution",
+    title: "How should the new pipework be run?",
+    hint: "You've told us what state it's in — this is how we connect to it.",
+    options: [
+      { key: "manifold", label: "New manifold, runs out to each emitter" },
+      { key: "existing", label: "Tap into the existing pipework" },
+      { key: "both", label: "Some of each", note: "Manifold where it's open, tapped in elsewhere" },
+      unsure,
+    ],
+  },
+  {
+    id: "unit",
+    title: "Any preference on the heat pump itself?",
+    hint: "No prices against these — you'll see the range at the end either way.",
+    // Pointless to ask when they are not having a heat pump.
+    when: (a) => a.target === "ashp",
+    options: [
+      ...HEAT_PUMP_RANGE.map((m) => ({
+        key: m.id,
+        label: `${m.brand} ${m.model}`,
+        note: `${m.sizes} · flow ${m.maxFlow}`,
+      })),
+      { key: UNSURE, label: "No preference", note: "We'll specify it from the heat-loss survey" },
+    ],
+  },
+];
+
+/** Core first, extras after — the order the enquiry reads in. */
+export const ALL_QUESTIONS: Question[] = [...QUESTIONS, ...DETAIL_QUESTIONS];
+
+/** The detail questions worth asking, given what they have already said. */
+export function detailQuestionsFor(a: Answers): Question[] {
+  return DETAIL_QUESTIONS.filter((q) => !q.when || q.when(a));
+}
+
 /* ------------------------------------------------------------- pricing --- */
 
 export interface Band {
@@ -132,6 +208,15 @@ export interface Pricing {
   flooring: Record<string, Band>;
   /** Added to the base, by heat pump → cylinder distance. */
   distance: Record<string, Band>;
+  /* ---- the optional detail step. Leave any of these out and that answer
+     simply does not move the number, so the core figures can go in first
+     and these can follow once they are known. ---- */
+  /** Added to the base, by where the cylinder is going. */
+  cylinder?: Record<string, Band>;
+  /** Added to the base, by how the pipework gets run. */
+  distribution?: Record<string, Band>;
+  /** Added to the base, by chosen unit — keyed on HEAT_PUMP_RANGE ids. */
+  unit?: Record<string, Band>;
   /** Multipliers on the base for property type, where 1 is the baseline. */
   propertyFactor: Record<string, number>;
   /** Boiler Upgrade Scheme, deducted from the total where it applies. */
@@ -149,7 +234,15 @@ export const PRICING: Pricing | null = null;
 export type Answers = Record<string, OptionKey>;
 
 export type QuoteResult =
-  | { kind: "range"; from: number; to: number; grant: number; beforeGrant: Band }
+  | {
+      kind: "range";
+      from: number;
+      to: number;
+      grant: number;
+      beforeGrant: Band;
+      /** how many of the detail answers actually moved the figure */
+      refined: number;
+    }
   | { kind: "callback"; reason: "unsure" | "no-pricing" };
 
 /** Electric boilers do not attract the Boiler Upgrade Scheme. */
@@ -175,24 +268,68 @@ export function quote(a: Answers): QuoteResult {
   const adds = [p.pipework[a.pipework], p.flooring[a.flooring], p.distance[a.distance]];
   if (adds.some((x) => !x)) return { kind: "callback", reason: "unsure" };
 
+  // The optional extras. A missing answer, a "not sure", or a price list
+  // that has no figure for that answer yet all mean the same thing here:
+  // leave the number where it was. Never a reason to withhold the range.
+  const refinements = (
+    [
+      [p.cylinder, a.cylinder],
+      [p.distribution, a.distribution],
+      [p.unit, a.unit],
+    ] as [Record<string, Band> | undefined, OptionKey | undefined][]
+  )
+    .map(([table, answer]) =>
+      !table || !answer || answer === UNSURE ? undefined : table[answer],
+    )
+    .filter((x): x is Band => Boolean(x));
+
+  const extraFrom = refinements.reduce((t, x) => t + x.from, 0);
+  const extraTo = refinements.reduce((t, x) => t + x.to, 0);
+
   const beforeGrant: Band = {
-    from: Math.round(b.from * factor + adds.reduce((s, x) => s + x!.from, 0)),
-    to: Math.round(b.to * factor + adds.reduce((s, x) => s + x!.to, 0)),
+    from: Math.round(b.from * factor + adds.reduce((s, x) => s + x!.from, 0) + extraFrom),
+    to: Math.round(b.to * factor + adds.reduce((s, x) => s + x!.to, 0) + extraTo),
   };
   const grant = grantFor(a, p);
   return {
     kind: "range",
     beforeGrant,
     grant,
+    refined: refinements.length,
     from: Math.max(0, beforeGrant.from - grant),
     to: Math.max(0, beforeGrant.to - grant),
   };
 }
 
-/** Human-readable answers, for the enquiry email. */
+/**
+ * Human-readable answers, for the enquiry email and the summary on screen.
+ *
+ * The core seven always appear, answered or not, so the office can see what
+ * was asked. The optional extras appear only when they were answered —
+ * listing three em dashes for a step the visitor skipped tells nobody
+ * anything.
+ */
 export function describe(a: Answers): { k: string; v: string }[] {
-  return QUESTIONS.map((q) => ({
+  const row = (q: Question) => ({
     k: q.title.replace(/\?$/, ""),
     v: q.options.find((o) => o.key === a[q.id])?.label ?? "—",
-  }));
+  });
+  return [
+    ...QUESTIONS.map(row),
+    ...detailQuestionsFor(a)
+      .filter((q) => a[q.id])
+      .map(row),
+  ];
+}
+
+/** True once the visitor has answered anything in the detail step. */
+export function hasDetail(a: Answers): boolean {
+  return DETAIL_QUESTIONS.some((q) => Boolean(a[q.id]));
+}
+
+/** Clears the detail answers — used when the visitor backs out of that step. */
+export function withoutDetail(a: Answers): Answers {
+  const out = { ...a };
+  DETAIL_QUESTIONS.forEach((q) => delete out[q.id]);
+  return out;
 }

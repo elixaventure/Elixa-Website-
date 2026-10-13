@@ -19,6 +19,8 @@ export type ConversionEvent =
   | "quote_step"
   | "quote_submit"
   | "quick_quote_submit"
+  // the optional extra step, opened by a visitor who knows their own system
+  | "quick_quote_detail"
   | "calculator_complete"
   | "phone_click"
   | "email_click"
