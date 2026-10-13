@@ -620,7 +620,7 @@ export function QuickQuote() {
               Where shall we send it?
             </h2>
             <p className="mt-4 max-w-[52ch] text-base text-night-muted md:text-lg">
-              A postcode lets us confirm we cover you and which grant rate applies.
+              We work across the UK — the postcode is so the right engineer comes to you.
             </p>
 
             <div className="mt-8 grid gap-4">
