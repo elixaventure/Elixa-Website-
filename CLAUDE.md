@@ -131,3 +131,14 @@ functions the website talks to: `web-lead` for enquiries,
 Quote Defaults and syncs to `profiles.quote_defaults`, so the website reads
 it rather than keeping a copy. Changes there go through a pull request for
 a person to deploy, never merged automatically from here.
+
+**Bump `APP_VERSION` in `index.html` on every change to that app.** It is
+the only thing that ships. The app polls its own deployed page every
+minute, compares the version it finds against the one it is running, and
+hard-reloads when they differ — so a merge that leaves the number alone
+reaches nobody, however green the deploy is. Three changes went out one
+evening without it, two tests "failed" against code that was never on the
+device, and force-closing the app did nothing, because the browser cache
+is exactly what that poller exists to defeat. The version badge at the
+foot of the menu says which build a device is actually on; ask for it
+before debugging anything that looks like a change not working.
