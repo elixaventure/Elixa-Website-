@@ -33,6 +33,16 @@ export interface Group {
   id: "prop" | "beds" | "baths";
   label: string;
   options: Choice[];
+  /**
+   * How many across on a phone.
+   *
+   * Said per group rather than left to wrapping, because wrapping put
+   * four homes on one line and left Bungalow alone across the full
+   * width, which reads as a heading rather than as the fifth of five.
+   * Three and two, both rows the same height, is the shape that looks
+   * like it was meant.
+   */
+  cols: 3 | 4;
 }
 
 export interface Ask {
@@ -57,6 +67,7 @@ export const ASKS: Ask[] = [
         // is, which was the thing that made clicking through feel like
         // starting over.
         id: "prop",
+        cols: 3,
         label: "Home",
         options: [
           { key: "flat", label: "Flat" },
@@ -68,6 +79,7 @@ export const ASKS: Ask[] = [
       },
       {
         id: "beds",
+        cols: 4,
         label: "Bedrooms",
         options: [
           { key: "1-2", label: "1–2" },
@@ -78,6 +90,7 @@ export const ASKS: Ask[] = [
       },
       {
         id: "baths",
+        cols: 3,
         label: "Bathrooms",
         options: [
           { key: "1", label: "1" },

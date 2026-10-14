@@ -313,6 +313,16 @@ export function PriceCheck() {
     SURVEY_TIMES.find((t) => t.key === sTime),
   );
 
+  /**
+   * A row of n, with the gap taken out of each share rather than added
+   * on top of it — otherwise the last one on a line is pushed onto the
+   * next and the line it leaves behind stretches to cover for it.
+   */
+  const COLS: Record<number, string> = {
+    3: "basis-[calc(33.333%_-_6.667px)]",
+    4: "basis-[calc(25%_-_7.5px)]",
+  };
+
   /* ------------------------------------------------------- pieces --- */
 
   /** One chip row, used by both pickers so they cannot drift apart. */
@@ -406,6 +416,10 @@ export function PriceCheck() {
                     <span className="mb-2.5 block font-techmono text-[10px] uppercase tracking-[0.2em] text-night-faint">
                       {g.label}
                     </span>
+                    {/* Basis sets how many fit on a line; grow lets a
+                        short last line share the width between the ones on
+                        it. Without the basis, five homes wrapped four and
+                        one, and the one was as wide as the question. */}
                     <div className="flex flex-wrap gap-2.5">
                       {g.options.map((o) => {
                         const on = answers[g.id] === o.key;
@@ -415,7 +429,7 @@ export function PriceCheck() {
                             type="button"
                             onClick={() => choose(g.id, o.key)}
                             aria-pressed={on}
-                            className={`min-h-[58px] min-w-[70px] flex-1 rounded-xl border px-4 text-[17px] font-semibold transition-colors ${
+                            className={`min-h-[58px] min-w-0 grow ${COLS[g.cols]} rounded-xl border px-4 text-[17px] font-semibold transition-colors ${
                               on
                                 ? "border-night-accent bg-night-accent/[0.12] text-night-accent"
                                 : "border-night-line bg-night-surface text-night-text hover:border-night-accent/45"
