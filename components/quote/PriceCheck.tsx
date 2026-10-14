@@ -19,6 +19,7 @@ import { track } from "@/lib/analytics";
 import { fetchEstimate, ESTIMATE_URL, type Estimate } from "@/lib/estimate";
 import { submitLead, FORM_ENDPOINT } from "@/lib/forms";
 import { handoffLink } from "@/lib/handoff";
+import { buildIcs, downloadIcs } from "@/lib/ics";
 import {
   CALL_TIMES,
   SURVEY_TIMES,
@@ -85,6 +86,7 @@ export function PriceCheck() {
   const [withGrant, setWithGrant] = useState(true);
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [added, setAdded] = useState(false);
 
   const top = useRef<HTMLDivElement>(null);
   const ask = ASKS[Math.min(step, ASKS.length - 1)];
@@ -312,6 +314,53 @@ export function PriceCheck() {
     sDays.find((d) => d.key === sDay),
     SURVEY_TIMES.find((t) => t.key === sTime),
   );
+  const firstName = contact.name.trim().split(" ")[0];
+
+  /**
+   * The same two appointments, for the customer's own phone.
+   *
+   * Built from the slots rather than from the enquiry we sent, so it
+   * cannot drift from what the confirmation says above it.
+   */
+  const calendarFile = useMemo(
+    () =>
+      buildIcs([
+        {
+          date: sDays.find((d) => d.key === sDay)?.date ?? "",
+          window: sTime,
+          title: "Elixa survey (provisional)",
+          notes:
+            `A free heat pump survey, about an hour at the property. Pencilled in` +
+            ` until we confirm it on the phone. Any problem, ring ${site.phoneDisplay}.`,
+        },
+        {
+          date: days.find((d) => d.key === day)?.date ?? "",
+          window: time,
+          title: "Call from Elixa Renewables",
+          notes:
+            `We'll ring to go through the radiators and the cylinder, and to confirm` +
+            ` the survey. Ten minutes or so. Our number is ${site.phoneDisplay}.`,
+        },
+      ]),
+    [sDays, sDay, sTime, days, day, time],
+  );
+
+  const addToCalendar = () => {
+    if (!calendarFile) return;
+    downloadIcs(calendarFile);
+    setAdded(true);
+    track("survey_booking", { source: "price-check-calendar" });
+  };
+
+  /**
+   * A row of n, with the gap taken out of each share rather than added
+   * on top of it — otherwise the last one on a line is pushed onto the
+   * next and the line it leaves behind stretches to cover for it.
+   */
+  const COLS: Record<number, string> = {
+    3: "basis-[calc(33.333%_-_6.667px)]",
+    4: "basis-[calc(25%_-_7.5px)]",
+  };
 
   /* ------------------------------------------------------- pieces --- */
 
@@ -406,6 +455,10 @@ export function PriceCheck() {
                     <span className="mb-2.5 block font-techmono text-[10px] uppercase tracking-[0.2em] text-night-faint">
                       {g.label}
                     </span>
+                    {/* Basis sets how many fit on a line; grow lets a
+                        short last line share the width between the ones on
+                        it. Without the basis, five homes wrapped four and
+                        one, and the one was as wide as the question. */}
                     <div className="flex flex-wrap gap-2.5">
                       {g.options.map((o) => {
                         const on = answers[g.id] === o.key;
@@ -415,7 +468,7 @@ export function PriceCheck() {
                             type="button"
                             onClick={() => choose(g.id, o.key)}
                             aria-pressed={on}
-                            className={`min-h-[58px] min-w-[70px] flex-1 rounded-xl border px-4 text-[17px] font-semibold transition-colors ${
+                            className={`min-h-[58px] min-w-0 grow ${COLS[g.cols]} rounded-xl border px-4 text-[17px] font-semibold transition-colors ${
                               on
                                 ? "border-night-accent bg-night-accent/[0.12] text-night-accent"
                                 : "border-night-line bg-night-surface text-night-text hover:border-night-accent/45"
@@ -780,18 +833,29 @@ export function PriceCheck() {
         {screen === "done" && (
           <motion.div key="done" {...fade}>
             <p className="font-techmono text-[10.5px] uppercase tracking-[0.26em] text-night-accent">
-              Received
+              Booked in
             </p>
             <h1 className="v2-narrow mt-4 max-w-[18ch] font-arch text-[2rem] font-bold leading-[1.02] tracking-[-0.025em] text-night-text sm:text-[2.6rem]">
-              {when ? `Thanks — we'll call ${when}.` : "Thanks — we'll call you."}
+              {firstName ? `You're booked in, ${firstName}.` : "You're booked in."}
             </h1>
+            {/* Plainly, because it is now plainly true: the enquiry lands
+                on the office diary the moment it arrives, rather than in
+                an inbox somebody reads later. */}
             <p className="mt-4 max-w-[48ch] text-[15px] leading-relaxed text-night-muted">
-              {contact.name.trim().split(" ")[0]
-                ? `We've got everything, ${contact.name.trim().split(" ")[0]}. `
-                : ""}
-              Here's what happens next.
+              {surveyWhen
+                ? `Thank you — your survey is in the office diary for ${surveyWhen}, and we'll ring you ${
+                    when || "before then"
+                  } to confirm it.`
+                : when
+                  ? `Thank you — it's with the office now, and we'll ring you ${when}.`
+                  : "Thank you — it's with the office now, and we'll ring you to arrange the survey."}
             </p>
-            <ol className="mt-6 grid gap-3">
+
+            {/* A list, and it has to read as one. These were cards with a
+                border and a fill, which is the same thing every tappable
+                answer on this page is made of, so they looked like two
+                more buttons on a page that had stopped asking anything. */}
+            <ol className="mt-7 grid gap-5 border-l border-night-line pl-5">
               {[
                 [
                   when ? `A call ${when}` : "A call",
@@ -800,19 +864,36 @@ export function PriceCheck() {
                 [
                   surveyWhen ? `A free survey ${surveyWhen}` : "A free survey",
                   surveyWhen
-                    ? "Pencilled in — we'll confirm it on the call. Room-by-room heat loss, and the figure we stand behind comes from it."
+                    ? "About an hour at the property. Room-by-room heat loss, and the figure we stand behind comes from it."
                     : "Booked on that call. Room-by-room heat loss, and the figure we stand behind comes from it.",
                 ],
-              ].map(([t, d], i) => (
-                <li key={t} className="flex gap-4 rounded-xl border border-night-line bg-night-surface p-4">
-                  <span className="font-techmono text-[13px] text-night-accent">{i + 1}</span>
-                  <span>
-                    <span className="block text-[15px] font-semibold text-night-text">{t}</span>
-                    <span className="mt-1 block text-[13.5px] leading-relaxed text-night-muted">{d}</span>
-                  </span>
+              ].map(([t, d]) => (
+                <li key={t}>
+                  <span className="block text-[15px] font-semibold text-night-text">{t}</span>
+                  <span className="mt-1 block text-[13.5px] leading-relaxed text-night-muted">{d}</span>
                 </li>
               ))}
             </ol>
+
+            {calendarFile && (
+              <>
+                <button
+                  type="button"
+                  onClick={addToCalendar}
+                  className="mt-7 flex min-h-[58px] w-full items-center justify-center gap-3 rounded-xl border border-night-line px-6 font-techmono text-[12.5px] uppercase tracking-[0.14em] text-night-text transition-colors hover:border-night-accent hover:text-night-accent"
+                >
+                  {added ? "Added" : "Put it in my calendar"}
+                </button>
+                <p className="mt-3 text-center text-[12.5px] leading-relaxed text-night-faint">
+                  {/* The window, not a time, because a window is what was
+                      agreed — and left free rather than busy, since the
+                      call confirms it. */}
+                  Both go in your own calendar, marked provisional until we confirm on the
+                  call.
+                </p>
+              </>
+            )}
+
             {phoneBlock}
           </motion.div>
         )}
